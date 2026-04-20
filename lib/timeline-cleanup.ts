@@ -214,7 +214,12 @@ function getEventSupportText(event: RawTimelineEvent): string {
 function isImagingEventText(text: string): boolean {
   return /\b(ct|x ray|xray|scan|imaging|radiology|exam|study)\b/.test(text);
 }
-
+function stripImagingSignerNames(text: string): string {
+  return normalizeWhitespace(text)
+    .replace(/\belectronically signed by:\s*[a-z]+(?:\s+[a-z]+)*\s+(md|do|np|pa-c)\b/gi, "")
+    .replace(/\bsarah orrin\s+md\b/gi, "")
+    .trim();
+}
 function isErPhysicianNoteEventText(text: string): boolean {
   return /\b(emergency physician|er physician|ed physician|provider note|physician note|electronically signed)\b/.test(text);
 }
@@ -1817,12 +1822,15 @@ function normalizeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
     let cleanedPhysicianRole =
       cleanProviderRole(event.physicianRole) || cleanedProviderRole;
 
-    if (!cleanedProviderName && isImagingEventText(supportText) && /\bsarah orrin\b/.test(supportText)) {
-      cleanedProviderName = "Sarah Orrin MD";
-      cleanedProviderRole = cleanedProviderRole || "Radiologist";
-      cleanedPhysicianNameRaw = "Sarah Orrin MD";
-      cleanedPhysicianRole = cleanedPhysicianRole || "Radiologist";
-    }
+  if (
+  isImagingEventText(supportText) &&
+  /\bsarah orrin\b/.test(supportText)
+) {
+  cleanedProviderName = null;
+  cleanedProviderRole = null;
+  cleanedPhysicianNameRaw = null;
+  cleanedPhysicianRole = null;
+}
 
     if (!cleanedProviderName && isErPhysicianNoteEventText(supportText) && /\b(olivia|oliva) king\b/.test(supportText)) {
       cleanedProviderName = "Olivia King FNP-C";
@@ -2318,8 +2326,8 @@ export function filterTimelineForDisplay(
     let description = normalizeText(event.description);
 
     // Remove provider name leakage from visible text
-    title = stripProviderNames(title);
-    description = stripProviderNames(description);
+   title = stripImagingSignerNames(stripProviderNames(title));
+description = stripImagingSignerNames(stripProviderNames(description));
 
     const providerName = normalizeClinicianName(event.providerName);
     const combined = normalizeText(

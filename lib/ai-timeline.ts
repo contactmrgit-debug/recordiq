@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-
+import { dedupeAndMergeEvents } from "@/lib/timeline/dedupe-merge";
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -698,11 +698,11 @@ export async function extractTimelineEvents(
     }
 
     const combined = [...allPrimaryEvents, ...allSecondaryEvents];
-    const deduped = dedupeEvents(combined);
-    const qualityCleaned = enforceDataQuality(deduped);
-    const dateCleaned = qualityCleaned.filter((e) => isValidDate(e.date));
-    const filtered = dateCleaned.filter((event) => !isLowValueEvent(event));
-    const sorted = sortEvents(filtered);
+const deduped = dedupeAndMergeEvents(combined);
+const qualityCleaned = enforceDataQuality(deduped);
+const dateCleaned = qualityCleaned.filter((e) => isValidDate(e.date));
+const filtered = dateCleaned.filter((event) => !isLowValueEvent(event));
+const sorted = sortEvents(filtered);
 
     const prioritized = [...sorted].sort((a, b) => {
       const aTime =
