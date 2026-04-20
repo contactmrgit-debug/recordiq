@@ -300,7 +300,34 @@ function getMeaningfulNameTokens(value: string): string[] {
         ].includes(token)
     );
 }
+function isRoutineMedicationEvent(text: string): boolean {
+  return /\b(ondansetron|zofran|normal saline|ns 1000ml|iv fluids?|hydromorphone|dilaudid|tdap)\b/i.test(text);
+}
 
+function isHighValueMedication(text: string): boolean {
+  return /\b(heparin|insulin|tpa|epinephrine|intubation meds)\b/i.test(text);
+}
+
+function isLowValueMedication(text: string): boolean {
+  return isRoutineMedicationEvent(text) && !isHighValueMedication(text);
+}
+
+function isUrinalysisEvent(text: string): boolean {
+  return /\b(urinalysis|ua)\b/i.test(text);
+}
+
+function hasSignificantUAFindings(text: string): boolean {
+  return /\b(hematuria|proteinuria|ketones|infection|abnormal)\b/i.test(text);
+}
+
+function isImagingEvent(text: string): boolean {
+  return /\b(ct|x-ray|xr|mri|imaging)\b/i.test(text);
+}
+
+function stripProviderNames(text: string): string {
+  // removes trailing provider signatures like "Sarah Orrin MD"
+  return text.replace(/\b[a-z]+\s+[a-z]+\s+(md|do|np|pa-c)\b/gi, "").trim();
+}
 function hasExplicitClinicianSupport(
   event: RawTimelineEvent,
   clinicianName?: string | null
@@ -2287,15 +2314,22 @@ export function filterTimelineForDisplay(
   events: RawTimelineEvent[]
 ): RawTimelineEvent[] {
   return events.filter((event) => {
-    const title = cleanTitle(event.title);
-    const physicianName = normalizeClinicianName(event.physicianName);
+    let title = cleanTitle(event.title);
+    let description = normalizeText(event.description);
+
+    // Remove provider name leakage from visible text
+    title = stripProviderNames(title);
+    description = stripProviderNames(description);
+
     const providerName = normalizeClinicianName(event.providerName);
-    const combined = normalizeText(`${event.title || ""} ${event.description || ""}`);
+    const combined = normalizeText(
+      `${event.title || ""} ${event.description || ""}`
+    );
 
     if (!title) return false;
     if (event.isHidden) return false;
 
-    // Only hide obvious UI noise — DO NOT duplicate backend filtering
+    // Only hide obvious UI noise — do not duplicate backend filtering
     if (
       isLowValueEmsWorkflowEvent(event) &&
       !hasMeaningfulTraumaFinding(combined)
@@ -2315,11 +2349,22 @@ export function filterTimelineForDisplay(
       return false;
     }
 
+    // Hide clearly non-provider actor rows that only carry nursing/EMS attribution
     if (
-      !physicianName &&
+      !providerName &&
+      /rn|ems|nurse|emt/.test(
+        normalizeText(`${event.providerRole || ""} ${event.eventActorType || ""}`)
+      )
+    ) {
+      return false;
+    }
+
+    if (
       providerName &&
       /rn|ems|nurse|emt/.test(
-        normalizeText(`${event.providerRole || ""} ${providerName}`)
+        normalizeText(
+          `${event.providerRole || ""} ${event.eventActorType || ""} ${providerName}`
+        )
       )
     ) {
       return false;
