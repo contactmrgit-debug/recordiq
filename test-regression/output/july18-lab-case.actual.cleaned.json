@@ -1,0 +1,21 @@
+{
+  "documentName": "july18-lab-case.pdf",
+  "rawEventCount": 5,
+  "cleanedEventCount": 2,
+  "cleanedEvents": [
+    {
+      "date": "2025-07-18",
+      "title": "Vitamin B6 prescribed",
+      "description": "Pyridoxine (vitamin B6) 50 mg daily was ordered.",
+      "eventType": "treatment",
+      "confidence": 0.98
+    },
+    {
+      "date": "2025-07-18",
+      "title": "Outpatient lab visit completed",
+      "description": "Patient had an outpatient lab encounter at Dallas Laboratory referred by Ming Yang, MD for ALD, adrenal insufficiency, X-linked adrenoleukodystrophy, and status post allogeneic bone marrow transplant.",
+      "eventType": "appointment",
+      "confidence": 0.98
+    }
+  ]
+}

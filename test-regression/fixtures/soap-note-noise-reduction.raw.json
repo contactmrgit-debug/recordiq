@@ -1,0 +1,121 @@
+[
+  {
+    "date": "2025-06-12",
+    "title": "Started omeprazole 40 mg daily",
+    "description": "Omeprazole 40 mg once daily was initiated at the prior clinic visit.",
+    "eventType": "treatment",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-12",
+    "title": "Prior clinic visit with omeprazole initiation",
+    "description": "At a previous clinic visit, the patient was started on omeprazole 40 mg daily.",
+    "eventType": "treatment",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-12",
+    "title": "Gastroenterology clinic visit",
+    "description": "Patient was previously seen in clinic for abdominal and reflux-related symptoms.",
+    "eventType": "appointment",
+    "confidence": 0.95
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Follow-up gastroenterology visit",
+    "description": "Patient seen for follow-up of abdominal pain, bloating, and intermittent dysphagia.",
+    "eventType": "appointment",
+    "confidence": 1
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Diagnosed GERD with partial PPI response",
+    "description": "Assessment included gastroesophageal reflux disease with only partial response to proton pump inhibitor therapy.",
+    "eventType": "diagnosis",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Diagnosed intermittent esophageal dysphagia",
+    "description": "Assessment documented intermittent esophageal dysphagia.",
+    "eventType": "diagnosis",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Diagnosed postprandial bloating",
+    "description": "Assessment documented postprandial bloating.",
+    "eventType": "diagnosis",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Postprandial bloating assessed",
+    "description": "Assessment included postprandial bloating.",
+    "eventType": "diagnosis",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Omeprazole dose increased",
+    "description": "Plan was to increase omeprazole to 40 mg twice daily for 8 weeks.",
+    "eventType": "treatment",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Continue anti-reflux diet",
+    "description": "Patient was advised to continue anti-reflux diet measures and avoid late evening meals.",
+    "eventType": "treatment",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Avoid late evening meals",
+    "description": "Patient was advised to avoid late evening meals.",
+    "eventType": "treatment",
+    "confidence": 0.96
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Advised to avoid trigger foods",
+    "description": "Patient instructions included avoiding trigger foods.",
+    "eventType": "treatment",
+    "confidence": 0.95
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Partial improvement with PPI therapy",
+    "description": "Patient reported only partial symptom improvement with proton pump inhibitor treatment, with breakthrough symptoms several times per week.",
+    "eventType": "observation",
+    "confidence": 0.94
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Intermittent dysphagia persists",
+    "description": "Patient described intermittent sensation of food sticking in the lower chest, ongoing for several months.",
+    "eventType": "other",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Postprandial bloating ongoing",
+    "description": "Patient reported bloating after meals continuing for several months.",
+    "eventType": "other",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Postprandial bloating persists",
+    "description": "Patient reported bloating after meals, ongoing for several months.",
+    "eventType": "other",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-07-10",
+    "title": "Ongoing upper abdominal discomfort",
+    "description": "Patient reported persistent upper abdominal discomfort that has been present for several months.",
+    "eventType": "other",
+    "confidence": 0.96
+  }
+]

@@ -1,0 +1,170 @@
+[
+  {
+    "date": "1990-01-01",
+    "title": "Diagnosed with peptic ulcer disease",
+    "description": "Patient was diagnosed with peptic ulcer disease.",
+    "eventType": "diagnosis",
+    "confidence": 0.96
+  },
+  {
+    "date": "1990-04-01",
+    "title": "Peptic ulcer disease resolved with cimetidine",
+    "description": "Peptic ulcer disease resolved after three months of cimetidine treatment.",
+    "eventType": "treatment",
+    "confidence": 0.9
+  },
+  {
+    "date": "1994-01-01",
+    "title": "Total abdominal hysterectomy with bilateral oophorectomy",
+    "description": "Patient underwent total abdominal hysterectomy and bilateral oophorectomy for uterine fibroids.",
+    "eventType": "treatment",
+    "confidence": 0.99
+  },
+  {
+    "date": "1998-01-01",
+    "title": "Diagnosed with hypertension",
+    "description": "Patient was diagnosed with hypertension and started on an unknown medication.",
+    "eventType": "diagnosis",
+    "confidence": 0.97
+  },
+  {
+    "date": "1998-01-01",
+    "title": "Bunionectomy performed",
+    "description": "Patient underwent bunionectomy.",
+    "eventType": "treatment",
+    "confidence": 0.98
+  },
+  {
+    "date": "1998-07-01",
+    "title": "Stopped antihypertensive medication",
+    "description": "Patient stopped her blood pressure medication after six months because it caused drowsiness.",
+    "eventType": "treatment",
+    "confidence": 0.87
+  },
+  {
+    "date": "2004-05-26",
+    "title": "Initial exertional chest pain episode",
+    "description": "About one week before admission, patient developed abrupt dull aching left parasternal chest pain radiating to the neck while gardening after about 45 minutes of work; associated shortness of breath, lasted 5 to 10 minutes, and resolved with rest in a cool area.",
+    "eventType": "other",
+    "confidence": 0.97
+  },
+  {
+    "date": "2004-05-30",
+    "title": "Second chest pain episode while walking dog",
+    "description": "Three days before admission, patient had a 15-minute episode of chest pain similar in quality and location to the first episode while walking her dog; it resolved with rest.",
+    "eventType": "other",
+    "confidence": 0.96
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Nitrate therapy planned",
+    "description": "Plan recommended starting nitrates to reduce risk of occlusion, treat chest pain symptoms, and help lower blood pressure.",
+    "eventType": "treatment",
+    "confidence": 0.98
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Aspirin therapy planned",
+    "description": "Plan recommended starting a platelet inhibitor such as aspirin to decrease myocardial infarction risk.",
+    "eventType": "treatment",
+    "confidence": 0.97
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Diuretic therapy planned for dyspnea and volume overload",
+    "description": "Plan recommended starting diuretics for dyspnea thought most likely due to volume overload; this was also expected to help blood pressure.",
+    "eventType": "treatment",
+    "confidence": 0.96
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Chest pain assessed as likely angina",
+    "description": "Assessment concluded that the exertional substernal chest pain was most suggestive of ischemic cardiac pain consistent with angina pectoris.",
+    "eventType": "diagnosis",
+    "confidence": 0.97
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Angina considered most likely diagnosis",
+    "description": "Assessment concluded that the chest pain was most suggestive of ischemic cardiac pain consistent with angina pectoris.",
+    "eventType": "diagnosis",
+    "confidence": 0.95
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Unstable angina suspected",
+    "description": "Because symptoms were increasing and pain occurred at rest, the presentation was considered consistent with unstable angina and hospitalization was indicated.",
+    "eventType": "diagnosis",
+    "confidence": 0.95
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Plan for telemetry admission",
+    "description": "Plan was to admit the patient to the telemetry floor for careful monitoring for increased chest pain and possible impending myocardial infarction.",
+    "eventType": "treatment",
+    "confidence": 0.96
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Aspirin and nitrates planned",
+    "description": "Plan was to start platelet inhibition with aspirin and begin nitrates to reduce occlusion risk, relieve pain, and help lower blood pressure.",
+    "eventType": "treatment",
+    "confidence": 0.96
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Hospitalization deemed indicated",
+    "description": "Assessment stated that hospitalization was indicated due to suspected unstable angina.",
+    "eventType": "treatment",
+    "confidence": 0.96
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Cardiac catheterization planned",
+    "description": "Plan was to schedule cardiac catheterization because of the high pretest probability of coronary disease.",
+    "eventType": "treatment",
+    "confidence": 0.95
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Morphine considered for prolonged nitrate-unresponsive pain",
+    "description": "If prolonged pain did not respond to nitrates, an analgesic such as morphine was considered.",
+    "eventType": "treatment",
+    "confidence": 0.95
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Diuretics planned for dyspnea",
+    "description": "Plan was to begin diuretics for dyspnea thought to be secondary to volume overload, which could also help treat hypertension.",
+    "eventType": "treatment",
+    "confidence": 0.94
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Ventriculogram planned with catheterization",
+    "description": "Plan included a ventriculogram at the time of catheterization to assess cardiac size and wall motion abnormalities.",
+    "eventType": "treatment",
+    "confidence": 0.94
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Possible renovascular hypertension considered",
+    "description": "Recent hypertension combined with an abdominal bruit raised concern for renal artery atherosclerotic disease causing renovascular hypertension.",
+    "eventType": "diagnosis",
+    "confidence": 0.84
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Possible aortic stenosis considered",
+    "description": "The systolic murmur radiating to the neck raised the possibility of significant valvular disease, specifically aortic stenosis.",
+    "eventType": "diagnosis",
+    "confidence": 0.82
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Morphine planned if pain persists",
+    "description": "For prolonged pain unresponsive to nitrates, morphine was planned as an analgesic option.",
+    "eventType": "treatment",
+    "confidence": 0.91
+  }
+]

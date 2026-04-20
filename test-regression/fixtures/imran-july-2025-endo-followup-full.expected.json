@@ -1,0 +1,37 @@
+{
+  "documentName": "imran-july-2025-endo-followup-full",
+  "minEvents": 5,
+  "maxEvents": 7,
+  "mustIncludeTitles": [
+    "Hydrocortisone dose increased after elevated ACTH and renin",
+    "Fludrocortisone increased to 0.1 mg daily",
+    "Repeat endocrine labs planned",
+    "Interpreter phone call completed with mother"
+  ],
+  "mustIncludeEventTypes": [
+    "appointment",
+    "treatment",
+    "communication"
+  ],
+  "dateRules": [
+    {
+      "date": "2025-07-22",
+      "minEvents": 4,
+      "maxEvents": 5,
+      "mustIncludeTitles": [
+        "Hydrocortisone dose increased after elevated ACTH and renin",
+        "Fludrocortisone increased to 0.1 mg daily",
+        "Repeat endocrine labs planned",
+        "Mother reported fatigue, color changes, dry lips, and thirst"
+      ]
+    },
+    {
+      "date": "2025-07-25",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Interpreter phone call completed with mother"
+      ]
+    }
+  ]
+}

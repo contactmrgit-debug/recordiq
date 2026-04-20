@@ -1,0 +1,54 @@
+[
+  {
+    "date": "2019-02-02",
+    "title": "CBC",
+    "description": "WBC 12.1; Hgb 13.8; platelets 220.",
+    "eventType": "report",
+    "sourcePage": 7,
+    "providerName": "Sarah Orrin MD"
+  },
+  {
+    "date": "2019-02-02",
+    "title": "BMP",
+    "description": "Sodium 139; potassium 4.1; creatinine 0.9.",
+    "eventType": "report",
+    "sourcePage": 7
+  },
+  {
+    "date": "2019-02-02",
+    "title": "CBC",
+    "description": "WBC low at 2.1; hemoglobin low at 8.1; platelets markedly decreased at 42.",
+    "eventType": "report",
+    "sourcePage": 8,
+    "providerName": "Sarah Orrin MD"
+  },
+  {
+    "date": "2019-02-02",
+    "title": "Urinalysis",
+    "description": "Positive nitrite and leukocyte esterase. Cloudy urine. Protein and glucose present. Reflex microscopy and urine culture triggered.",
+    "eventType": "report",
+    "sourcePage": 8
+  },
+  {
+    "date": "2019-02-02",
+    "title": "X-ray humerus findings",
+    "description": "X-ray shoulder impression; lucency traverses the left scapular body compatible with nondisplaced fracture.",
+    "eventType": "report",
+    "sourcePage": 9,
+    "providerName": "Sarah Orrin MD"
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Assessment",
+    "description": "Because symptoms were increasing and pain occurred at rest, the presentation was considered consistent with unstable angina and hospitalization was indicated.",
+    "eventType": "diagnosis",
+    "sourcePage": 4
+  },
+  {
+    "date": "2004-06-02",
+    "title": "Plan",
+    "description": "Plan was to schedule cardiac catheterization because of the high pretest probability of coronary disease.",
+    "eventType": "treatment",
+    "sourcePage": 4
+  }
+]

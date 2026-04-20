@@ -1,0 +1,43 @@
+{
+  "documentName": "timeline-hardening-final-pass",
+  "minEvents": 5,
+  "maxEvents": 5,
+  "mustIncludeTitles": [
+    "Urinalysis showed positive nitrite, positive leukocyte esterase, proteinuria",
+    "Unstable angina suspected",
+    "Cardiac catheterization planned",
+    "X-ray showed nondisplaced left scapular fracture"
+  ],
+  "mustIncludeTitlePatterns": [
+    "^CBC$"
+  ],
+  "mustNotIncludeTitles": [
+    "BMP"
+  ],
+  "mustNotIncludeProviderNames": [
+    "Sarah Orrin MD"
+  ],
+  "dateRules": [
+    {
+      "date": "2019-02-02",
+      "minEvents": 3,
+      "maxEvents": 3,
+      "mustIncludeTitles": [
+        "Urinalysis showed positive nitrite, positive leukocyte esterase, proteinuria",
+        "X-ray showed nondisplaced left scapular fracture"
+      ],
+      "mustNotIncludeTitles": [
+        "BMP"
+      ]
+    },
+    {
+      "date": "2004-06-02",
+      "minEvents": 2,
+      "maxEvents": 2,
+      "mustIncludeTitles": [
+        "Unstable angina suspected",
+        "Cardiac catheterization planned"
+      ]
+    }
+  ]
+}

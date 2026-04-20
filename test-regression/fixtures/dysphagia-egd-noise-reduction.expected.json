@@ -1,0 +1,14 @@
+{
+  "documentName": "dysphagia-egd-noise-reduction",
+  "expectedCleanedCountMin": 4,
+  "expectedCleanedCountMax": 11,
+  "expectedRawGreaterThanCleaned": true,
+  "expectedMaxEventsOnSingleDate": 11,
+  "expectedNoDuplicateNormalizedKeys": true,
+  "mustKeepTitlePatterns": [
+    "dysphagia|foreign body sensation|difficulty swallowing",
+    "endoscopy|egd",
+    "biops",
+    "barium swallow|eosinophilic esophagitis|ent|gastroenterology|follow up|follow-up"
+  ]
+}

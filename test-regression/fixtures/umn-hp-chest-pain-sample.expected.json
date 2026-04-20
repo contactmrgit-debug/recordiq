@@ -1,0 +1,54 @@
+{
+    "documentName": "umn-hp-chest-pain-sample",
+    "minEvents": 18,
+    "maxEvents": 18,
+    "mustIncludeTitles": [
+      "Diagnosed with peptic ulcer disease",
+      "Total abdominal hysterectomy with bilateral oophorectomy",
+      "Diagnosed with hypertension",
+      "Initial exertional chest pain episode",
+      "Second chest pain episode while walking dog",
+      "Unstable angina suspected",
+      "Hospitalization deemed indicated",
+      "Cardiac catheterization planned"
+    ],
+    "mustIncludeEventTypes": [
+      "diagnosis",
+      "treatment"
+    ],
+    "mustNotIncludeProviderNames": [
+      "Sarah Orrin MD",
+      "Olivia King FNP-C",
+      "Dr. Vretis"
+    ],
+    "dateRules": [
+      {
+        "date": "2004-05-26",
+        "minEvents": 1,
+        "maxEvents": 1,
+        "mustIncludeTitles": [
+          "Initial exertional chest pain episode"
+        ]
+      },
+      {
+        "date": "2004-05-30",
+        "minEvents": 1,
+        "maxEvents": 1,
+        "mustIncludeTitles": [
+          "Second chest pain episode while walking dog"
+        ]
+      },
+      {
+        "date": "2004-06-02",
+        "minEvents": 10,
+        "maxEvents": 10,
+        "mustIncludeTitles": [
+          "Unstable angina suspected",
+          "Hospitalization deemed indicated",
+          "Cardiac catheterization planned",
+          "Aspirin therapy planned",
+          "Nitrate therapy planned"
+        ]
+      }
+    ]
+  }

@@ -1,0 +1,24 @@
+{
+  "documentName": "imran-july-2025-endo-followup",
+  "minEvents": 2,
+  "maxEvents": 6,
+  "mustIncludeTitles": [
+    "Hydrocortisone dose increased after elevated ACTH and renin",
+    "Repeat endocrine labs planned"
+  ],
+  "mustIncludeEventTypes": [
+    "treatment",
+    "other"
+  ],
+  "dateRules": [
+    {
+      "date": "2025-07-21",
+      "minEvents": 2,
+      "maxEvents": 4,
+      "mustIncludeTitles": [
+        "Hydrocortisone dose increased after elevated ACTH and renin",
+        "Repeat endocrine labs planned"
+      ]
+    }
+  ]
+}

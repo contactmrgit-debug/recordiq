@@ -1,0 +1,11 @@
+{
+  "documentName": "ascites-discharge-noise-reduction",
+  "expectedCleanedCountMin": 4,
+  "expectedCleanedCountMax": 14,
+  "expectedMaxEventsOnSingleDate": 14,
+  "expectedNoDuplicateNormalizedKeys": true,
+  "mustKeepTitlePatterns": [
+    "paracentesis",
+    "ascites|abdominal distension|portal hypertension|cirrhosis"
+  ]
+}

@@ -1,0 +1,188 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  USER
+}
+
+enum CaseType {
+  MEDICAL
+  LEGAL
+}
+
+enum RecordType {
+  MEDICAL_RECORD
+  BILL
+  LAB_RESULT
+  IMAGING
+  INSURANCE
+  LEGAL_DOCUMENT
+  OTHER
+}
+
+enum RecordStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ChunkStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cases     Case[]     @relation("CaseOwner")
+  auditLogs AuditLog[]
+}
+
+model Case {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  caseType    CaseType
+  subjectName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId String?
+  owner   User?   @relation("CaseOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  documents      Document[]
+  timelineEvents TimelineEvent[]
+  auditLogs      AuditLog[]
+
+  @@index([ownerId])
+}
+
+model Document {
+  id            String         @id @default(cuid())
+  caseId        String
+  fileName      String
+  fileUrl       String
+  extractedText String?        @db.Text
+  mimeType      String?
+  recordType    RecordType?
+  pageCount     Int?
+  status        DocumentStatus @default(UPLOADED)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  case           Case            @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  pages          DocumentPage[]
+  chunks         DocumentChunk[]
+  timelineEvents TimelineEvent[]
+
+  @@index([caseId])
+  @@index([status])
+  @@index([recordType])
+}
+
+model DocumentPage {
+  id         String   @id @default(cuid())
+  documentId String
+  pageNumber Int
+  text       String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, pageNumber])
+  @@index([documentId])
+}
+
+model DocumentChunk {
+  id            String      @id @default(cuid())
+  documentId    String
+  chunkIndex    Int
+  startPage     Int
+  endPage       Int
+  extractedText String?     @db.Text
+  status        ChunkStatus @default(PENDING)
+  error         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+  @@index([status])
+}
+
+model TimelineEvent {
+  id              String        @id @default(cuid())
+  caseId          String
+  documentId      String?
+  eventDate       DateTime
+  title           String
+  description     String?
+  eventType       String?
+  sourcePage      Int?
+  reviewStatus    ReviewStatus? @default(PENDING)
+  isHidden        Boolean       @default(false)
+  physicianName   String?
+  medicalFacility String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  case     Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([documentId])
+  @@index([eventDate])
+  @@index([reviewStatus])
+  @@index([isHidden])
+  @@index([caseId, eventDate])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  caseId     String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  case Case? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([caseId])
+  @@index([action])
+  @@index([createdAt])
+}

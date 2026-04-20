@@ -1,0 +1,93 @@
+[
+  {
+    "date": "2025-02-03",
+    "title": "Referral note entered",
+    "description": "A general referral note was documented by Kenya Scott.",
+    "eventType": "report",
+    "confidence": 0.88
+  },
+  {
+    "date": "2025-04-02",
+    "title": "Referral note entered",
+    "description": "A general referral note was documented by Yossly Cazares.",
+    "eventType": "report",
+    "confidence": 0.88
+  },
+  {
+    "date": "2025-04-10",
+    "title": "Referral note entered",
+    "description": "A general referral note was documented by Yossly Cazares.",
+    "eventType": "report",
+    "confidence": 0.88
+  },
+  {
+    "date": "2025-06-05",
+    "title": "Referral note entered",
+    "description": "A general referral note was documented by Yossly Cazares.",
+    "eventType": "report",
+    "confidence": 0.88
+  },
+  {
+    "date": "2025-06-19",
+    "title": "Respiratory viral testing ordered",
+    "description": "A respiratory panel including COVID-19 was ordered and nasopharyngeal swab specimen was collected.",
+    "eventType": "treatment",
+    "confidence": 0.96
+  },
+  {
+    "date": "2025-06-19",
+    "title": "Relevant diagnoses documented",
+    "description": "ED visit diagnoses included breakthrough seizure, bone marrow transplant status, adrenoleukodystrophy, history of seizures, and history of adrenal insufficiency.",
+    "eventType": "diagnosis",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-06-19",
+    "title": "Basic metabolic panel ordered and collected",
+    "description": "Basic metabolic panel testing was ordered and blood was collected.",
+    "eventType": "report",
+    "confidence": 0.94
+  },
+  {
+    "date": "2025-06-19",
+    "title": "Levetiracetam administered in ED",
+    "description": "Levetiracetam 1,400 mg was administered orally in the emergency department at 8:59 PM.",
+    "eventType": "treatment",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-06-19",
+    "title": "HSCT exam orders discontinued",
+    "description": "Orders for physical exam, vital signs, height and weight, lab draw, and patient waiting for labs were discontinued by Jessica Leigh Riddle, RN, PNP.",
+    "eventType": "treatment",
+    "confidence": 0.96
+  },
+  {
+    "date": "2025-06-19",
+    "title": "Peripheral IV placed",
+    "description": "A 24-gauge 1.25-inch peripheral IV was placed in the right forearm cephalic vein.",
+    "eventType": "treatment",
+    "confidence": 0.96
+  },
+  {
+    "date": "2025-06-19",
+    "title": "Medications stopped during visit",
+    "description": "Stopped-in-visit medications included cyanocobalamin, hydrocortisone formulations, lacosamide 100 mg, levetiracetam solution, and diazepam Valtoco 15 mg/2 spray.",
+    "eventType": "treatment",
+    "confidence": 0.92
+  },
+  {
+    "date": "2025-06-19",
+    "title": "Emergency visit for breakthrough seizure",
+    "description": "The patient was seen in the Dallas Emergency Room for breakthrough seizure.",
+    "eventType": "appointment",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-19",
+    "title": "CBC showed multiple hematologic abnormalities",
+    "description": "CBC with differential finalized with values including WBC 7.0, hemoglobin 12.2 g/dL, hematocrit 36.1%, and platelets 309 x10^3/uL.",
+    "eventType": "observation",
+    "confidence": 0.97
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "documentName": "soap-note-noise-reduction",
+  "expectedCleanedCountMin": 5,
+  "expectedCleanedCountMax": 11,
+  "expectedRawGreaterThanCleaned": true,
+  "expectedMaxEventsOnSingleDate": 9,
+  "expectedNoDuplicateNormalizedKeys": true,
+  "mustKeepTitlePatterns": [
+    "omeprazole|ppi",
+    "dysphagia",
+    "gerd|reflux",
+    "follow-up|follow up|clinic visit|gastroenterology visit"
+  ]
+}

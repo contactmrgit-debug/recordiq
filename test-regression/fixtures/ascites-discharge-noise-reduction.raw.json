@@ -1,0 +1,72 @@
+[
+  {
+    "date": "UNKNOWN",
+    "title": "Worsening abdominal distension over the past week",
+    "eventType": "incident"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Worsening abdominal pain and discomfort",
+    "eventType": "incident"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Brief confusion reported in the emergency department",
+    "eventType": "observation"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Ascites noted in setting of cirrhosis",
+    "eventType": "diagnosis"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Portal hypertension with ascites assessed",
+    "eventType": "diagnosis"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Paracentesis performed to remove ascitic fluid",
+    "eventType": "treatment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Diagnostic paracentesis attempted in ED and was unsuccessful",
+    "eventType": "treatment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Furosemide increased to 40 mg daily",
+    "eventType": "treatment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Spironolactone continued at 50 mg daily",
+    "eventType": "treatment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Diuretics resumed for fluid management",
+    "eventType": "treatment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Low-salt diet advised on discharge",
+    "eventType": "other"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Liver clinic follow-up arranged",
+    "eventType": "appointment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "PCP follow-up arranged after discharge",
+    "eventType": "appointment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Outpatient EGD and colonoscopy planned",
+    "eventType": "appointment"
+  }
+]

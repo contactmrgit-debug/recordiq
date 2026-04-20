@@ -1,0 +1,149 @@
+[
+  {
+    "date": "2025-06-23",
+    "title": "Reflex microscopy and culture triggered",
+    "description": "Urinalysis prompted reflex microscopy and urine culture because of positive nitrite, positive leukocyte esterase, and cloudy urine appearance.",
+    "eventType": "treatment",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Laboratory encounter initiated",
+    "description": "Encounter at Northwind Children's Specialty Center documented for Avery Rowan with ordering provider M. Ortega, MD.",
+    "eventType": "appointment",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Respiratory viral PCR negative",
+    "description": "Respiratory viral PCR was final and showed adenovirus not detected, influenza A/B negative, and RSV negative at 11:06.",
+    "eventType": "report",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Blood specimen collected for chemistry panel",
+    "description": "Primary blood specimen 25D-223C1098 was collected for comprehensive metabolic panel, hepatic panel, and lactate testing at 09:58.",
+    "eventType": "report",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-23",
+    "title": "CBC specimen collected",
+    "description": "Peripheral blood specimen 25D-223H1101 was collected for CBC with differential and smear review at 09:58.",
+    "eventType": "report",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Coagulation specimen collected",
+    "description": "Citrate plasma specimen was collected at 10:14 for coagulation studies including PT, INR, aPTT, fibrinogen, and D-dimer.",
+    "eventType": "report",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Blood culture set A collected",
+    "description": "Blood culture set A specimen was collected at 10:18.",
+    "eventType": "report",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Respiratory swab collected",
+    "description": "Swab specimen 25D-223S5120 was collected at 10:23 for respiratory viral PCR testing.",
+    "eventType": "report",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Peripheral smear confirmed marked platelet decrease",
+    "description": "Microscopy platelet estimate was markedly decreased.",
+    "eventType": "report",
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Peripheral smear showed anisopoikilocytosis",
+    "description": "Smear review reported anisopoikilocytosis with occasional target cells and no schistocytes.",
+    "eventType": "report",
+    "confidence": 0.96
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Potassium result may be falsely elevated",
+    "description": "Laboratory comment stated potassium may be falsely elevated because of specimen hemolysis.",
+    "eventType": "report",
+    "confidence": 0.95
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Elevated lactate result",
+    "description": "Lactate was markedly elevated at 4.8 mmol/L on blood testing, resulted at 10:20.",
+    "eventType": "observation",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-06-23",
+    "title": "CBC showed leukopenia",
+    "description": "WBC count was low at 2.1 x10^3/µL, resulted at 10:26.",
+    "eventType": "observation",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-06-23",
+    "title": "CBC showed anemia",
+    "description": "Hemoglobin was low at 8.1 g/dL and hematocrit was 24.6%, with low RBC count 2.88 x10^6/µL.",
+    "eventType": "observation",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-06-23",
+    "title": "CBC showed severe thrombocytopenia",
+    "description": "Platelet count was critically low at 42 x10^3/µL, resulted at 10:26.",
+    "eventType": "observation",
+    "confidence": 0.99
+  },
+  {
+    "date": "2025-06-23",
+    "title": "CBC showed neutropenia",
+    "description": "Absolute neutrophil count was low at 0.7 x10^3/µL.",
+    "eventType": "observation",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-23",
+    "title": "CBC showed lymphopenia",
+    "description": "Absolute lymphocyte count was low at 0.4 x10^3/µL.",
+    "eventType": "observation",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Urinalysis showed proteinuria and glucosuria",
+    "description": "Urine protein was 100 mg/dL and urine glucose was 50 mg/dL.",
+    "eventType": "observation",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Urine specimen collected",
+    "description": "Clean-catch urine specimen for urinalysis with reflex microscopy and culture was collected at 10:07.",
+    "eventType": "observation",
+    "confidence": 0.96
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Urinalysis showed concentrated urine",
+    "description": "Specific gravity was elevated at 1.031.",
+    "eventType": "observation",
+    "confidence": 0.95
+  },
+  {
+    "date": "2025-06-23",
+    "title": "Critical lab values verbally reported",
+    "description": "Platelet count of 42 x10^3/µL and lactate 4.8 mmol/L were verbally read back to J. Mercer, RN at 10:34.",
+    "eventType": "communication",
+    "confidence": 0.99
+  }
+]

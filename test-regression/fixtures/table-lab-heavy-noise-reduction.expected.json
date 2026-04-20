@@ -1,0 +1,44 @@
+{
+    "documentName": "table-lab-heavy-noise-reduction",
+    "minEvents": 7,
+    "maxEvents": 7,
+    "mustIncludeTitles": [
+      "CBC showed leukopenia, thrombocytopenia, anemia",
+      "Critical lab values verbally reported",
+      "Elevated lactate result",
+      "Peripheral smear showed anisopoikilocytosis and target cells",
+      "Potassium result may be falsely elevated",
+      "Respiratory viral PCR negative",
+      "Urinalysis showed positive nitrite, positive leukocyte esterase, proteinuria"
+    ],
+    "mustIncludeTitlePatterns": [
+      "urinalysis",
+      "smear",
+      "respiratory viral pcr",
+      "critical lab values"
+    ],
+    "mustNotIncludeTitlePatterns": [
+      "specimen collected",
+      "encounter initiated",
+      "blood culture set",
+      "respiratory swab collected",
+      "cbc specimen collected",
+      "coagulation specimen collected"
+    ],
+    "mustNotIncludeProviderNames": [
+      "Sarah Orrin MD",
+      "Olivia King FNP-C",
+      "Dr. Vretis"
+    ],
+    "dateRules": [
+      {
+        "date": "2025-06-23",
+        "minEvents": 7,
+        "maxEvents": 7,
+        "mustIncludeTitles": [
+          "Urinalysis showed positive nitrite, positive leukocyte esterase, proteinuria",
+          "Critical lab values verbally reported"
+        ]
+      }
+    ]
+  }

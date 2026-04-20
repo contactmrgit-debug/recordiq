@@ -1,0 +1,20 @@
+{
+  "maxCleanedEvents": 8,
+  "maxEventsOnSameDate": {
+    "date": "2025-06-19",
+    "max": 6
+  },
+  "mustIncludeTitlePatterns": [
+    "seizure",
+    "diagnoses|diagnosis",
+    "levetiracetam|keppra",
+    "cbc|hematologic",
+    "viral|respiratory"
+  ],
+  "mustNotIncludeTitlePatterns": [
+    "referral note entered",
+    "orders discontinued",
+    "ordered and collected",
+    "peripheral iv placed"
+  ]
+}

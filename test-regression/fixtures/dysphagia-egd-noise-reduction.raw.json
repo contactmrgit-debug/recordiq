@@ -1,0 +1,62 @@
+[
+  {
+    "date": "UNKNOWN",
+    "title": "Worsening dysphagia with foreign body sensation",
+    "eventType": "incident"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Difficulty swallowing food with sensation of food stuck in neck",
+    "eventType": "incident"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Patient placed herself on a pureed diet for 10 days",
+    "eventType": "treatment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Prominent esophagus seen on chest x-ray",
+    "eventType": "report"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Upper endoscopy performed",
+    "eventType": "treatment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "EGD showed normal appearing esophagus",
+    "eventType": "report"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Biopsies taken during endoscopy",
+    "eventType": "treatment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "No obvious anatomic cause for dysphagia identified on EGD",
+    "eventType": "report"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Biopsy follow-up planned to rule out eosinophilic esophagitis",
+    "eventType": "appointment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Outpatient barium swallow recommended",
+    "eventType": "appointment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Follow-up with gastroenterology recommended if biopsies show eosinophilic esophagitis",
+    "eventType": "appointment"
+  },
+  {
+    "date": "UNKNOWN",
+    "title": "Follow-up with ENT as planned",
+    "eventType": "appointment"
+  }
+]
