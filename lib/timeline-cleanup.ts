@@ -1003,7 +1003,7 @@ function buildGroupedIncidentTitle(
       .map((event) => `${event.title || ""} ${event.description || ""}`)
       .join(" ")
   );
-
+const eventType = (events[0]?.eventType || "").toString().trim().toLowerCase();
   if (
     eventType === "incident" &&
     hasMeaningfulMechanismOfInjury(combined)
@@ -1797,6 +1797,7 @@ function improveDescription(event: RawTimelineEvent): string | null {
   const eventType = normalizeEventType(event.eventType);
   const physician = normalizeText(event.physicianName);
   const facility = normalizeText(event.medicalFacility);
+  
 
   if (
     (facility.includes("shannon") || physician.includes("vretis")) &&
