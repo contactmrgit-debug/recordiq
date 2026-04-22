@@ -1,0 +1,91 @@
+{
+  "documentName": "reagan-trauma-baseline",
+  "minEvents": 9,
+  "maxEvents": 9,
+  "expectedTitlesInOrder": [
+    "C2 fracture imaging result",
+    "CT head result",
+    "ER presentation with head, neck, left shoulder pain",
+    "Grouped labs/urinalysis",
+    "Grouped medications",
+    "Left scalp/periorbital injury findings",
+    "Scapular fracture imaging result",
+    "Transferred to Shannon for higher level care",
+    "Workplace head injury after pipe fell from derrick"
+  ],
+  "mustIncludeTitles": [
+    "Workplace head injury after pipe fell from derrick",
+    "ER presentation with head, neck, left shoulder pain",
+    "Left scalp/periorbital injury findings",
+    "CT head result",
+    "C2 fracture imaging result",
+    "Scapular fracture imaging result",
+    "Grouped medications",
+    "Grouped labs/urinalysis",
+    "Transferred to Shannon for higher level care"
+  ],
+  "mustNotIncludeTitlePatterns": [
+    "^Dr\\.",
+    "^Sarah Orrin MD$",
+    "^Oliva",
+    "^Olivia"
+  ],
+  "mustIncludeProviderNames": [
+    "Sarah Orrin MD",
+    "Dr. Vretis"
+  ],
+  "mustNotIncludeProviderNames": [
+    "Oliva King FNP-C"
+  ],
+  "mustIncludeMedicalFacilities": [
+    "Reagan Memorial Hospital - Medical",
+    "Shannon ER"
+  ],
+  "expectedNoDuplicateNormalizedKeys": true,
+  "eventAssertions": [
+    {
+      "title": "Workplace head injury after pipe fell from derrick",
+      "sourcePage": 1
+    },
+    {
+      "title": "ER presentation with head, neck, left shoulder pain",
+      "sourcePage": 2
+    },
+    {
+      "title": "Left scalp/periorbital injury findings",
+      "sourcePage": 3
+    },
+    {
+      "title": "CT head result",
+      "sourcePage": 4,
+      "physicianName": "Sarah Orrin MD",
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "C2 fracture imaging result",
+      "sourcePage": 5,
+      "physicianName": "Sarah Orrin MD",
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "Scapular fracture imaging result",
+      "sourcePage": 6,
+      "physicianName": "Sarah Orrin MD",
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "Grouped medications",
+      "sourcePage": 7
+    },
+    {
+      "title": "Grouped labs/urinalysis",
+      "sourcePage": 8
+    },
+    {
+      "title": "Transferred to Shannon for higher level care",
+      "sourcePage": 9,
+      "physicianName": "Dr. Vretis",
+      "medicalFacility": "Shannon ER"
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
-const pdfParse = require("pdf-parse");
+import pdfParse from "pdf-parse";
 import vision from "@google-cloud/vision";
-const { fromPath } = require("pdf2pic");
+import { fromPath } from "pdf2pic";
 
 type PageText = {
   page: number;
@@ -116,12 +116,14 @@ async function extractPerPageTextWithPdfParse(
   const pageTexts: PageText[] = [];
 
   const options = {
-    pagerender: async (pageData: any) => {
+    pagerender: async (pageData: {
+      getTextContent: () => Promise<{ items: Array<{ str?: string }> }>;
+      pageIndex?: number;
+    }) => {
       const textContent = await pageData.getTextContent();
+      const items = textContent?.items || [];
       const pageText = cleanText(
-        (textContent?.items || [])
-          .map((item: any) => ("str" in item ? item.str : ""))
-          .join(" ")
+        items.map((item) => item.str || "").join(" ")
       );
 
       const pageNumber =
@@ -210,14 +212,15 @@ export async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
       usedOcr: true,
       pageTexts: ocr.pageTexts,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "PDF extraction failed";
     console.error("PDF extraction error:", err);
 
     return {
       success: false,
       text: "",
       pages: 0,
-      error: err?.message || "PDF extraction failed",
+      error: message,
       pageTexts: [],
     };
   }

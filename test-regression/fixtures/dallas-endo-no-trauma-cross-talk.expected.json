@@ -1,0 +1,33 @@
+{
+  "documentName": "dallas-endo-no-trauma-cross-talk",
+  "minEvents": 2,
+  "maxEvents": 2,
+  "expectedTitlesInOrder": [
+    "Grouped labs/urinalysis",
+    "Grouped medications"
+  ],
+  "mustIncludeTitles": [
+    "Grouped labs/urinalysis",
+    "Grouped medications"
+  ],
+  "mustNotIncludeTitles": [
+    "Workplace head injury after pipe fell from derrick",
+    "ER presentation with head, neck, left shoulder pain",
+    "Left scalp/periorbital injury findings",
+    "CT head result",
+    "C2 fracture imaging result",
+    "Scapular fracture imaging result",
+    "Transferred to Shannon for higher level care"
+  ],
+  "eventAssertions": [
+    {
+      "title": "Grouped labs/urinalysis",
+      "sourcePage": 18
+    },
+    {
+      "title": "Grouped medications",
+      "sourcePage": 14
+    }
+  ],
+  "expectedNoDuplicateNormalizedKeys": true
+}

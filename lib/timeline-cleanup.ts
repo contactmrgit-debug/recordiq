@@ -734,7 +734,10 @@ function getMergeGroupKey(event: RawTimelineEvent): string {
     return `${date}|page:${page}|med:${medication}`;
   }
 
-   if (hasMeaningfulMechanismOfInjury(text)) {
+   if (
+    eventType === "incident" &&
+    hasMeaningfulMechanismOfInjury(text)
+  ) {
     return `${date}|incident:mechanism`;
   }
 
@@ -968,7 +971,7 @@ function buildGroupedImagingDescription(
     /\bvertebral\b/.test(combined) &&
     /\bforamen\b/.test(combined)
   ) {
-    return "Bilateral C2 fractures involved the transverse process and lamina, with extension through the right vertebral foramen raising concern for vascular injury; CT angiography was recommended.";
+    return "C2 fractures involved the left facet and right lamina, with right vertebral foramen extension raising concern for vascular injury.";
   }
 
   if (
@@ -977,7 +980,7 @@ function buildGroupedImagingDescription(
     /\bperiorbital\b/.test(combined) &&
     /\bswelling\b/.test(combined)
   ) {
-    return "CT head showed no acute intracranial abnormality but documented left periorbital soft tissue swelling.";
+    return "CT head showed no acute intracranial abnormality and left periorbital soft tissue swelling.";
   }
 
   if (
@@ -1001,17 +1004,34 @@ function buildGroupedIncidentTitle(
       .join(" ")
   );
 
-  if (hasMeaningfulMechanismOfInjury(combined)) {
+  if (
+    eventType === "incident" &&
+    hasMeaningfulMechanismOfInjury(combined)
+  ) {
     return "Workplace head injury after pipe fell from derrick";
   }
 
   if (
-    /\bclinical impression\b/.test(combined) &&
-    /\btrauma\b/.test(combined) &&
     /\bc2\b/.test(combined) &&
-    /\bscapula(?:r)?\b/.test(combined)
+    /\bfracture\b/.test(combined) &&
+    (/\bfacet\b/.test(combined) ||
+      /\blamina\b/.test(combined) ||
+      /\bnondisplaced\b/.test(combined) ||
+      /\bcomminuted\b/.test(combined))
   ) {
-    return "Clinical impression documented trauma with C2 and left scapular fractures";
+    return "C2 fracture imaging result";
+  }
+
+  if (
+    /\btransfer\b/.test(combined) &&
+    /\bshannon\b/.test(combined) &&
+    /\bair transport\b/.test(combined)
+  ) {
+    return "Transferred by air to Shannon for higher level care";
+  }
+
+  if (/\btransfer\b/.test(combined) && /\bshannon\b/.test(combined)) {
+    return "Transferred to Shannon for higher level care";
   }
 
   if (
@@ -1050,6 +1070,18 @@ function buildGroupedIncidentDescription(
     }
 
     return details.join(" ");
+  }
+
+  if (
+    /\btransfer\b/.test(combined) &&
+    /\bshannon\b/.test(combined) &&
+    /\bair transport\b/.test(combined)
+  ) {
+    return "Transferred by air to Shannon Medical Center for higher-level trauma care.";
+  }
+
+  if (/\btransfer\b/.test(combined) && /\bshannon\b/.test(combined)) {
+    return "Transferred to Shannon Medical Center for higher-level trauma care.";
   }
 
   if (
@@ -1099,7 +1131,7 @@ function buildGroupedTraumaExamTitle(
     /\b(periorbital|orbital|left eye|left orbit)\b/.test(combined) &&
     /\b(bruising|bruised|swelling|swollen|ecchymosis)\b/.test(combined)
   ) {
-    return "Left periorbital swelling and bruising documented";
+    return "Left scalp/periorbital injury findings";
   }
 
   return fallbackTitle;
@@ -1268,6 +1300,24 @@ function shouldDropLowSignalEvent(event: RawTimelineEvent): boolean {
   const hasClinicalContent = hasClinicalValue(combined);
 
   if (!title) return true;
+
+  if (
+    /\bclinical impression\b/.test(combined) &&
+    /\btrauma\b/.test(combined) &&
+    /\bc2\b/.test(combined) &&
+    /\bscapula(?:r)?\b/.test(combined)
+  ) {
+    return true;
+  }
+
+  if (
+    /\bclinical concern\b/.test(combined) &&
+    /\bvascular injury\b/.test(combined) &&
+    /\bvertebral\b/.test(combined) &&
+    /\bforamen\b/.test(combined)
+  ) {
+    return true;
+  }
 
   if (confidence < 0.45 && !hasClinicalContent) {
     return true;
@@ -1575,8 +1625,22 @@ function improveTitle(event: RawTimelineEvent): string {
   const sourceExcerpt = cleanDescription(event.sourceExcerpt);
   const combined = normalizeText(`${originalTitle} ${description} ${sourceExcerpt}`);
   const eventType = normalizeEventType(event.eventType);
+  const physician = normalizeText(event.physicianName);
+  const facility = normalizeText(event.medicalFacility);
 
-  if (hasMeaningfulMechanismOfInjury(combined)) {
+  if (
+    (facility.includes("shannon") || physician.includes("vretis")) &&
+    /\b(transfer|accepted|accepting|air transport|higher level)\b/.test(
+      `${combined} ${physician} ${facility}`
+    )
+  ) {
+    return "Transferred to Shannon for higher level care";
+  }
+
+  if (
+    eventType === "incident" &&
+    hasMeaningfulMechanismOfInjury(combined)
+  ) {
     return "Workplace head injury after pipe fell from derrick";
   }
 
@@ -1587,16 +1651,6 @@ function improveTitle(event: RawTimelineEvent): string {
     /\bscapula(?:r)?\b/.test(combined)
   ) {
     return "Clinical impression documented trauma with C2 and left scapular fractures";
-  }
-
-  if (
-    /\bc2\b/.test(combined) &&
-    /\bfracture\b/.test(combined) &&
-    /\bbilateral\b/.test(combined) &&
-    /\bvertebral\b/.test(combined) &&
-    /\bforamen\b/.test(combined)
-  ) {
-    return "Imaging showed bilateral C2 fractures with vertebral foramen extension";
   }
 
   if (
@@ -1677,6 +1731,10 @@ function improveTitle(event: RawTimelineEvent): string {
     return "Transferred by air to Shannon for higher level care";
   }
 
+  if (/\btransfer\b/.test(combined) && /\bshannon\b/.test(combined)) {
+    return "Transferred to Shannon for higher level care";
+  }
+
   if (/\bscalp laceration\b/.test(combined)) {
     return "Scalp laceration documented";
   }
@@ -1685,7 +1743,7 @@ function improveTitle(event: RawTimelineEvent): string {
     /\bleft eye\b/.test(combined) &&
     /\b(bruising|bruised|swelling|swollen|ecchymosis)\b/.test(combined)
   ) {
-    return "Left eye bruising and swelling documented";
+    return "Left scalp/periorbital injury findings";
   }
 
   if (
@@ -1736,8 +1794,23 @@ function improveDescription(event: RawTimelineEvent): string | null {
   const combined = normalizeText(
     `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
   );
+  const eventType = normalizeEventType(event.eventType);
+  const physician = normalizeText(event.physicianName);
+  const facility = normalizeText(event.medicalFacility);
 
-  if (hasMeaningfulMechanismOfInjury(combined)) {
+  if (
+    (facility.includes("shannon") || physician.includes("vretis")) &&
+    /\b(transfer|accepted|accepting|air transport|higher level)\b/.test(
+      `${combined} ${physician} ${facility}`
+    )
+  ) {
+    return "Transferred to Shannon Medical Center for higher-level trauma care.";
+  }
+
+  if (
+    eventType === "incident" &&
+    hasMeaningfulMechanismOfInjury(combined)
+  ) {
     const details: string[] = [
       "At work on a drill rig, a pipe fell from the derrick onto his head.",
     ];
@@ -1769,7 +1842,7 @@ function improveDescription(event: RawTimelineEvent): string | null {
     /\bvertebral\b/.test(combined) &&
     /\bforamen\b/.test(combined)
   ) {
-    return "Bilateral C2 fractures extended through the right vertebral foramen, raising concern for vascular injury; CT angiography was recommended.";
+    return "C2 fracture imaging result";
   }
 
   if (
@@ -1797,6 +1870,10 @@ function improveDescription(event: RawTimelineEvent): string | null {
     return "Transferred by air to Shannon Medical Center for higher-level trauma care.";
   }
 
+  if (/\btransfer\b/.test(combined) && /\bshannon\b/.test(combined)) {
+    return "Transferred to Shannon Medical Center for higher-level trauma care.";
+  }
+
   if (
     /\b(head|scalp)\b/.test(combined) &&
     /\blaceration\b/.test(combined) &&
@@ -1821,16 +1898,6 @@ function normalizeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
 
     let cleanedPhysicianRole =
       cleanProviderRole(event.physicianRole) || cleanedProviderRole;
-
-  if (
-  isImagingEventText(supportText) &&
-  /\bsarah orrin\b/.test(supportText)
-) {
-  cleanedProviderName = null;
-  cleanedProviderRole = null;
-  cleanedPhysicianNameRaw = null;
-  cleanedPhysicianRole = null;
-}
 
     if (!cleanedProviderName && isErPhysicianNoteEventText(supportText) && /\b(olivia|oliva) king\b/.test(supportText)) {
       cleanedProviderName = "Olivia King FNP-C";

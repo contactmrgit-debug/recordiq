@@ -1,5 +1,9 @@
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 
+type PdfTextItem = {
+  str?: string;
+};
+
 type PdfChunkResult = {
   success: boolean;
   text: string;
@@ -36,9 +40,10 @@ export async function extractPdfChunkText(
     for (let pageNum = safeStart; pageNum <= safeEnd; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
+      const items = textContent.items as PdfTextItem[];
 
-      const pageText = textContent.items
-        .map((item: any) => ("str" in item ? item.str : ""))
+      const pageText = items
+        .map((item) => item.str || "")
         .join(" ")
         .replace(/\s+/g, " ")
         .trim();
@@ -53,7 +58,8 @@ export async function extractPdfChunkText(
       endPage: safeEnd,
       totalPages,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "PDF chunk extraction failed";
     console.error("PDF chunk extraction error:", err);
 
     return {
@@ -62,7 +68,7 @@ export async function extractPdfChunkText(
       startPage,
       endPage,
       totalPages: 0,
-      error: err?.message || "PDF chunk extraction failed",
+      error: message,
     };
   }
 }

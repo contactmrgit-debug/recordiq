@@ -1,0 +1,52 @@
+{
+  "documentName": "hospital-transfer-mixed-imaging",
+  "minEvents": 4,
+  "maxEvents": 4,
+  "expectedTitlesInOrder": [
+    "C2 fracture imaging result",
+    "CT head result",
+    "Scapular fracture imaging result",
+    "Transferred to Shannon for higher level care"
+  ],
+  "mustIncludeTitles": [
+    "CT head result",
+    "C2 fracture imaging result",
+    "Scapular fracture imaging result",
+    "Transferred to Shannon for higher level care"
+  ],
+  "mustIncludeProviderNames": [
+    "Sarah Orrin MD",
+    "Dr. Vretis"
+  ],
+  "mustIncludeMedicalFacilities": [
+    "Reagan Memorial Hospital - Medical",
+    "Shannon ER"
+  ],
+  "expectedNoDuplicateNormalizedKeys": true,
+  "eventAssertions": [
+    {
+      "title": "CT head result",
+      "sourcePage": 4,
+      "physicianName": "Sarah Orrin MD",
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "C2 fracture imaging result",
+      "sourcePage": 5,
+      "physicianName": "Sarah Orrin MD",
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "Scapular fracture imaging result",
+      "sourcePage": 6,
+      "physicianName": "Sarah Orrin MD",
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "Transferred to Shannon for higher level care",
+      "sourcePage": 7,
+      "physicianName": "Dr. Vretis",
+      "medicalFacility": "Shannon ER"
+    }
+  ]
+}

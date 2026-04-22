@@ -1,0 +1,18 @@
+[
+  {
+    "date": "2025-07-21",
+    "title": "Hydrocortisone dose increased after elevated ACTH and renin",
+    "description": "Provider documented that ACTH remained high after stress dosing and renin was elevated, and increased baseline hydrocortisone to 10 mg in the morning while continuing 7.5 mg in the afternoon and evening.",
+    "eventType": "treatment",
+    "sourcePage": 2,
+    "confidence": 0.97
+  },
+  {
+    "date": "2025-07-21",
+    "title": "Repeat endocrine labs planned",
+    "description": "Provider planned repeat electrolytes, ACTH, and renin testing in 4 weeks.",
+    "eventType": "other",
+    "sourcePage": 2,
+    "confidence": 0.99
+  }
+]

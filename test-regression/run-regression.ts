@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { extractTimelineEvents } from "../lib/ai-timeline";
 import { cleanTimelineEvents, RawTimelineEvent } from "../lib/timeline-cleanup";
 
 type ExpectedDateRule = {
@@ -8,6 +9,19 @@ type ExpectedDateRule = {
   mustNotIncludeTitles?: string[];
   minEvents?: number;
   maxEvents?: number;
+};
+
+type ExpectedEventAssertion = {
+  title: string;
+  physicianName?: string | null;
+  medicalFacility?: string | null;
+  sourcePage?: number | null;
+  eventType?: string | null;
+};
+
+type PageTextFixture = {
+  page: number;
+  text: string;
 };
 
 type ExpectedSpec = {
@@ -32,6 +46,10 @@ type ExpectedSpec = {
   dateRules?: ExpectedDateRule[];
   mustIncludeProviderNames?: string[];
   mustNotIncludeProviderNames?: string[];
+  mustIncludeMedicalFacilities?: string[];
+  mustNotIncludeMedicalFacilities?: string[];
+  eventAssertions?: ExpectedEventAssertion[];
+  expectedTitlesInOrder?: string[];
 
   expectedCleanedCountMin?: number;
   expectedCleanedCountMax?: number;
@@ -56,6 +74,20 @@ function normalizeText(value?: string | null): string {
 
 function loadJsonFile<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
+}
+
+function isPageTextFixture(value: unknown): value is PageTextFixture[] {
+  if (!Array.isArray(value) || value.length === 0) return false;
+
+  return value.every(
+    (item) =>
+      !!item &&
+      typeof item === "object" &&
+      "page" in item &&
+      "text" in item &&
+      typeof (item as PageTextFixture).page === "number" &&
+      typeof (item as PageTextFixture).text === "string"
+  );
 }
 
 function assertCondition(condition: boolean, error: string, errors: string[]) {
@@ -83,6 +115,26 @@ function hasProviderName(events: RawTimelineEvent[], providerName: string): bool
       normalizeText(e.providerName) === target ||
       normalizeText(e.physicianName) === target
   );
+}
+
+function hasMedicalFacility(
+  events: RawTimelineEvent[],
+  medicalFacility: string
+): boolean {
+  const target = normalizeText(medicalFacility);
+  return events.some((e) => normalizeText(e.medicalFacility) === target);
+}
+
+function findEventByTitle(
+  events: RawTimelineEvent[],
+  title: string
+): RawTimelineEvent | undefined {
+  const target = normalizeText(title);
+  return events.find((e) => normalizeText(e.title) === target);
+}
+
+function getEventTitles(events: RawTimelineEvent[]): string[] {
+  return events.map((event) => normalizeText(event.title));
 }
 
 function normalizeTitleForKey(value: string): string {
@@ -192,6 +244,22 @@ function validateExpected(
     assertCondition(
       !hasProviderName(cleanedEvents, providerName),
       `Found forbidden provider/physician name: "${providerName}"`,
+      errors
+    );
+  }
+
+  for (const facility of spec.mustIncludeMedicalFacilities ?? []) {
+    assertCondition(
+      hasMedicalFacility(cleanedEvents, facility),
+      `Missing required medical facility: "${facility}"`,
+      errors
+    );
+  }
+
+  for (const facility of spec.mustNotIncludeMedicalFacilities ?? []) {
+    assertCondition(
+      !hasMedicalFacility(cleanedEvents, facility),
+      `Found forbidden medical facility: "${facility}"`,
       errors
     );
   }
@@ -331,6 +399,64 @@ function validateExpected(
     );
   }
 
+  for (const assertion of spec.eventAssertions ?? []) {
+    const event = findEventByTitle(cleanedEvents, assertion.title);
+
+    assertCondition(
+      Boolean(event),
+      `Missing required event for assertion: "${assertion.title}"`,
+      errors
+    );
+
+    if (!event) continue;
+
+    if (assertion.physicianName !== undefined) {
+      assertCondition(
+        normalizeText(event.physicianName) === normalizeText(assertion.physicianName),
+        `Event "${assertion.title}" expected physicianName "${assertion.physicianName}", got "${event.physicianName ?? ""}"`,
+        errors
+      );
+    }
+
+    if (assertion.medicalFacility !== undefined) {
+      assertCondition(
+        normalizeText(event.medicalFacility) === normalizeText(assertion.medicalFacility),
+        `Event "${assertion.title}" expected medicalFacility "${assertion.medicalFacility}", got "${event.medicalFacility ?? ""}"`,
+        errors
+      );
+    }
+
+    if (assertion.sourcePage !== undefined) {
+      assertCondition(
+        (event.sourcePage ?? null) === assertion.sourcePage,
+        `Event "${assertion.title}" expected sourcePage "${assertion.sourcePage}", got "${event.sourcePage ?? null}"`,
+        errors
+      );
+    }
+
+    if (assertion.eventType !== undefined) {
+      assertCondition(
+        normalizeText(event.eventType) === normalizeText(assertion.eventType),
+        `Event "${assertion.title}" expected eventType "${assertion.eventType}", got "${event.eventType ?? ""}"`,
+        errors
+      );
+    }
+  }
+
+  if (spec.expectedTitlesInOrder?.length) {
+    const expectedTitles = spec.expectedTitlesInOrder.map((title) =>
+      normalizeText(title)
+    );
+    const actualTitles = getEventTitles(cleanedEvents);
+
+    assertCondition(
+      actualTitles.length === expectedTitles.length &&
+        actualTitles.every((title, index) => title === expectedTitles[index]),
+      `Expected event titles in exact order:\n${expectedTitles.join(" | ")}\nActual:\n${actualTitles.join(" | ")}`,
+      errors
+    );
+  }
+
   return {
     documentName,
     passed: errors.length === 0,
@@ -379,6 +505,7 @@ async function main() {
     const rawJsonPath = path.join(fixturesDir, `${baseName}.raw.json`);
 
     let rawEvents: RawTimelineEvent[] | null = null;
+    let pageTexts: PageTextFixture[] | null = null;
     let rawSourceLabel = `${baseName}.raw.txt or ${baseName}.raw.json`;
 
     if (fs.existsSync(rawJsonPath)) {
@@ -396,8 +523,13 @@ async function main() {
         continue;
       }
 
-      rawEvents = parsed as RawTimelineEvent[];
-      rawSourceLabel = `${baseName}.raw.json`;
+      if (isPageTextFixture(parsed)) {
+        pageTexts = parsed;
+        rawSourceLabel = `${baseName}.raw.json (page texts)`;
+      } else {
+        rawEvents = parsed as RawTimelineEvent[];
+        rawSourceLabel = `${baseName}.raw.json`;
+      }
     } else if (fs.existsSync(rawTxtPath)) {
       const rawText = fs.readFileSync(rawTxtPath, "utf8").trim();
 
@@ -436,10 +568,15 @@ async function main() {
     }
 
     try {
-      const cleanedEvents = cleanTimelineEvents(rawEvents);
+      if (pageTexts) {
+        rawEvents = await extractTimelineEvents(pageTexts);
+      }
+
+      const extractedEvents = rawEvents ?? [];
+      const cleanedEvents = cleanTimelineEvents(extractedEvents);
       const result = validateExpected(
         spec,
-        rawEvents,
+        extractedEvents,
         cleanedEvents,
         spec.documentName ?? baseName
       );
@@ -453,7 +590,7 @@ async function main() {
           {
             documentName: spec.documentName ?? baseName,
             rawSource: rawSourceLabel,
-            rawEventCount: rawEvents.length,
+            rawEventCount: extractedEvents.length,
             cleanedEventCount: cleanedEvents.length,
             cleanedEvents,
           },

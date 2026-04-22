@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 
@@ -281,15 +281,13 @@ export default function CasePage() {
 
   const [caseData, setCaseData] = useState<CaseData | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
-const rightPanelRef = useRef<HTMLDivElement | null>(null);
-const previewRef = useRef<HTMLDivElement | null>(null);
+const [events, setEvents] = useState<TimelineEvent[]>([]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState<string | null>(null);
 
 const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-const [activeSourcePage, setActiveSourcePage] = useState<number | null>(1);
+const [activeSourcePage, setActiveSourcePage] = useState<number | null>(null);
 const [showHidden, setShowHidden] = useState(false);
 const [searchQuery, setSearchQuery] = useState("");
 
@@ -303,13 +301,11 @@ const [searchQuery, setSearchQuery] = useState("");
 
   const downloadRef = useRef<HTMLDivElement | null>(null);
 
-  function getDocumentName(documentId?: string | null) {
-    return documents.find((doc) => doc.id === documentId)?.fileName || "Unknown";
-  }
-
-  function getDocumentUrl(documentId?: string | null) {
-    return documents.find((doc) => doc.id === documentId)?.fileUrl || null;
-  }
+  const getDocumentName = useCallback(
+    (documentId?: string | null) =>
+      documents.find((doc) => doc.id === documentId)?.fileName || "Unknown",
+    [documents]
+  );
 
 function getProviderName(event: TimelineEvent) {
   return event.providerName?.trim() || event.physicianName?.trim() || null;
@@ -331,8 +327,16 @@ function getAttributionLine(event: TimelineEvent) {
   return [providerName, providerRole, facility].filter(Boolean).join(" • ");
 }
 
+function getSourcePage(event?: TimelineEvent | null) {
+  return typeof event?.sourcePage === "number" && event.sourcePage > 0
+    ? event.sourcePage
+    : null;
+}
+
 function handleSelectEvent(event: TimelineEvent) {
   setSelectedEventId(event.id);
+  setSelectedDocumentId(event.documentId ?? null);
+  setActiveSourcePage(getSourcePage(event));
 }
 
 function handleSourceClick(
@@ -507,7 +511,7 @@ const filteredEvents = useMemo(() => {
     codeText.includes(q)
   );
 });
-}, [visibleEvents, searchQuery, documents]);
+}, [visibleEvents, searchQuery, getDocumentName]);
 
   async function verifyAllVisible() {
     const pendingVisible = filteredEvents.filter(
@@ -591,11 +595,18 @@ const filteredEvents = useMemo(() => {
     return groups;
   }, [filteredEvents]);
 
-const selectedEvent =
-  filteredEvents.find((event) => event.id === selectedEventId) ||
-  visibleEvents.find((event) => event.id === selectedEventId) ||
-  events.find((event) => event.id === selectedEventId) ||
-  null;
+  const selectedEvent =
+    filteredEvents.find((event) => event.id === selectedEventId) ||
+    visibleEvents.find((event) => event.id === selectedEventId) ||
+    events.find((event) => event.id === selectedEventId) ||
+    null;
+
+  const currentSourcePage = getSourcePage(selectedEvent) ?? activeSourcePage;
+
+  useEffect(() => {
+    setSelectedDocumentId(selectedEvent?.documentId ?? null);
+    setActiveSourcePage(getSourcePage(selectedEvent));
+  }, [selectedEvent]);
 
 const activeDocument = useMemo(() => {
   if (selectedDocumentId) {
@@ -1239,9 +1250,12 @@ Status: ${row.reviewStatus}
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Source page
                 </div>
-                <div className="mt-1 text-sm font-medium text-blue-600">
-  Viewing: {activeDocument?.fileName || "No source document"}
-</div>
+                <div className="mt-1 text-sm font-medium text-slate-900">
+                  {currentSourcePage ?? "No page mapped"}
+                </div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {activeDocument?.fileName || "No source document"}
+                </div>
               </div>
 
              <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
@@ -1316,7 +1330,7 @@ Status: ${row.reviewStatus}
             {activeDocument.fileName}
           </p>
           <p className="text-xs text-slate-500">
-            Page {activeSourcePage || 1}
+            Page {currentSourcePage ?? "N/A"}
           </p>
         </div>
       </div>
@@ -1324,10 +1338,10 @@ Status: ${row.reviewStatus}
       {activeDocument.fileUrl ? (
   fileIsPdf(activeDocument) ? (
     <iframe
-      key={`${activeDocument.fileUrl}-${activeSourcePage ?? "nopage"}-${selectedEventId ?? "noevent"}`}
+      key={`${activeDocument.fileUrl}-${currentSourcePage ?? "nopage"}-${selectedEventId ?? "noevent"}`}
       src={
-        activeSourcePage
-          ? `${activeDocument.fileUrl}?sourcePage=${activeSourcePage}&t=${selectedEventId ?? Date.now()}#page=${activeSourcePage}&zoom=page-fit`
+        currentSourcePage
+          ? `${activeDocument.fileUrl}?sourcePage=${currentSourcePage}&t=${selectedEventId ?? Date.now()}#page=${currentSourcePage}&zoom=page-fit`
           : `${activeDocument.fileUrl}`
       }
       title={activeDocument.fileName || "Source document"}

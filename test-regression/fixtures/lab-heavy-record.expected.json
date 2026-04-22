@@ -1,0 +1,42 @@
+{
+  "documentName": "lab-heavy-record",
+  "minEvents": 7,
+  "maxEvents": 7,
+  "expectedTitlesInOrder": [
+    "CBC showed leukopenia, thrombocytopenia, anemia",
+    "Critical lab values verbally reported",
+    "Elevated lactate result",
+    "Peripheral smear showed anisopoikilocytosis and target cells",
+    "Potassium result may be falsely elevated",
+    "Respiratory viral PCR negative",
+    "Urinalysis showed positive nitrite, positive leukocyte esterase, proteinuria"
+  ],
+  "mustIncludeTitles": [
+    "CBC showed leukopenia, thrombocytopenia, anemia",
+    "Critical lab values verbally reported",
+    "Elevated lactate result",
+    "Peripheral smear showed anisopoikilocytosis and target cells",
+    "Potassium result may be falsely elevated",
+    "Respiratory viral PCR negative",
+    "Urinalysis showed positive nitrite, positive leukocyte esterase, proteinuria"
+  ],
+  "mustNotIncludeTitlePatterns": [
+    "specimen collected",
+    "encounter initiated",
+    "blood culture set",
+    "respiratory swab collected"
+  ],
+  "expectedRawGreaterThanCleaned": true,
+  "expectedNoDuplicateNormalizedKeys": true,
+  "dateRules": [
+    {
+      "date": "2025-06-23",
+      "minEvents": 7,
+      "maxEvents": 7,
+      "mustIncludeTitles": [
+        "Urinalysis showed positive nitrite, positive leukocyte esterase, proteinuria",
+        "Critical lab values verbally reported"
+      ]
+    }
+  ]
+}

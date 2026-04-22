@@ -6,7 +6,7 @@ export type TimelineEventInput = {
   confidence?: number;
   sourcePage?: number;
   physicianName?: string;
-medicalFacility?: string;
+  medicalFacility?: string;
 };
 
 function normalizeText(value: string): string {
@@ -90,22 +90,27 @@ function resolveEventType(a?: string, b?: string): string {
 
   return a;
 }
-
+function pickBetterString(a?: string, b?: string): string | undefined {
+  if (a && b) {
+    return b.length > a.length ? b : a;
+  }
+  return a || b || undefined;
+}
 function mergeEvents(
   a: TimelineEventInput,
   b: TimelineEventInput
 ): TimelineEventInput {
-  const aTitleScore = normalizeTitle(a.title).length;
-  const bTitleScore = normalizeTitle(b.title).length;
+  const aScore = (a.title?.length || 0) + (a.description?.length || 0);
+  const bScore = (b.title?.length || 0) + (b.description?.length || 0);
 
   return {
     ...a,
-    title: bTitleScore > aTitleScore ? b.title : a.title,
+    title: bScore > aScore ? b.title : a.title,
     description: mergeDescriptions(a.description, b.description),
     confidence: Math.max(a.confidence ?? 0, b.confidence ?? 0),
     sourcePage: a.sourcePage ?? b.sourcePage,
-    physicianName: a.physicianName || b.physicianName,
-medicalFacility: a.medicalFacility || b.medicalFacility,
+    physicianName: pickBetterString(a.physicianName, b.physicianName),
+    medicalFacility: pickBetterString(a.medicalFacility, b.medicalFacility),
     eventType: resolveEventType(a.eventType, b.eventType),
   };
 }

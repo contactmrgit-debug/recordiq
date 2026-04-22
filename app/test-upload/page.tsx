@@ -3,6 +3,37 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+type ApiResponse = {
+  success?: boolean;
+  error?: string;
+  case?: {
+    id?: string;
+  };
+};
+
+function parseResponseBody(text: string): ApiResponse | null {
+  if (!text.trim()) return null;
+
+  try {
+    return JSON.parse(text) as ApiResponse;
+  } catch {
+    return null;
+  }
+}
+
+function getResponseError(
+  res: Response,
+  data: ApiResponse | null,
+  rawText: string,
+  fallback: string
+): string {
+  return (
+    data?.error?.trim() ||
+    rawText.trim() ||
+    `${fallback} (HTTP ${res.status})`
+  );
+}
+
 export default function TestUploadPage() {
   const router = useRouter();
 
@@ -24,17 +55,21 @@ export default function TestUploadPage() {
       const text = await res.text();
       console.log("CREATE CASE RAW RESPONSE:", text);
 
-      const data = text ? JSON.parse(text) : null;
+      const data = parseResponseBody(text);
 
       if (!res.ok || !data?.success || !data?.case?.id) {
-        throw new Error(data?.error || "Failed to create case");
+        throw new Error(
+          getResponseError(res, data, text, "Failed to create case")
+        );
       }
 
       setCaseId(data.case.id);
       setStatus("Case created");
     } catch (err) {
       console.error(err);
-      setStatus("Error creating case");
+      setStatus(
+        `Error creating case: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
     }
   }
 
@@ -69,10 +104,12 @@ export default function TestUploadPage() {
       const text = await res.text();
       console.log("UPLOAD RAW RESPONSE:", text);
 
-      const data = text ? JSON.parse(text) : null;
+      const data = parseResponseBody(text);
 
       if (!res.ok || !data?.success) {
-        throw new Error(data?.error || "Upload failed");
+        throw new Error(
+          getResponseError(res, data, text, "Upload failed")
+        );
       }
 
       setStatus("Saving results...");
@@ -86,7 +123,9 @@ export default function TestUploadPage() {
       }, 500);
     } catch (err) {
       console.error(err);
-      setStatus("Error during upload");
+      setStatus(
+        `Error during upload: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }

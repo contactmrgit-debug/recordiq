@@ -10,36 +10,23 @@ export async function GET(
 
     const timelineEvents = await prisma.timelineEvent.findMany({
       where: { caseId: id },
-      orderBy: [
-        { eventDate: "asc" },
-        { createdAt: "asc" },
-      ],
+      orderBy: [{ eventDate: "asc" }, { createdAt: "asc" }],
     });
 
     return NextResponse.json({
       success: true,
-    timelineEvents: timelineEvents.map((event) => ({
-  id: event.id,
-  date: event.eventDate
-    ? event.eventDate.toISOString().split("T")[0]
-    : "",
-  title: event.title,
-  description: event.description,
-  eventType: event.eventType,
-
-  // ❌ REMOVE THIS (you said you don't want it)
-  // confidence: event.confidence,
-
-  sourcePage: event.sourcePage,
-  reviewStatus: event.reviewStatus,
-  isHidden: event.isHidden,
-
-  // ✅ ADD THESE (even if null for now)
-  physicianName: (event as any).physicianName ?? null,
-  doctorName: (event as any).doctorName ?? null,
-  providerName: (event as any).providerName ?? null,
-  physicians: (event as any).physicians ?? null,
-}))
+      timelineEvents: timelineEvents.map((event) => ({
+        id: event.id,
+        date: event.eventDate ? event.eventDate.toISOString().split("T")[0] : "",
+        title: event.title,
+        description: event.description,
+        eventType: event.eventType,
+        sourcePage: event.sourcePage,
+        reviewStatus: event.reviewStatus,
+        isHidden: event.isHidden,
+        physicianName: event.physicianName,
+        medicalFacility: event.medicalFacility,
+      })),
     });
   } catch (error) {
     console.error("GET timeline events error:", error);

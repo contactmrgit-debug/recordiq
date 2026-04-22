@@ -1,0 +1,44 @@
+{
+  "documentName": "dallas-endo-no-trauma-cross-talk",
+  "rawSource": "dallas-endo-no-trauma-cross-talk.raw.json (page texts)",
+  "rawEventCount": 2,
+  "cleanedEventCount": 2,
+  "cleanedEvents": [
+    {
+      "date": "UNKNOWN",
+      "title": "Grouped labs/urinalysis",
+      "description": "Grouped laboratory and urinalysis results documented.",
+      "eventType": "report",
+      "sourcePage": 18,
+      "providerName": null,
+      "providerRole": null,
+      "eventActorType": null,
+      "physicianName": null,
+      "physicianRole": "Author",
+      "medicalFacility": null,
+      "facilityType": null,
+      "confidence": 0.9,
+      "sourceExcerpt": "If symptoms persist, go to the ER for evaluation. See if the lab can add on an A1c. Other labs are in process.",
+      "reviewStatus": "PENDING",
+      "isHidden": false
+    },
+    {
+      "date": "UNKNOWN",
+      "title": "Grouped medications",
+      "description": "Encounter medications documented: ondansetron, lidocaine.",
+      "eventType": "treatment",
+      "sourcePage": 14,
+      "providerName": null,
+      "providerRole": null,
+      "eventActorType": null,
+      "physicianName": null,
+      "physicianRole": null,
+      "medicalFacility": null,
+      "facilityType": null,
+      "confidence": 0.9,
+      "sourceExcerpt": "t Medications include lidocaine-prilocaine cream, hyoscyamine, magnesium oxide, ondansetron, polyethylene glycol, cyanocobalamin, hydrocortisone, and fludrocortisone.",
+      "reviewStatus": "PENDING",
+      "isHidden": false
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "date": "2025-06-15",
+    "title": "CT head result",
+    "description": "CT head performed. Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical.",
+    "eventType": "report",
+    "sourcePage": 4,
+    "physicianName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-15",
+    "title": "C2 fracture imaging result",
+    "description": "CT cervical spine showed a nondisplaced C2 facet and lamina fracture. Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical.",
+    "eventType": "report",
+    "sourcePage": 5,
+    "physicianName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-15",
+    "title": "Scapular fracture imaging result",
+    "description": "Left shoulder and humerus radiographs showed a left scapular body fracture. Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical.",
+    "eventType": "report",
+    "sourcePage": 6,
+    "physicianName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "confidence": 0.98
+  },
+  {
+    "date": "2025-06-15",
+    "title": "Transferred to Shannon for higher level care",
+    "description": "Accepting physician Dr. Vretis at Shannon ER for higher level of care. Transfer arranged from Reagan Memorial Hospital - Medical to Shannon Medical Center.",
+    "eventType": "treatment",
+    "sourcePage": 7,
+    "physicianName": "Dr. Vretis",
+    "medicalFacility": "Shannon ER",
+    "confidence": 0.99
+  }
+]
