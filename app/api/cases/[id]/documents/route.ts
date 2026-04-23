@@ -5,6 +5,10 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
+function sanitizeFileName(fileName: string): string {
+  return fileName.replace(/[^\w.\-]/g, "_");
+}
+
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -14,6 +18,7 @@ export async function POST(
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
+    const recordTypeValue = formData.get("recordType");
 
     if (!file) {
       return NextResponse.json(
@@ -22,25 +27,32 @@ export async function POST(
       );
     }
 
-    // Convert file to buffer (for storage upload if needed)
+    const fileName = sanitizeFileName(file.name);
+    const mimeType = file.type || "application/octet-stream";
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // TODO: Replace this with real storage (S3 / Supabase Storage)
-    // For now, just store filename as placeholder
-    const fileName = file.name;
+    // Temporary placeholder:
+    // You should replace this with Supabase Storage or S3 upload.
+    // For now, we only save the DB row so the route stays lightweight.
+    void buffer;
 
     const document = await prisma.document.create({
       data: {
         caseId,
         fileName,
-        fileUrl: "", // will be replaced after storage integration
+        fileUrl: "",
+        mimeType,
         status: "UPLOADED",
+        ...(typeof recordTypeValue === "string" && recordTypeValue.trim()
+          ? { recordType: recordTypeValue.trim() as any }
+          : {}),
       },
     });
 
     return NextResponse.json({
       success: true,
       documentId: document.id,
+      message: "File uploaded successfully. Processing will be handled separately.",
     });
   } catch (error: any) {
     console.error("UPLOAD ERROR:", error);
