@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { extractPdfText } from "@/lib/pdf-extract";
 import {
   cleanTimelineEvents,
