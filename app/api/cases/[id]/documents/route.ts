@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(
-  _req: Request,
+  _req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -10,15 +13,8 @@ export async function GET(
 
     const documents = await prisma.document.findMany({
       where: { caseId: id },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        fileName: true,
-        fileUrl: true,
-        recordType: true,
-        status: true,
-        pageCount: true,
-        createdAt: true,
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
@@ -27,10 +23,9 @@ export async function GET(
       documents,
     });
   } catch (error) {
-    console.error("GET documents error:", error);
-
+    console.error("GET DOCUMENTS ERROR:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to load documents" },
+      { success: false, error: "Failed to fetch documents" },
       { status: 500 }
     );
   }
