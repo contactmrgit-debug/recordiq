@@ -17,13 +17,24 @@ export async function POST(
     const { id: caseId } = await context.params;
 
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const recordTypeValue = formData.get("recordType");
+    const file = formData.get("file");
+    const recordTypeRaw = formData.get("recordType");
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json(
         { success: false, error: "No file uploaded" },
         { status: 400 }
+      );
+    }
+
+    const existingCase = await prisma.case.findUnique({
+      where: { id: caseId },
+    });
+
+    if (!existingCase) {
+      return NextResponse.json(
+        { success: false, error: "Case not found" },
+        { status: 404 }
       );
     }
 
@@ -31,10 +42,13 @@ export async function POST(
     const mimeType = file.type || "application/octet-stream";
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Temporary placeholder:
-    // You should replace this with Supabase Storage or S3 upload.
-    // For now, we only save the DB row so the route stays lightweight.
+    // Placeholder until storage is wired up
     void buffer;
+
+    const recordType =
+      typeof recordTypeRaw === "string" && recordTypeRaw.trim()
+        ? recordTypeRaw.trim()
+        : null;
 
     const document = await prisma.document.create({
       data: {
@@ -43,16 +57,14 @@ export async function POST(
         fileUrl: "",
         mimeType,
         status: "UPLOADED",
-        ...(typeof recordTypeValue === "string" && recordTypeValue.trim()
-          ? { recordType: recordTypeValue.trim() as any }
-          : {}),
+        ...(recordType ? { recordType: recordType as any } : {}),
       },
     });
 
     return NextResponse.json({
       success: true,
       documentId: document.id,
-      message: "File uploaded successfully. Processing will be handled separately.",
+      message: "Upload saved. Processing will run separately.",
     });
   } catch (error: any) {
     console.error("UPLOAD ERROR:", error);
