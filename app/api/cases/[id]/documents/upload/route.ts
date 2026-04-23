@@ -10,6 +10,9 @@ import {
 } from "@/lib/timeline-cleanup";
 import { extractTimelineEvents } from "@/lib/ai-timeline";
 import { DocumentStatus, RecordType } from "@prisma/client";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
 
 function sanitizeFileName(fileName: string): string {
   return fileName.replace(/[^\w.\-]/g, "_");
