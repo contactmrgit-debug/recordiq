@@ -5,28 +5,51 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
-export async function GET(
-  _req: NextRequest,
+export async function POST(
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;
+    const { id: caseId } = await context.params;
 
-    const records = await prisma.document.findMany({
-      where: { caseId: id },
-      orderBy: {
-        createdAt: "desc",
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
+
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: "No file uploaded" },
+        { status: 400 }
+      );
+    }
+
+    // Convert file to buffer (for storage upload if needed)
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // TODO: Replace this with real storage (S3 / Supabase Storage)
+    // For now, just store filename as placeholder
+    const fileName = file.name;
+
+    const document = await prisma.document.create({
+      data: {
+        caseId,
+        fileName,
+        fileUrl: "", // will be replaced after storage integration
+        status: "UPLOADED",
       },
     });
 
     return NextResponse.json({
       success: true,
-      records,
+      documentId: document.id,
     });
-  } catch (error) {
-    console.error("GET RECORDS ERROR:", error);
+  } catch (error: any) {
+    console.error("UPLOAD ERROR:", error);
+
     return NextResponse.json(
-      { success: false, error: "Failed to fetch records" },
+      {
+        success: false,
+        error: error?.message || "Upload failed",
+      },
       { status: 500 }
     );
   }
