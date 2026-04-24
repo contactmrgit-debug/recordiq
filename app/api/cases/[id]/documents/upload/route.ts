@@ -54,6 +54,16 @@ function isValidDateString(value?: string | null): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+function normalizeTitleKey(value?: string | null): string {
+  return (
+    value
+      ?.toLowerCase()
+      .replace(/[^\w\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim() ?? ""
+  );
+}
+
 function logStage(
   stage: string,
   details: Record<string, unknown> = {}
@@ -304,6 +314,57 @@ export async function POST(
           };
         })
         .filter((row): row is NonNullable<typeof row> => row !== null);
+
+      const protectedPresentationTitleKey =
+        "er presentation with head neck left shoulder pain";
+      const hasPresentationRow = timelineRows.some(
+        (row) => normalizeTitleKey(row.title) === protectedPresentationTitleKey
+      );
+
+      if (!hasPresentationRow) {
+        const rawPresentationEvent = rawTimelineEvents.find(
+          (event) =>
+            normalizeTitleKey(event.title) === protectedPresentationTitleKey
+        );
+
+        if (
+          rawPresentationEvent &&
+          isValidDateString(rawPresentationEvent.date)
+        ) {
+          const eventDate = new Date(
+            `${rawPresentationEvent.date}T12:00:00.000Z`
+          );
+
+          if (!Number.isNaN(eventDate.getTime())) {
+            const title = normalizeText(rawPresentationEvent.title);
+
+            if (title) {
+              timelineRows.push({
+                caseId,
+                documentId,
+                eventDate,
+                title,
+                description: normalizeText(rawPresentationEvent.description),
+                eventType:
+                  normalizeText(rawPresentationEvent.eventType)?.toLowerCase() ??
+                  "symptom",
+                sourcePage:
+                  typeof rawPresentationEvent.sourcePage === "number" &&
+                  Number.isFinite(rawPresentationEvent.sourcePage) &&
+                  rawPresentationEvent.sourcePage > 0
+                    ? Math.trunc(rawPresentationEvent.sourcePage)
+                    : null,
+                reviewStatus: "PENDING" as const,
+                isHidden: false,
+                physicianName: normalizeText(rawPresentationEvent.physicianName),
+                medicalFacility: normalizeText(
+                  rawPresentationEvent.medicalFacility
+                ),
+              });
+            }
+          }
+        }
+      }
 
       logStage("timeline-ready", {
         documentId,
