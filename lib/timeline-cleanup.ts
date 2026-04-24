@@ -2596,6 +2596,29 @@ function isGenericDischargeFollowupSummary(event: RawTimelineEvent): boolean {
     !/\btransfer\b|\bfracture\b|\bimaging\b|\bcritical\b|\babnormal\b/.test(combined)
   );
 }
+
+function isProtectedPresentationSymptomEvent(event: RawTimelineEvent): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""}`
+  );
+  const eventType = normalizeText(event.eventType || "");
+
+  const hasPresentationContext =
+    /\b(er|ed|emergency room|emergency department)\b/.test(combined) &&
+    /\b(presentation|presented|arrival|arrived|chief complaint)\b/.test(combined);
+
+  const hasMeaningfulPainComplaint =
+    /\b(head|neck|shoulder|chest|back|abdominal|abdomen|leg|arm)\b/.test(combined) &&
+    /\bpain\b/.test(combined);
+
+  return (
+    (eventType === "symptom" ||
+      eventType === "observation" ||
+      eventType === "presentation") &&
+    hasPresentationContext &&
+    hasMeaningfulPainComplaint
+  );
+}
 function getHighLevelDuplicateKey(event: RawTimelineEvent): string {
   const date = normalizeDate(event.date);
   const text = normalizeText(`${event.title || ""} ${event.description || ""}`);
@@ -2826,6 +2849,10 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
     }
 
     if (isAppointmentOrFollowUpVisitEvent(event)) {
+      return true;
+    }
+
+    if (isProtectedPresentationSymptomEvent(event)) {
       return true;
     }
 
