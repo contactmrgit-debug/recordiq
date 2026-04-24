@@ -43,3 +43,5 @@ next-env.d.ts
 /app/generated/prisma
 
 keys/vision-key.json
+/public/uploads/*
+!/public/uploads/.gitkeep
