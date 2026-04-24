@@ -10,22 +10,14 @@ type PageText = {
   text: string;
 };
 
-type ExtractResult =
-  | {
-      success: true;
-      text: string;
-      pages: number;
-      usedOcr: boolean;
-      pageTexts: PageText[];
-    }
-  | {
-      success: false;
-      text: string;
-      pages: number;
-      error: string;
-      pageTexts: PageText[];
-    };
-
+export type PdfExtractResult = {
+  success: boolean;
+  text: string;
+  pages: number;
+  usedOcr: boolean;
+  pageTexts: PageText[];
+  error?: string;
+};
 const visionClient = new vision.ImageAnnotatorClient();
 
 function cleanText(input: string) {
@@ -164,7 +156,9 @@ async function extractPerPageTextWithPdfParse(
   };
 }
 
-export async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
+export async function extractPdfText(
+  buffer: Buffer
+): Promise<PdfExtractResult> {
   try {
     if (!buffer || !Buffer.isBuffer(buffer)) {
       throw new Error("Invalid PDF buffer");
@@ -192,36 +186,37 @@ export async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
     );
 
     if (!looksScannedOrBad(parsedText) && hasUsablePageText) {
-      return {
-        success: true,
-        text: parsedText,
-        pages: pageCount,
-        usedOcr: false,
-        pageTexts,
-      };
+     return {
+  success: true,
+  text: parsedText,
+  pages: pageCount,
+  usedOcr: false,
+  pageTexts,
+};
     }
 
     console.log("PDF text looks scanned/bad or page text empty. Falling back to OCR.");
 
     const ocr = await runVisionOcrOnPdf(buffer, pageCount);
 
-    return {
-      success: true,
-      text: ocr.text,
-      pages: pageCount,
-      usedOcr: true,
-      pageTexts: ocr.pageTexts,
-    };
+   return {
+  success: true,
+  text: ocr.text,
+  pages: pageCount,
+  usedOcr: true,
+  pageTexts: ocr.pageTexts,
+};
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "PDF extraction failed";
     console.error("PDF extraction error:", err);
 
-    return {
-      success: false,
-      text: "",
-      pages: 0,
-      error: message,
-      pageTexts: [],
-    };
+  return {
+  success: false,
+  text: "",
+  pages: 0,
+  usedOcr: false,
+  pageTexts: [],
+  error: message,
+};
   }
 }

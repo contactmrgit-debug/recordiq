@@ -66,6 +66,7 @@ type ExtractedCode = {
 
 async function safeJson(res: Response, label: string) {
   const text = await res.text();
+  console.log(`${label.toUpperCase()} RAW RESPONSE:`, text);
 
   if (!text) {
     throw new Error(`${label} returned empty response`);
@@ -73,11 +74,12 @@ async function safeJson(res: Response, label: string) {
 
   try {
     return JSON.parse(text);
-  } catch {
+  } catch (error) {
+    console.error(`${label.toUpperCase()} JSON PARSE ERROR:`, error);
+    console.error(`${label.toUpperCase()} NON-JSON BODY:`, text);
     throw new Error(`${label} returned invalid JSON`);
   }
 }
-
 function formatDate(date?: string) {
   if (!date || date === "UNKNOWN") return "Unknown";
 
@@ -281,15 +283,16 @@ export default function CasePage() {
 
   const [caseData, setCaseData] = useState<CaseData | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-const [events, setEvents] = useState<TimelineEvent[]>([]);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState<string | null>(null);
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [loadWarning, setLoadWarning] = useState<string | null>(null);
 
-const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-const [activeSourcePage, setActiveSourcePage] = useState<number | null>(null);
-const [showHidden, setShowHidden] = useState(false);
-const [searchQuery, setSearchQuery] = useState("");
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [activeSourcePage, setActiveSourcePage] = useState<number | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -368,39 +371,82 @@ async function loadCase() {
       setLoading(true);
       setError(null);
 
-      const [caseRes, docsRes, eventsRes] = await Promise.all([
-        fetch(`/api/cases/${caseId}`, { cache: "no-store" }),
-        fetch(`/api/cases/${caseId}/documents`, { cache: "no-store" }),
-        fetch(`/api/cases/${caseId}/timeline-events`, { cache: "no-store" }),
+      const fetchJson = async (url: string, label: string) => {
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          const text = await res.text();
+          console.log(`${label.toUpperCase()} RAW RESPONSE:`, text);
+
+          if (!text.trim()) {
+            return {
+              ok: res.ok,
+              data: null,
+              error: `${label} returned empty response`,
+            };
+          }
+
+          try {
+            return {
+              ok: res.ok,
+              data: JSON.parse(text),
+              error: null as string | null,
+            };
+          } catch (parseError) {
+            console.error(`${label.toUpperCase()} JSON PARSE ERROR:`, parseError);
+            return {
+              ok: false,
+              data: null,
+              error: `${label} returned invalid JSON`,
+            };
+          }
+        } catch (fetchError) {
+          console.error(`${label.toUpperCase()} FETCH ERROR:`, fetchError);
+          return {
+            ok: false,
+            data: null,
+            error:
+              fetchError instanceof Error
+                ? fetchError.message
+                : `${label} request failed`,
+          };
+        }
+      };
+
+      const [caseResult, docsResult, eventsResult] = await Promise.all([
+        fetchJson(`/api/cases/${caseId}`, "Case"),
+        fetchJson(`/api/cases/${caseId}/documents`, "Documents"),
+        fetchJson(`/api/cases/${caseId}/timeline-events`, "Timeline"),
       ]);
 
-      const [caseJson, docsJson, eventsJson] = await Promise.all([
-        safeJson(caseRes, "Case"),
-        safeJson(docsRes, "Documents"),
-        safeJson(eventsRes, "Timeline"),
-      ]);
-
-      if (!caseRes.ok || !caseJson?.success) {
-        throw new Error(caseJson?.error || "Failed to load case");
+      if (!caseResult.ok || !caseResult.data?.success) {
+        throw new Error(caseResult.data?.error || caseResult.error || "Failed to load case");
       }
 
-      if (!docsRes.ok || !docsJson?.success) {
-        throw new Error(docsJson?.error || "Failed to load documents");
-      }
+      const warnings: string[] = [];
+      const nextCase = caseResult.data.case ?? null;
 
-      if (!eventsRes.ok || !eventsJson?.success) {
-        throw new Error(eventsJson?.error || "Failed to load timeline events");
-      }
-
-      const nextCase = caseJson.case ?? null;
-      const nextDocs = Array.isArray(docsJson.documents) ? docsJson.documents : [];
-      const nextEvents = Array.isArray(eventsJson.timelineEvents)
-        ? eventsJson.timelineEvents
+      const nextDocs = Array.isArray(docsResult.data?.documents)
+        ? docsResult.data.documents
         : [];
+      if (!docsResult.ok || !docsResult.data?.success) {
+        const message = docsResult.data?.error || docsResult.error || "Failed to load documents";
+        warnings.push(message);
+        console.error("Documents load warning:", message);
+      }
+
+      const nextEvents = Array.isArray(eventsResult.data?.timelineEvents)
+        ? eventsResult.data.timelineEvents
+        : [];
+      if (!eventsResult.ok || !eventsResult.data?.success) {
+        const message = eventsResult.data?.error || eventsResult.error || "Failed to load timeline events";
+        warnings.push(message);
+        console.error("Timeline load warning:", message);
+      }
 
       setCaseData(nextCase);
       setDocuments(nextDocs);
       setEvents(nextEvents);
+      setLoadWarning(warnings.length ? warnings.join(" • ") : null);
 
       const resolvedSelectedEventId =
   selectedEventId && nextEvents.some((event: TimelineEvent) => event.id === selectedEventId)
@@ -416,6 +462,7 @@ setSelectedDocumentId(resolvedSelectedEvent?.documentId ?? null);
     } catch (err) {
       console.error("Load case error:", err);
       setError(err instanceof Error ? err.message : "Failed to load case");
+      setLoadWarning(null);
     } finally {
       setLoading(false);
     }
@@ -786,8 +833,15 @@ Status: ${row.reviewStatus}
   if (error) {
     return (
       <div className="min-h-screen bg-slate-50 p-6">
-        <div className="mx-auto max-w-[1600px] rounded-3xl border border-red-300 bg-red-50 p-6 text-red-700 shadow-sm">
-          {error}
+        <div className="mx-auto max-w-[1600px] space-y-4">
+          <div className="rounded-3xl border border-red-300 bg-red-50 p-6 text-red-700 shadow-sm">
+            {error}
+          </div>
+          {loadWarning ? (
+            <div className="rounded-3xl border border-amber-300 bg-amber-50 p-4 text-amber-800 shadow-sm">
+              {loadWarning}
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -796,6 +850,11 @@ Status: ${row.reviewStatus}
   return (
   <div className="min-h-screen bg-slate-50 text-slate-900">
     <div className="mx-auto max-w-[1700px] px-4 pb-6 pt-4 sm:px-6 lg:px-8">
+      {loadWarning ? (
+        <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+          {loadWarning}
+        </div>
+      ) : null}
       <div className="mb-4 rounded-[28px] border border-slate-200 bg-white shadow-sm ring-1 ring-slate-100">
   <div className="p-5">
     <div className="grid grid-cols-[260px_1fr_360px] items-center gap-6">

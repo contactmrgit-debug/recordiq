@@ -9,14 +9,32 @@ type ApiResponse = {
   case?: {
     id?: string;
   };
+  documents?: unknown[];
+  timelineEvents?: unknown[];
+  document?: {
+    id?: string;
+    fileUrl?: string;
+    status?: string;
+    pageCount?: number | null;
+    recordType?: string | null;
+  };
+  timelineEventsCreated?: number;
 };
 
-function parseResponseBody(text: string): ApiResponse | null {
-  if (!text.trim()) return null;
+async function safeJson(res: Response, label: string): Promise<ApiResponse | null> {
+  const text = await res.text();
+  console.log(`${label.toUpperCase()} RAW RESPONSE:`, text);
+
+  if (!text.trim()) {
+    console.error(`${label.toUpperCase()} EMPTY RESPONSE BODY`);
+    return null;
+  }
 
   try {
     return JSON.parse(text) as ApiResponse;
-  } catch {
+  } catch (error) {
+    console.error(`${label.toUpperCase()} JSON PARSE ERROR:`, error);
+    console.error(`${label.toUpperCase()} NON-JSON BODY:`, text);
     return null;
   }
 }
@@ -24,15 +42,20 @@ function parseResponseBody(text: string): ApiResponse | null {
 function getResponseError(
   res: Response,
   data: ApiResponse | null,
-  rawText: string,
   fallback: string
 ): string {
-  return (
-    data?.error?.trim() ||
-    rawText.trim() ||
-    `${fallback} (HTTP ${res.status})`
-  );
+  return data?.error?.trim() || `${fallback} (HTTP ${res.status})`;
 }
+
+type UploadDebugResult = {
+  documentId: string | null;
+  fileUrl: string | null;
+  recordType: string | null;
+  status: string | null;
+  pageCount: number | null;
+  timelineEventsCreated: number | null;
+  warnings: string[];
+};
 
 export default function TestUploadPage() {
   const router = useRouter();
@@ -40,27 +63,24 @@ export default function TestUploadPage() {
   const [caseId, setCaseId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState("MEDICAL_RECORD");
-
   const [status, setStatus] = useState("Idle");
   const [loading, setLoading] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [result, setResult] = useState<UploadDebugResult | null>(null);
 
   async function handleCreateCase() {
     try {
+      setWarning(null);
       setStatus("Creating case...");
 
       const res = await fetch("/api/create-case", {
         method: "POST",
       });
 
-      const text = await res.text();
-      console.log("CREATE CASE RAW RESPONSE:", text);
-
-      const data = parseResponseBody(text);
+      const data = await safeJson(res, "Create case");
 
       if (!res.ok || !data?.success || !data?.case?.id) {
-        throw new Error(
-          getResponseError(res, data, text, "Failed to create case")
-        );
+        throw new Error(getResponseError(res, data, "Failed to create case"));
       }
 
       setCaseId(data.case.id);
@@ -68,7 +88,9 @@ export default function TestUploadPage() {
     } catch (err) {
       console.error(err);
       setStatus(
-        `Error creating case: ${err instanceof Error ? err.message : "Unknown error"}`
+        `Error creating case: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
       );
     }
   }
@@ -80,20 +102,23 @@ export default function TestUploadPage() {
     }
 
     try {
+      setWarning(null);
+      setResult(null);
       setLoading(true);
-
       setStatus("Uploading file...");
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("recordType", recordType);
+      formData.append("caseId", caseId);
+
+      if (recordType) {
+        formData.append("recordType", recordType);
+      }
 
       await new Promise((r) => setTimeout(r, 300));
-
       setStatus("Extracting text...");
 
       await new Promise((r) => setTimeout(r, 300));
-
       setStatus("Building timeline...");
 
       const res = await fetch(`/api/cases/${caseId}/documents/upload`, {
@@ -101,30 +126,86 @@ export default function TestUploadPage() {
         body: formData,
       });
 
-      const text = await res.text();
-      console.log("UPLOAD RAW RESPONSE:", text);
-
-      const data = parseResponseBody(text);
+      const data = await safeJson(res, "Upload");
 
       if (!res.ok || !data?.success) {
-        throw new Error(
-          getResponseError(res, data, text, "Upload failed")
+        throw new Error(getResponseError(res, data, "Upload failed"));
+      }
+
+      const documentId = data.document?.id || null;
+      const fileUrl = data.document?.fileUrl || null;
+      const savedRecordType = data.document?.recordType || recordType || null;
+      const pageCount = typeof data.document?.pageCount === "number"
+        ? data.document.pageCount
+        : null;
+      const timelineEventsCreated =
+        typeof data.timelineEventsCreated === "number"
+          ? data.timelineEventsCreated
+          : null;
+
+      setStatus(
+        documentId ? `Upload saved (${documentId})` : "Upload saved"
+      );
+
+      const [docsRes, timelineRes] = await Promise.all([
+        fetch(`/api/cases/${caseId}/documents`, { cache: "no-store" }),
+        fetch(`/api/cases/${caseId}/timeline-events`, { cache: "no-store" }),
+      ]);
+
+      const [docsJson, timelineJson] = await Promise.all([
+        safeJson(docsRes, "Documents"),
+        safeJson(timelineRes, "Timeline"),
+      ]);
+
+      const warnings: string[] = [];
+
+      if (!docsRes.ok || !docsJson?.success) {
+        warnings.push(docsJson?.error || "Documents endpoint returned an error");
+      }
+
+      if (!timelineRes.ok || !timelineJson?.success) {
+        warnings.push(
+          timelineJson?.error || "Timeline endpoint returned an error"
         );
       }
 
-      setStatus("Saving results...");
-
-      await new Promise((r) => setTimeout(r, 300));
-
-      setStatus("Complete");
+      if (warnings.length) {
+        const message = warnings.join(" • ");
+        setWarning(message);
+        setResult({
+          documentId,
+          fileUrl,
+          recordType: savedRecordType,
+          status: data.document?.status || null,
+          pageCount,
+          timelineEventsCreated,
+          warnings,
+        });
+        setStatus(`Upload complete with warnings: ${message}`);
+      } else {
+        setResult({
+          documentId,
+          fileUrl,
+          recordType: savedRecordType,
+          status: data.document?.status || null,
+          pageCount,
+          timelineEventsCreated,
+          warnings: [],
+        });
+        setStatus("Complete");
+      }
 
       setTimeout(() => {
         router.push(`/cases/${caseId}`);
-      }, 500);
+      }, 1500);
     } catch (err) {
       console.error(err);
+      setWarning(null);
+      setResult(null);
       setStatus(
-        `Error during upload: ${err instanceof Error ? err.message : "Unknown error"}`
+        `Error during upload: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
       );
     } finally {
       setLoading(false);
@@ -132,12 +213,12 @@ export default function TestUploadPage() {
   }
 
   return (
-    <div className="p-6 space-y-4 max-w-xl">
+    <div className="max-w-xl space-y-4 p-6">
       <h1 className="text-xl font-bold">Test Upload</h1>
 
       <button
         onClick={handleCreateCase}
-        className="border px-3 py-2 rounded"
+        className="rounded border px-3 py-2"
       >
         Create Case
       </button>
@@ -165,7 +246,7 @@ export default function TestUploadPage() {
       <button
         onClick={handleUpload}
         disabled={loading}
-        className="border px-3 py-2 rounded"
+        className="rounded border px-3 py-2"
       >
         Upload
       </button>
@@ -173,6 +254,91 @@ export default function TestUploadPage() {
       <div className="text-sm">
         Status: <span className="font-medium">{status}</span>
       </div>
+
+      {warning ? (
+        <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {warning}
+        </div>
+      ) : null}
+
+      {result ? (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm shadow-sm">
+          <div className="mb-3 text-sm font-semibold text-slate-900">
+            Upload Result
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Document ID
+              </div>
+              <div className="break-all font-mono text-slate-900">
+                {result.documentId || "N/A"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                File URL
+              </div>
+              {result.fileUrl ? (
+                <a
+                  href={result.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all font-mono text-blue-600 underline underline-offset-2 hover:text-blue-700"
+                >
+                  {result.fileUrl}
+                </a>
+              ) : (
+                <div className="font-mono text-slate-900">N/A</div>
+              )}
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Record Type
+              </div>
+              <div className="font-mono text-slate-900">
+                {result.recordType || "N/A"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Document Status
+              </div>
+              <div className="font-mono text-slate-900">
+                {result.status || "N/A"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Page Count
+              </div>
+              <div className="font-mono text-slate-900">
+                {result.pageCount ?? "N/A"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">
+                Timeline Events
+              </div>
+              <div className="font-mono text-slate-900">
+                {result.timelineEventsCreated ?? "N/A"}
+              </div>
+            </div>
+          </div>
+          {result.warnings.length ? (
+            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide">
+                Warnings
+              </div>
+              <ul className="list-inside list-disc space-y-1">
+                {result.warnings.map((item, index) => (
+                  <li key={`${index}-${item}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

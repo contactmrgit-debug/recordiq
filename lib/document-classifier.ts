@@ -1,8 +1,11 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+const openaiApiKey = process.env.OPENAI_API_KEY;
+const openai = openaiApiKey
+  ? new OpenAI({
+      apiKey: openaiApiKey,
+    })
+  : null;
 
 const ALLOWED_TYPES = [
   "MEDICAL_RECORD",
@@ -89,6 +92,10 @@ export async function classifyDocument(
   const snippet = text.slice(0, 6000);
   const fallback = fallbackClassify(snippet);
 
+  if (!openai) {
+    return { type: fallback };
+  }
+
   try {
     const prompt = `
 You classify uploaded documents for a records platform.
@@ -123,7 +130,8 @@ ${snippet}
       temperature: 0,
     });
 
-    const raw = res.choices?.[0]?.message?.content?.trim()?.toUpperCase() ?? "OTHER";
+    const raw =
+      res.choices?.[0]?.message?.content?.trim()?.toUpperCase() ?? "OTHER";
 
     if (ALLOWED_TYPES.includes(raw as RecordTypeValue)) {
       return { type: raw as RecordTypeValue };

@@ -10,25 +10,35 @@ export async function GET(
   try {
     const { id } = await context.params;
 
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Missing case id", timelineEvents: [] },
+        { status: 400 }
+      );
+    }
+
     const timelineEvents = await prisma.timelineEvent.findMany({
       where: { caseId: id },
       orderBy: {
         eventDate: "asc",
       },
+      select: {
+        id: true,
+        caseId: true,
+        documentId: true,
+        eventDate: true,
+        title: true,
+        description: true,
+        eventType: true,
+        sourcePage: true,
+        reviewStatus: true,
+        isHidden: true,
+        physicianName: true,
+        medicalFacility: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
-
-    console.log("######## TIMELINE RAW ########");
-    console.log(
-      timelineEvents.map((event) => ({
-        id: event.id,
-        title: event.title,
-        sourcePage: event.sourcePage,
-        documentId: event.documentId,
-        physicianName: event.physicianName,
-        medicalFacility: event.medicalFacility,
-      }))
-    );
-    console.log("######## END TIMELINE RAW ########");
 
     return NextResponse.json({
       success: true,
@@ -59,6 +69,7 @@ export async function GET(
           error instanceof Error
             ? error.message
             : "Failed to load timeline events",
+        timelineEvents: [],
       },
       { status: 500 }
     );
