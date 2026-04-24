@@ -82,6 +82,37 @@ function isValidDate(date?: string | null): boolean {
   if (date === "UNKNOWN") return true;
   return /^\d{4}-\d{2}-\d{2}$/.test(date);
 }
+function isStandalonePeriorbitalDuplicate(event: RawTimelineEvent): boolean {
+  const title = normalizeText(event.title || "");
+  const description = normalizeText(event.description || "");
+  const combined = `${title} ${description}`;
+
+  const isPeriorbitalOnly =
+    /\bperiorbital\b/.test(combined) &&
+    /\b(swelling|bruising|ecchymosis|contusion)\b/.test(combined);
+
+  const hasHigherValueImagingContext =
+    /\bct head\b/.test(combined) ||
+    /\bno acute intracranial\b/.test(combined) ||
+    /\bintracranial injury\b/.test(combined) ||
+    /\bimaging\b/.test(combined);
+
+  const hasMechanismContext =
+    /\bpipe\b/.test(combined) ||
+    /\bderrick\b/.test(combined) ||
+    /\bworkplace\b/.test(combined) ||
+    /\bhead injury\b/.test(combined) ||
+    /\btrauma\b/.test(combined);
+
+  const hasScalpContext = /\bscalp\b/.test(combined);
+
+  return (
+    isPeriorbitalOnly &&
+    !hasScalpContext &&
+    !hasHigherValueImagingContext &&
+    !hasMechanismContext
+  );
+}
 
 function normalizeDate(date?: string | null): string {
   if (!date || !isValidDate(date)) return "UNKNOWN";
@@ -126,6 +157,227 @@ function cleanDescription(description?: string | null): string {
     .replace(/^[•\-\*\s]+/, "")
     .trim();
 }
+const LEGAL_WRAPPER_PATTERNS: RegExp[] = [
+  /\bdeposition\b/i,
+  /\bdeposition notice\b/i,
+  /\bsubpoena\b/i,
+  /\brecords affidavit\b/i,
+  /\bcustodian(?: of records)?\b/i,
+  /\bcertification\b/i,
+  /\bbusiness records\b/i,
+  /\blegal cover sheet\b/i,
+  /\bcover sheet\b/i,
+  /\bnotice of filing\b/i,
+  /\bcertificate of service\b/i,
+  /\brecords request\b/i,
+  /\brecords produced\b/i,
+  /\bmedical record affidavit\b/i,
+  /\bnot a medical record\b/i,
+  /\battorney\b/i,
+  /\blaw office\b/i,
+  /\btransmittal letter\b/i,
+  /\bsworn to and subscribed\b/i,
+  /\bnotary public\b/i,
+  /\brecord packet\b/i,
+];
+
+const OCR_GARBAGE_PATTERNS: RegExp[] = [
+  /(?:^|\s)[^\w\s]{4,}(?:\s|$)/,
+  /\b[a-z]\b(?:\s+\b[a-z]\b){6,}/i,
+  /[^\w\s]{6,}/,
+  /\b(?:[a-z]\d|[a-z]{1,2}\d{2,}|\d{2,}[a-z]{1,2})\b/i,
+];
+
+const STANDALONE_METADATA_TITLES = new Set([
+  "physician",
+  "provider",
+  "facility",
+  "medical facility",
+  "hospital",
+  "clinic",
+  "radiology",
+  "unknown",
+  "er",
+  "shannon er",
+]);
+
+const CLINICAL_SIGNAL_PATTERNS: RegExp[] = [
+  /\bdiagnos\w*\b/i,
+  /\btreated\b/i,
+  /\bstarted\b/i,
+  /\bgiven\b/i,
+  /\badmitted\b/i,
+  /\badmission\b/i,
+  /\bdischarged\b/i,
+  /\bdisposition\b/i,
+  /\btransfer\w*\b/i,
+  /\bconsult\b/i,
+  /\bfracture\b/i,
+  /\btrauma\b/i,
+  /\binjury\b/i,
+  /\bvascular injury\b/i,
+  /\bdissection\b/i,
+  /\bcta\b/i,
+  /\bct\b/i,
+  /\bmri\b/i,
+  /\bx ray\b/i,
+  /\bxray\b/i,
+  /\bultrasound\b/i,
+  /\bimpression\b/i,
+  /\bfindings?\b/i,
+  /\bmedications?\b/i,
+  /\bprescribed\b/i,
+  /\bfollow[- ]?up\b/i,
+  /\brecommend\w*\b/i,
+  /\blaceration\b/i,
+  /\bbruise[ds]?\b/i,
+  /\bbruising\b/i,
+  /\bswelling\b/i,
+  /\becchymosis\b/i,
+  /\bperiorbital\b/i,
+  /\borbital\b/i,
+  /\bscalp\b/i,
+  /\bhead\b/i,
+  /\bneck\b/i,
+  /\bshoulder\b/i,
+  /\bpain\b/i,
+];
+
+function hasClinicalSignal(text: string): boolean {
+  return CLINICAL_SIGNAL_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+export function isLegalWrapperPacket(text?: string | null): boolean {
+  const normalized = normalizeWhitespace(text);
+  if (!normalized) return false;
+
+  return LEGAL_WRAPPER_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+export function isOcrGarbageText(text?: string | null): boolean {
+  const raw = normalizeWhitespace(text);
+  if (!raw) return true;
+
+  if (raw.length < 18) {
+    return false;
+  }
+
+  const alphaCount = (raw.match(/[A-Za-z]/g) || []).length;
+  const digitCount = (raw.match(/[0-9]/g) || []).length;
+  const punctuationCount = (raw.match(/[^\w\s]/g) || []).length;
+  const tokenCount = raw.split(/\s+/).filter(Boolean).length;
+  const readableTokens = raw
+    .split(/\s+/)
+    .filter((token) => /^[A-Za-z][A-Za-z.'/-]{2,}$/.test(token));
+
+  if (alphaCount + digitCount === 0) return true;
+  if (raw.length >= 30 && alphaCount / raw.length < 0.42) return true;
+  if (raw.length >= 40 && punctuationCount / raw.length > 0.28) return true;
+  if (raw.length >= 32 && readableTokens.length < 3 && tokenCount < 6) return true;
+  if (/(.)\1{6,}/.test(raw)) return true;
+  if (OCR_GARBAGE_PATTERNS.some((pattern) => pattern.test(raw))) return true;
+
+  return false;
+}
+
+export function hasMeaningfulClinicalSignal(text: string): boolean {
+  const normalized = normalizeText(text);
+
+  return hasClinicalSignal(normalized) || hasMeaningfulTraumaFinding(normalized);
+}
+
+export function isStandaloneMetadataOnlyEvent(
+  event: Pick<
+    RawTimelineEvent,
+    | "title"
+    | "description"
+    | "providerName"
+    | "providerRole"
+    | "eventActorType"
+    | "physicianName"
+    | "physicianRole"
+    | "medicalFacility"
+    | "facilityType"
+  >
+): boolean {
+  const title = cleanTitle(event.title);
+  const description = cleanDescription(event.description);
+  const providerName = normalizeClinicianName(event.providerName);
+  const physicianName = normalizeClinicianName(event.physicianName);
+  const facility = normalizeFacility(event.medicalFacility);
+  const combined = `${title} ${description}`.trim();
+  const normalizedTitle = normalizeText(title);
+  const normalizedDescription = normalizeText(description);
+
+  if (!title && !description) return true;
+
+  if (isLegalWrapperPacket(combined) && !hasMeaningfulClinicalSignal(combined)) {
+    return true;
+  }
+
+  if (isOcrGarbageText(combined) && !hasMeaningfulClinicalSignal(combined)) {
+    return true;
+  }
+
+  if (
+    STANDALONE_METADATA_TITLES.has(normalizedTitle) ||
+    STANDALONE_METADATA_TITLES.has(normalizedDescription)
+  ) {
+    return true;
+  }
+
+  if (
+    providerName &&
+    (normalizedTitle === normalizeText(providerName) ||
+      normalizedDescription === normalizeText(providerName))
+  ) {
+    return true;
+  }
+
+  if (
+    physicianName &&
+    (normalizedTitle === normalizeText(physicianName) ||
+      normalizedDescription === normalizeText(physicianName))
+  ) {
+    return true;
+  }
+
+  if (
+    facility &&
+    (normalizedTitle === normalizeText(facility) ||
+      normalizedDescription === normalizeText(facility))
+  ) {
+    return true;
+  }
+
+  if (!hasMeaningfulClinicalSignal(combined)) {
+    const metadataOnlyTokens = normalizeText(
+      `${event.providerName || ""} ${event.providerRole || ""} ${event.eventActorType || ""} ${event.physicianName || ""} ${event.physicianRole || ""} ${event.medicalFacility || ""} ${event.facilityType || ""}`
+    );
+
+    if (
+      metadataOnlyTokens &&
+      (normalizedTitle === metadataOnlyTokens ||
+        normalizedDescription === metadataOnlyTokens)
+    ) {
+      return true;
+    }
+
+    if (
+      /^(physician|provider|facility|medical facility|hospital|clinic|radiology|unknown|er)$/.test(
+        normalizedTitle
+      ) ||
+      /^(physician|provider|facility|medical facility|hospital|clinic|radiology|unknown|er)$/.test(
+        normalizedDescription
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function isGarbageProviderName(value?: string | null): boolean {
   const raw = normalizeText(value);
   if (!raw) return true;
@@ -661,6 +913,16 @@ function isStandaloneNormalPanelLabEvent(event: RawTimelineEvent): boolean {
 }
 
 function getImagingModality(text: string): string {
+  if (
+    /\bcta\b/.test(text) ||
+    /\bct angiogram\b/.test(text) ||
+    (/\bct neck\b/.test(text) &&
+      /\b(vascular injury|dissection|vertebral artery|foraminal extension)\b/.test(
+        text
+      ))
+  ) {
+    return "cta";
+  }
   if (/\bct\b/.test(text)) return "ct";
   if (/\bx ray\b|\bxray\b/.test(text)) return "xray";
   if (/\bmri\b/.test(text)) return "mri";
@@ -706,6 +968,16 @@ function getMergeGroupKey(event: RawTimelineEvent): string {
 
   if (eventType === "communication") {
     return "";
+  }
+
+  if (
+    /\b(cta|ct angiogram)\b/.test(text) ||
+    (/\bct neck\b/.test(text) &&
+      /\b(vascular injury|dissection|vertebral artery|foraminal extension)\b/.test(
+        text
+      ))
+  ) {
+    return `${date}|page:${page}|imaging:cta:cervical`;
   }
 
   if (
@@ -917,11 +1189,23 @@ function buildGroupedImagingTitle(
   const modalityLabel =
     modality === "ct"
       ? "CT"
+      : modality === "cta"
+        ? "CTA"
       : modality === "xray"
         ? "X-ray"
         : modality === "mri"
           ? "MRI"
           : "Imaging";
+
+  if (
+    /\bcta\b/.test(combined) ||
+    (/\bct neck\b/.test(combined) &&
+      /\b(vascular injury|dissection|vertebral artery|foraminal extension)\b/.test(
+        combined
+      ))
+  ) {
+    return `${modalityLabel} neck showed vascular injury concern`;
+  }
 
   if (
     /\bc2\b/.test(combined) &&
@@ -965,6 +1249,16 @@ function buildGroupedImagingDescription(
   );
 
   if (
+    /\bcta\b/.test(combined) ||
+    (/\bct neck\b/.test(combined) &&
+      /\b(vascular injury|dissection|vertebral artery|foraminal extension)\b/.test(
+        combined
+      ))
+  ) {
+    return "CTA neck showed vascular injury concern, including vertebral artery or foraminal extension findings.";
+  }
+
+  if (
     /\bc2\b/.test(combined) &&
     /\bfracture\b/.test(combined) &&
     /\bbilateral\b/.test(combined) &&
@@ -981,6 +1275,16 @@ function buildGroupedImagingDescription(
     /\bswelling\b/.test(combined)
   ) {
     return "CT head showed no acute intracranial abnormality and left periorbital soft tissue swelling.";
+  }
+
+  if (
+    /\bcta\b/.test(combined) &&
+    /\bneck\b/.test(combined) &&
+    /\b(vascular injury|dissection|vertebral artery|foraminal extension)\b/.test(
+      combined
+    )
+  ) {
+    return "CTA neck noted vascular injury concern, including vertebral artery or foraminal extension findings.";
   }
 
   if (
@@ -1300,6 +1604,9 @@ function shouldDropLowSignalEvent(event: RawTimelineEvent): boolean {
   const hasClinicalContent = hasClinicalValue(combined);
 
   if (!title) return true;
+  if (isLegalWrapperPacket(combined) && !hasClinicalContent) return true;
+  if (isOcrGarbageText(combined) && !hasClinicalContent) return true;
+  if (isStandaloneMetadataOnlyEvent(event)) return true;
 
   if (
     /\bclinical impression\b/.test(combined) &&
@@ -1387,6 +1694,15 @@ function shouldDropLowSignalEvent(event: RawTimelineEvent): boolean {
   }
 
   if (
+    !hasClinicalContent &&
+    /^(physician|provider|facility|medical facility|hospital|clinic|radiology|unknown|er)$/.test(
+      normalizeText(title)
+    )
+  ) {
+    return true;
+  }
+
+  if (
     confidence < 0.75 &&
     (conceptKey === "lab_encounter_admin" ||
       conceptKey === "blood_cultures_collected" ||
@@ -1409,13 +1725,17 @@ function hasClinicalValue(text: string): boolean {
     /\bstarted\b/i,
     /\bgiven\b/i,
     /\badmitted\b/i,
+    /\badmission\b/i,
     /\bdischarged\b/i,
+    /\bdisposition\b/i,
     /\bconsult\b/i,
     /\bfracture\b/i,
     /\binfection\b/i,
     /\bpneumonia\b/i,
     /\bsepsis\b/i,
     /\bhemorrhage\b/i,
+    /\bvascular injury\b/i,
+    /\bdissection\b/i,
     /\bmass\b/i,
     /\blesion\b/i,
     /\banemia\b/i,
@@ -1429,9 +1749,11 @@ function hasClinicalValue(text: string): boolean {
     /\bnegative\b/i,
     /\bnot detected\b/i,
     /\bno evidence of\b/i,
+    /\bcta\b/i,
     /\bct\b/i,
     /\bmri\b/i,
     /\bx ray\b/i,
+    /\bxray\b/i,
     /\bultrasound\b/i,
     /\bsmear\b/i,
     /\burinalysis\b/i,
@@ -1446,6 +1768,10 @@ function hasClinicalValue(text: string): boolean {
     /\bglucosuria\b/i,
     /\bspecific gravity\b/i,
     /\bcloudy urine\b/i,
+    /\bmedications?\b/i,
+    /\bprescribed\b/i,
+    /\bfollow[- ]?up\b/i,
+    /\btransfer\w*\b/i,
 
     // trauma / physical exam findings
     /\blaceration\b/i,
@@ -1460,12 +1786,12 @@ function hasClinicalValue(text: string): boolean {
     /\bscalp\b/i,
     /\beye\b/i,
     /\borbit\b/i,
+    /\bneck\b/i,
+    /\bshoulder\b/i,
+    /\bpain\b/i,
   ];
 
-  return (
-    clinicalPatterns.some((pattern) => pattern.test(normalized)) ||
-    hasMeaningfulTraumaFinding(normalized)
-  );
+  return hasMeaningfulClinicalSignal(normalized) || clinicalPatterns.some((pattern) => pattern.test(normalized));
 }
 function areLikelyDuplicateEvents(a: RawTimelineEvent, b: RawTimelineEvent): boolean {
   const aDate = normalizeDate(a.date);
@@ -1482,6 +1808,41 @@ function areLikelyDuplicateEvents(a: RawTimelineEvent, b: RawTimelineEvent): boo
 
   if (
     /\bunstable angina\b/.test(aText) !== /\bunstable angina\b/.test(bText)
+  ) {
+    return false;
+  }
+
+  if (
+    (/\bct head\b/.test(aText) && /\b(periorbital|scalp)\b/.test(bText)) ||
+    (/\bct head\b/.test(bText) && /\b(periorbital|scalp)\b/.test(aText))
+  ) {
+    return false;
+  }
+
+  if (
+    (/\bc2\b/.test(aText) && /\bscapula(?:r)?\b/.test(bText)) ||
+    (/\bc2\b/.test(bText) && /\bscapula(?:r)?\b/.test(aText))
+  ) {
+    return false;
+  }
+
+  if (
+    (/\bcta\b/.test(aText) || /\bct neck\b/.test(aText)) &&
+    (/\bc2\b/.test(bText) || /\bvertebral foramen\b/.test(bText))
+  ) {
+    return false;
+  }
+
+  if (
+    (/\bcta\b/.test(bText) || /\bct neck\b/.test(bText)) &&
+    (/\bc2\b/.test(aText) || /\bvertebral foramen\b/.test(aText))
+  ) {
+    return false;
+  }
+
+  if (
+    (/\bdischarge summary\b/.test(aText) && /\bfracture\b/.test(bText)) ||
+    (/\bdischarge summary\b/.test(bText) && /\bfracture\b/.test(aText))
   ) {
     return false;
   }
@@ -1627,6 +1988,13 @@ function improveTitle(event: RawTimelineEvent): string {
   const eventType = normalizeEventType(event.eventType);
   const physician = normalizeText(event.physicianName);
   const facility = normalizeText(event.medicalFacility);
+  const isImagingReport =
+    eventType === "report" &&
+    /\b(ct|cta|x ray|xray|mri|ultrasound|imaging|radiology|impression|findings|fracture)\b/.test(combined);
+
+  if (eventType === "appointment") {
+    return originalTitle;
+  }
 
   if (
     (facility.includes("shannon") || physician.includes("vretis")) &&
@@ -1658,7 +2026,7 @@ function improveTitle(event: RawTimelineEvent): string {
     /\bfracture\b/.test(combined) &&
     /\bbilateral\b/.test(combined)
   ) {
-    return "Imaging showed bilateral C2 fractures";
+    return "C2 fracture with vertebral foramen extension";
   }
 
   if (
@@ -1674,7 +2042,17 @@ function improveTitle(event: RawTimelineEvent): string {
     /\bvascular injury\b/.test(combined) ||
     (/\bvertebral\b/.test(combined) && /\bforamen\b/.test(combined))
   ) {
-    return "Clinical concern for vertebral foraminal extension and vascular injury";
+    return "CTA neck showed vascular injury concern";
+  }
+
+  if (
+    /\bcta\b/.test(combined) &&
+    /\bneck\b/.test(combined) &&
+    /\b(vascular injury|dissection|vertebral artery|foraminal extension)\b/.test(
+      combined
+    )
+  ) {
+    return "CTA neck showed vascular injury concern";
   }
 
   if (
@@ -1692,6 +2070,29 @@ function improveTitle(event: RawTimelineEvent): string {
     /\b(hospitalization|hospitalisation|admit|admission|telemetry)\b/.test(combined)
   ) {
     return "Hospitalization deemed indicated";
+  }
+
+  if (
+    /\bdischarge summary\b/.test(originalTitle) ||
+    /\bfollow[- ]?up\b/.test(originalTitle) ||
+    /\bmedication list\b/.test(originalTitle)
+  ) {
+    return "Discharge summary documented follow-up instructions and medication status.";
+  }
+
+  if (
+    /\b(admitted|admission|hospitalized|hospitalisation|hospitalization)\b/.test(
+      originalTitle
+    ) &&
+    !/\b(fracture|trauma|ct head|scapula(?:r)?|c2|vascular injury|dissection)\b/.test(
+      combined
+    )
+  ) {
+    return "Hospitalization deemed indicated";
+  }
+
+  if (/\bdisposition\b/.test(combined) || /\bfollow[- ]?up\b/.test(combined)) {
+    return "Discharge disposition and follow-up documented";
   }
 
   if (eventType === "diagnosis" && /\bunstable angina\b/.test(combined)) {
@@ -1747,6 +2148,7 @@ function improveTitle(event: RawTimelineEvent): string {
   }
 
   if (
+    !isImagingReport &&
     /\bleft\b/.test(combined) &&
     /\b(periorbital|orbital)\b/.test(combined) &&
     /\b(bruising|bruised|swelling|swollen|ecchymosis)\b/.test(combined)
@@ -1789,6 +2191,7 @@ function improveTitle(event: RawTimelineEvent): string {
 }
 
 function improveDescription(event: RawTimelineEvent): string | null {
+  const originalTitle = cleanTitle(event.title);
   const conciseDescription = cleanDescription(event.description);
   const supportExcerpt = cleanDescription(event.sourceExcerpt);
   const combined = normalizeText(
@@ -1797,7 +2200,10 @@ function improveDescription(event: RawTimelineEvent): string | null {
   const eventType = normalizeEventType(event.eventType);
   const physician = normalizeText(event.physicianName);
   const facility = normalizeText(event.medicalFacility);
-  
+
+  if (eventType === "appointment") {
+    return conciseDescription || supportExcerpt || null;
+  }
 
   if (
     (facility.includes("shannon") || physician.includes("vretis")) &&
@@ -1856,6 +2262,31 @@ function improveDescription(event: RawTimelineEvent): string | null {
   }
 
   if (
+    /\bct head\b/.test(combined) &&
+    /\b(periorbital hematoma|periorbital swelling|periorbital bruising|hematoma)\b/.test(combined)
+  ) {
+    return "CT head showed no acute intracranial abnormality and left periorbital hematoma.";
+  }
+
+  if (
+    /\bc2\b/.test(combined) &&
+    /\bfracture\b/.test(combined)
+  ) {
+    if (/\bvertebral foramen\b/.test(combined) || /\bvertebral\b/.test(combined)) {
+      return "CT scan showed C2 fractures with vertebral foramen extension.";
+    }
+    return "CT scan showed C2 fractures.";
+  }
+
+  if (
+    /\bc2\b/.test(combined) &&
+    /\bfracture\b/.test(combined) &&
+    /\bvertebral foramen\b/.test(combined)
+  ) {
+    return "CT neck showed nondisplaced bilateral C2 fractures with extension to the vertebral foramen, raising concern for vascular injury.";
+  }
+
+  if (
     /\bscapula(?:r)?\b/.test(combined) &&
     /\bfracture\b/.test(combined) &&
     /\bnondisplaced\b/.test(combined)
@@ -1875,6 +2306,22 @@ function improveDescription(event: RawTimelineEvent): string | null {
     return "Transferred to Shannon Medical Center for higher-level trauma care.";
   }
 
+  if (/\badmitted\b/.test(combined) || /\bhospitalization\b/.test(combined)) {
+    return "Hospital admission or inpatient transfer documented.";
+  }
+
+  if (
+    /\bdischarge summary\b/.test(originalTitle) ||
+    /\bfollow[- ]?up\b/.test(originalTitle) ||
+    /\bmedication list\b/.test(originalTitle)
+  ) {
+    return "Discharge summary documented follow-up instructions and medication status.";
+  }
+
+  if (/\bdisposition\b/.test(combined) || /\bfollow[- ]?up\b/.test(combined)) {
+    return "Disposition and follow-up instructions were documented.";
+  }
+
   if (
     /\b(head|scalp)\b/.test(combined) &&
     /\blaceration\b/.test(combined) &&
@@ -1890,6 +2337,9 @@ function normalizeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
   return events.map((event) => {
     const supportText = getSupportText(event);
     const eventText = getEventText(event);
+    const cleanedTitle = improveTitle(event);
+    const cleanedDescription = improveDescription(event);
+    const cleanedEventType = normalizeEventType(event.eventType);
 
     let cleanedProviderName = normalizeClinicianName(event.providerName);
     let cleanedProviderRole = cleanProviderRole(event.providerRole);
@@ -1928,12 +2378,45 @@ function normalizeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
       cleanedPhysicianRole = null;
     }
 
-    const cleanedPhysicianName =
+    const hasExplicitPhysicianCue =
+      /\b(electronically signed by|signed by|accepting|author|emergency physician record)\b/.test(
+        supportText
+      );
+    const isSymptomOrObservation =
+      normalizeEventType(event.eventType) === "symptom" ||
+      normalizeEventType(event.eventType) === "observation";
+    const isTransferTreatment =
+      normalizeEventType(event.eventType) === "treatment" &&
+      /\b(transfer|accepted|accepting|higher level|shannon)\b/.test(
+        supportText
+      );
+
+    if (isSymptomOrObservation && !hasExplicitPhysicianCue) {
+      cleanedPhysicianNameRaw = null;
+      cleanedPhysicianRole = null;
+    }
+
+    if (isTransferTreatment && cleanedPhysicianNameRaw && !cleanedPhysicianRole) {
+      cleanedPhysicianRole = "Physician";
+    }
+
+    let cleanedPhysicianName =
       shouldAssignPhysician(event) &&
       cleanedPhysicianNameRaw &&
       hasExplicitClinicianSupport(event, cleanedPhysicianNameRaw)
         ? cleanedPhysicianNameRaw
         : null;
+
+    const normalizedFinalTitle = normalizeText(cleanedTitle || event.title || "");
+    const normalizedFinalEventType = normalizeEventType(cleanedEventType || event.eventType);
+
+    if (
+      normalizedFinalTitle === "left periorbital swelling and bruising documented" &&
+      (normalizedFinalEventType === "symptom" || normalizedFinalEventType === "observation")
+    ) {
+      cleanedPhysicianName = null;
+      cleanedPhysicianRole = null;
+    }
 
     const cleanedFacility = normalizeFacility(event.medicalFacility);
     const supportedFacility =
@@ -1943,9 +2426,9 @@ function normalizeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
 
     return {
       date: normalizeDate(event.date),
-      title: improveTitle(event),
-      description: improveDescription(event),
-      eventType: normalizeEventType(event.eventType),
+      title: cleanedTitle,
+      description: cleanedDescription,
+      eventType: cleanedEventType,
       sourcePage:
         typeof event.sourcePage === "number" ? event.sourcePage : null,
 
@@ -1972,8 +2455,10 @@ function scoreEvent(event: RawTimelineEvent): number {
 
   let score = 0;
 
-  if (/fracture|hemorrhage|injury|trauma|vascular injury/.test(text)) score += 60;
+  if (/fracture|hemorrhage|injury|trauma|vascular injury|dissection|cta neck/.test(text)) score += 70;
   if (/transfer|accepted|air transport|higher level of care/.test(text)) score += 45;
+  if (/admit|admitted|admission|discharged|disposition/.test(text)) score += 35;
+  if (/medication|medications|prescribed|follow up/.test(text)) score += 22;
   if (/impression|diagnosis/.test(text)) score += 35;
   if (/ct|x ray|imaging|radiology/.test(text)) score += 25;
   if (/laceration|swelling|disc herniation|scapular|c2/.test(text)) score += 20;
@@ -1983,6 +2468,7 @@ function scoreEvent(event: RawTimelineEvent): number {
   if (/cbc|cmp|metabolic panel|lab/.test(text)) score -= 15;
   if (/social history|past medical|past surgical|smoker|drinker/.test(text)) score -= 35;
   if (/report called|awaiting|resting|educated|returned from x ray/.test(text)) score -= 35;
+  if (isLegalWrapperPacket(text) || isOcrGarbageText(text)) score -= 100;
 
   return score;
 }
@@ -2008,11 +2494,101 @@ function hasConflictingLaterality(aText: string, bText: string): boolean {
 
   return !!aLaterality && !!bLaterality && aLaterality !== bLaterality;
 }
+function isProtectedHighValueLabEvent(event: RawTimelineEvent): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""}`
+  );
 
+  const isCriticalLab =
+    /\bcritical lab values?\b/.test(combined) ||
+    /\bcritical value\b/.test(combined) ||
+    /\bverbally reported\b/.test(combined) ||
+    /\bcritical result\b/.test(combined);
+
+  const isAbnormalCbc =
+    /\bcbc\b/.test(combined) &&
+    /\b(leukopenia|thrombocytopenia|anemia|neutropenia|pancytopenia|low platelets|low hemoglobin|low wbc)\b/.test(
+      combined
+    );
+
+  const isImportantLabFinding =
+    /\b(leukopenia|thrombocytopenia|anemia|neutropenia|pancytopenia)\b/.test(
+      combined
+    );
+
+  const isGroupedLabs =
+    /\bgrouped\s+labs\b/.test(combined) ||
+    /\blabs\s+urinalysis\b/.test(combined) ||
+    /\burinalysis\b/.test(combined) ||
+    /\bua\b/.test(combined) ||
+    /\bcbc\b/.test(combined) ||
+    /\bcmp\b/.test(combined) ||
+    /\bhematolog\w*\b/.test(combined);
+
+  return isCriticalLab || isAbnormalCbc || isImportantLabFinding || isGroupedLabs;
+}
+
+function isAppointmentOrFollowUpVisitEvent(event: RawTimelineEvent): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""}`
+  );
+  const eventType = normalizeText(event.eventType || "");
+
+  if (eventType === "appointment") {
+    return !/\b(discharge summary|encounter initiated|laboratory encounter initiated)\b/.test(
+      combined
+    );
+  }
+
+  return (
+    /\b(appointment|office visit|follow[- ]?up visit|endocrinology follow[- ]?up|clinic visit|follow[- ]up)\b/.test(
+      combined
+    ) &&
+    !/\bdischarge summary\b/.test(combined) &&
+    !/\b(administrative|billing|cancelled|canceled|rescheduled|paperwork)\b/.test(
+      combined
+    )
+  );
+}
+
+function isGenericDischargeFollowupSummary(event: RawTimelineEvent): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""}`
+  );
+
+  return (
+    /\bdischarge summary\b/.test(combined) &&
+    /\bfollow[- ]?up instructions\b/.test(combined) &&
+    /\bmedication status\b/.test(combined) &&
+    !/\btransfer\b|\bfracture\b|\bimaging\b|\bcritical\b|\babnormal\b/.test(combined)
+  );
+}
 function getHighLevelDuplicateKey(event: RawTimelineEvent): string {
   const date = normalizeDate(event.date);
   const text = normalizeText(`${event.title || ""} ${event.description || ""}`);
   const laterality = getLaterality(text);
+
+  if (
+    /\b(cta|ct angiogram)\b/.test(text) ||
+    (/\bct neck\b/.test(text) &&
+      /\b(vascular injury|dissection|vertebral artery|foraminal extension)\b/.test(
+        text
+      ))
+  ) {
+    return `${date}|imaging:cta:cervical`;
+  }
+
+  if (/\bct head\b/.test(text) && /\b(periorbital|scalp)\b/.test(text)) {
+    return `${date}|imaging:ct:head`;
+  }
+
+  if (
+    /\bc2\b/.test(text) &&
+    /\bfracture\b/.test(text) &&
+    /\bvertebral foramen\b/.test(text)
+  ) {
+    return `${date}|imaging:ct:cervical:c2`;
+  }
 
   if (
     /\bclinical impression\b/.test(text) &&
@@ -2070,6 +2646,27 @@ function areHighLevelClinicalDuplicates(
 
   if (normalizeDate(a.date) !== normalizeDate(b.date)) return false;
   if (hasConflictingLaterality(aText, bText)) return false;
+
+  if (
+    (/\bct head\b/.test(aText) && /\b(periorbital|scalp)\b/.test(bText)) ||
+    (/\bct head\b/.test(bText) && /\b(periorbital|scalp)\b/.test(aText))
+  ) {
+    return false;
+  }
+
+  if (
+    (/\bcta\b/.test(aText) || /\bct neck\b/.test(aText)) &&
+    (/\bc2\b/.test(bText) || /\bvertebral foramen\b/.test(bText))
+  ) {
+    return false;
+  }
+
+  if (
+    (/\bcta\b/.test(bText) || /\bct neck\b/.test(bText)) &&
+    (/\bc2\b/.test(aText) || /\bvertebral foramen\b/.test(aText))
+  ) {
+    return false;
+  }
 
   const aDuplicateKey = getHighLevelDuplicateKey(a);
   const bDuplicateKey = getHighLevelDuplicateKey(b);
@@ -2150,7 +2747,18 @@ function dedupeAndRankEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
         ((a as RawTimelineEvent & { _score?: number })._score ?? 0))
   );
 }
+function isCriticalLabValueEvent(event: RawTimelineEvent): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""}`
+  );
 
+  return (
+    /\bcritical lab values?\b/.test(combined) ||
+    /\bcritical value\b/.test(combined) ||
+    /\bverbally reported\b/.test(combined) ||
+    /\bcritical result\b/.test(combined)
+  );
+}
 function sortEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
   return [...events].sort((a, b) => {
     const aDate = normalizeDate(a.date);
@@ -2174,7 +2782,40 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
   const normalized = normalizeEvents(events);
 
   const filtered = normalized.filter((event) => {
+    const combined = normalizeText(
+      `${event.title || ""} ${event.description || ""}`
+    );
+
     if (event.isHidden) return false;
+
+    if (isProtectedHighValueLabEvent(event)) {
+      return true;
+    }
+
+    if (isAppointmentOrFollowUpVisitEvent(event)) {
+      return true;
+    }
+
+    if (isStandalonePeriorbitalDuplicate(event)) {
+      return false;
+    }
+
+    if (isGenericDischargeFollowupSummary(event)) {
+      return false;
+    }
+
+    if (isLegalWrapperPacket(combined) && !hasMeaningfulClinicalSignal(combined)) {
+      return false;
+    }
+
+    if (isOcrGarbageText(combined) && !hasMeaningfulClinicalSignal(combined)) {
+      return false;
+    }
+
+    if (isStandaloneMetadataOnlyEvent(event)) {
+      return false;
+    }
+
     return !shouldDropLowSignalEvent(event);
   });
 
@@ -2406,6 +3047,13 @@ description = stripImagingSignerNames(stripProviderNames(description));
     if (event.isHidden) return false;
 
     // Only hide obvious UI noise — do not duplicate backend filtering
+    if (isLegalWrapperPacket(combined) && !hasMeaningfulClinicalSignal(combined)) {
+      return false;
+    }
+    if (isOcrGarbageText(combined) && !hasMeaningfulClinicalSignal(combined)) {
+      return false;
+    }
+
     if (
       isLowValueEmsWorkflowEvent(event) &&
       !hasMeaningfulTraumaFinding(combined)

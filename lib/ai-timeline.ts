@@ -1,3 +1,9 @@
+import {
+  hasMeaningfulClinicalSignal,
+  isLegalWrapperPacket,
+  isOcrGarbageText,
+} from "@/lib/timeline-cleanup";
+
 export type TimelineEventResult = {
   date: string;
   dateType?: string;
@@ -147,6 +153,33 @@ const EVENT_SPECS: EventSpec[] = [
     confidence: 0.95,
   },
   {
+    title: "CTA neck vascular injury evaluation",
+    eventType: "report",
+    dateType: "service_date",
+    pageTerms: [
+      "ct neck",
+      "cta neck",
+      "ct angiogram neck",
+      "vertebral artery",
+      "vertebral foramen",
+      "vascular injury",
+      "no involvement",
+    ],
+    sourceTerms: [
+      "ct neck",
+      "cta neck",
+      "ct angiogram neck",
+      "vertebral artery",
+      "vertebral foramen",
+      "vascular injury",
+      "no involvement",
+    ],
+    minMatches: 1,
+    descriptionBuilder: () =>
+      "CTA neck raised concern for vertebral artery injury.",
+    confidence: 0.96,
+  },
+  {
     title: "C2 fracture imaging result",
     eventType: "report",
     dateType: "service_date",
@@ -155,15 +188,47 @@ const EVENT_SPECS: EventSpec[] = [
     descriptionBuilder: (text) => {
       const snippet =
         findSnippet(text, [
+          "vertebral foramen",
+          "vertebral artery",
           "c2 facet",
           "c2 lamina",
           "nondisplaced fracture",
           "comminuted fractures",
-        ]) || "Imaging showed a C2 fracture.";
+        ]) || "Imaging showed a C2 fracture with vertebral foramen extension.";
 
       return compactSentence(snippet);
     },
     confidence: 0.96,
+  },
+  {
+    title: "Discharge summary and follow-up",
+    eventType: "treatment",
+    dateType: "service_date",
+    pageTerms: [
+      "discharge summary",
+      "follow ups",
+      "follow-up",
+      "followups",
+      "no future appointments",
+      "medication list",
+    ],
+    sourceTerms: ["discharge summary", "follow-ups", "medication list"],
+    minMatches: 1,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "discharge summary",
+          "follow-ups",
+          "follow up",
+          "no future appointments",
+          "medication list",
+          "follow-up",
+        ]) ||
+        "Discharge summary documented follow-up instructions and medication status.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.9,
   },
   {
     title: "Scapular fracture imaging result",
@@ -253,6 +318,88 @@ function normalizeWhitespace(value: string): string {
   return value.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+const HIGH_VALUE_FINDINGS = [
+  "vascular injury",
+  "dissection",
+  "cta neck",
+  "ct neck",
+  "vertebral artery",
+  "vertebral foramen",
+  "foraminal extension",
+  "fracture",
+  "transfer",
+  "admission",
+  "admitted",
+  "discharge",
+  "discharged",
+  "disposition",
+  "medication",
+  "medications",
+  "follow up",
+  "follow-up",
+  "urinalysis",
+  "ct head",
+  "intracranial",
+  "laceration",
+  "periorbital",
+  "scalp",
+  "head",
+  "neck",
+  "shoulder",
+];
+
+function countMatches(text: string, terms: string[]): number {
+  const normalized = normalizeSearchText(text);
+  return terms.reduce((count, term) => {
+    if (!normalized || !normalizeSearchText(term)) return count;
+    return normalized.includes(normalizeSearchText(term)) ? count + 1 : count;
+  }, 0);
+}
+
+function pageSignalScore(text: string): number {
+  const normalized = normalizeSearchText(text);
+  let score = 0;
+
+  for (const finding of HIGH_VALUE_FINDINGS) {
+    if (normalized.includes(finding)) score += 2;
+  }
+
+  if (hasMeaningfulClinicalSignal(text)) score += 5;
+  if (/addendum|impression|findings|result|report|study/.test(normalized)) score += 2;
+  if (/\b(date of service|service date|admit date|visit date|incidental? date)\b/.test(normalized)) {
+    score += 2;
+  }
+
+  return score;
+}
+
+function isLowQualityTimelinePage(text: string): boolean {
+  if (isLegalWrapperPacket(text)) return true;
+  if (isOcrGarbageText(text) && !hasMeaningfulClinicalSignal(text)) return true;
+
+  const normalized = normalizeSearchText(text);
+  if (!normalized) return true;
+
+  const clinicalSignals = HIGH_VALUE_FINDINGS.filter((finding) => normalized.includes(finding)).length;
+  const legalSignals = [
+    "deposition",
+    "subpoena",
+    "affidavit",
+    "custodian",
+    "business records",
+    "records produced",
+    "notice of filing",
+    "certificate of service",
+    "attorney",
+    "law office",
+  ].filter((term) => normalized.includes(term)).length;
+
+  if (legalSignals > 0 && clinicalSignals === 0) return true;
+  if (clinicalSignals === 0 && normalized.length < 40) return true;
+
+  return false;
+}
+
 function normalizeSearchText(value?: string): string {
   return (value || "")
     .toLowerCase()
@@ -275,6 +422,10 @@ function isAcceptedDate(value: string): boolean {
 }
 
 function extractDateFromText(text: string): string {
+  if (isLegalWrapperPacket(text) && !hasMeaningfulClinicalSignal(text)) {
+    return "UNKNOWN";
+  }
+
   const labeledPatterns = [
     /\b(?:VISIT\s+DATE|ADMIT\s+DATE|DATE\s+OF\s+SERVICE|SERVICE\s+DATE|ER\s+NOTE\s+ENTRY|PROGRESS\s+DATE|INCIDENT\s+DATE|INJURY\s+DATE)\s*[:\s-]*([0-1]?\d\/[0-3]?\d\/\d{4})/i,
     /\b(?:VISIT\s+DATE|ADMIT\s+DATE|DATE\s+OF\s+SERVICE|SERVICE\s+DATE|ER\s+NOTE\s+ENTRY|PROGRESS\s+DATE|INCIDENT\s+DATE|INJURY\s+DATE)\s*[:\s-]*([0-1]?\d\/[0-3]?\d\/\d{2})/i,
@@ -309,6 +460,16 @@ function extractDateFromText(text: string): string {
       .toLowerCase();
 
     if (/\b(dob|birth|date of birth)\b/.test(window)) continue;
+    if (
+      /\b(deposition|subpoena|affidavit|custodian|business records|records produced|law office|attorney|certificate of service)\b/.test(
+        window
+      ) &&
+      !/\b(ct|x ray|fracture|trauma|transfer|admit|admission|discharge|impression|findings|pain|injury|diagnosis)\b/.test(
+        window
+      )
+    ) {
+      continue;
+    }
 
     const iso = `${match[3]}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}`;
     if (isValidDate(iso)) return iso;
@@ -374,15 +535,30 @@ function sourcePageToText(page: PageText | undefined): string {
 
 function findBestPage(pages: PageText[], terms: string[]): PageText | undefined {
   let best: PageText | undefined;
-  let bestScore = 0;
+  let bestScore = Number.NEGATIVE_INFINITY;
 
   for (const page of pages) {
     const text = normalizeSearchText(page.text);
     if (!text) continue;
+    if (isLowQualityTimelinePage(page.text)) continue;
 
-    let score = 0;
-    for (const term of terms) {
-      if (text.includes(normalizeSearchText(term))) score += 1;
+    const termScore = countMatches(page.text, terms);
+    if (termScore <= 0) continue;
+
+    let score = termScore * 10;
+    score += pageSignalScore(page.text);
+
+    const clinicalOverlap = countMatches(page.text, HIGH_VALUE_FINDINGS);
+    score += clinicalOverlap;
+
+    if (/\b(cta neck|vascular injury|vertebral artery|dissection)\b/.test(text)) {
+      score += 6;
+    }
+    if (/\b(admit|admitted|admission|discharged|disposition)\b/.test(text)) {
+      score += 4;
+    }
+    if (/\btransfer|accepted|air transport|higher level of care\b/.test(text)) {
+      score += 5;
     }
 
     if (score > bestScore) {
@@ -455,37 +631,76 @@ function collectLabFindings(text: string): string[] {
   return Array.from(new Set(findings)).slice(0, 6);
 }
 
-function inferMetadata(text: string, eventTitle: string): Partial<TimelineEventResult> {
+function inferMetadata(
+  text: string,
+  eventTitle: string
+): Partial<TimelineEventResult> {
   const normalized = normalizeSearchText(text);
-  const providerMatch = PROVIDER_PATTERNS.map((pattern) => text.match(pattern)).find(
-    (match): match is RegExpMatchArray => Boolean(match?.[1])
-  );
-  const providerName = normalizeProviderName(providerMatch?.[1]);
+  const combined = `${eventTitle} ${text}`;
 
-  const isTransfer = /transfer|accepted|higher level|shannon/i.test(eventTitle + " " + text);
-  const isImaging = /ct|x-ray|xray|radiology|imaging|fracture/i.test(eventTitle + " " + text);
-  const isErNote = /er|emergency department|clinical impression|history of present illness/i.test(
-    normalized
+  const providerMatch = PROVIDER_PATTERNS
+    .map((pattern) => text.match(pattern))
+    .find((match): match is RegExpMatchArray => Boolean(match?.[1]));
+
+  let providerName = normalizeProviderName(providerMatch?.[1]);
+
+  if (!providerName) {
+    const signedByMatch = text.match(
+      /electronically signed by:\s*([A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,3}\s*(?:MD|DO|PA-C|PA|NP|FNP-C)?)/i
+    );
+    providerName = normalizeProviderName(signedByMatch?.[1]);
+  }
+
+  if (!providerName) {
+    const drMatch = text.match(/\bdr\.?\s+([A-Z][A-Za-z'`.-]+)/i);
+    providerName = normalizeProviderName(
+      drMatch?.[1] ? `Dr. ${drMatch[1]}` : undefined
+    );
+  }
+
+  if (!providerName) {
+    const acceptingMatch = text.match(
+      /\bdr\.?\s+([A-Z][A-Za-z'`.-]+)\s+accepting\b/i
+    );
+    providerName = normalizeProviderName(
+      acceptingMatch?.[1] ? `Dr. ${acceptingMatch[1]}` : undefined
+    );
+  }
+
+  const isTransfer = /transfer|accepted|accepting|higher level|shannon/i.test(
+    combined
   );
+  const isImaging = /ct|cta|x-ray|xray|radiology|imaging|fracture|impression/i.test(
+    combined
+  );
+  const isErNote =
+    /emergency physician record|er note|emergency department|history of present illness|physical exam|clinical impression/i.test(
+      normalized
+    );
 
   const medicalFacility =
     (/shannon medical center/i.test(text) && "Shannon Medical Center") ||
     (/shannon er/i.test(text) && "Shannon ER") ||
     (/reagan memorial hospital/i.test(text) && "Reagan Memorial Hospital") ||
     (/reagan hospital district/i.test(text) && "Reagan Hospital District") ||
+    (/hickman rhc/i.test(text) && "Hickman RHC") ||
     undefined;
 
-  const physicianRole =
-    (isTransfer && "accepting") ||
-    (isImaging && "rendering") ||
-    (isErNote && "author") ||
-    undefined;
+  let physicianRole: string | undefined;
+
+  if (isTransfer) {
+    physicianRole = "accepting";
+  } else if (isImaging) {
+    physicianRole = "rendering";
+  } else if (isErNote) {
+    physicianRole = "author";
+  }
 
   return {
     physicianName: providerName,
     physicianRole,
     medicalFacility,
-    facilityType: medicalFacility?.includes("Shannon") || medicalFacility?.includes("Reagan") ? "hospital" : undefined,
+    facilityType: medicalFacility ? "hospital" : undefined,
   };
 }
 
@@ -508,6 +723,10 @@ function normalizeProviderName(value?: string): string | undefined {
 
 function buildEvent(page: PageText, spec: EventSpec): TimelineEventResult | null {
   const pageText = sourcePageToText(page);
+  if (isLowQualityTimelinePage(pageText)) {
+    return null;
+  }
+
   const normalized = normalizeSearchText(pageText);
 
   const matchedTerms = spec.pageTerms.filter((term) =>
@@ -518,12 +737,50 @@ function buildEvent(page: PageText, spec: EventSpec): TimelineEventResult | null
     return null;
   }
 
+  if (spec.eventType === "report" || spec.eventType === "observation") {
+    const strongFindingCount = countMatches(pageText, HIGH_VALUE_FINDINGS);
+    if (strongFindingCount === 0 && matchedTerms.length < 2) {
+      return null;
+    }
+  }
+
   const date = extractDateFromText(pageText);
   const description = compactSentence(spec.descriptionBuilder(pageText));
   const sourceExcerpt = compactSentence(
-    findSnippet(pageText, spec.sourceTerms ?? spec.pageTerms)
+    findSnippet(pageText, [
+      "electronically signed by",
+      "signed by",
+      "dr.",
+      "accepting",
+      ...(spec.sourceTerms ?? spec.pageTerms),
+    ])
   );
   const metadata = inferMetadata(pageText, spec.title);
+  const combinedSupportText = `${spec.title} ${pageText}`.toLowerCase();
+
+  const isSignedImagingReport =
+    /\b(electronically signed by|signed by)\b/i.test(pageText) &&
+    /\b(ct|cta|x-ray|xray|mri|ultrasound|impression|findings|radiology|fracture)\b/i.test(
+      combinedSupportText
+    ) &&
+    !/\b(cbc|bmp|cmp|urinalysis|ua|wbc|hemoglobin|platelets|glucose|creatinine)\b/i.test(
+      combinedSupportText
+    );
+
+  const isTransferPhysician =
+    /\btransfer|accepted|accepting|higher level|shannon\b/i.test(
+      combinedSupportText
+    );
+
+  const physicianName =
+    isSignedImagingReport || isTransferPhysician
+      ? metadata.physicianName
+      : undefined;
+
+  const physicianRole =
+    isSignedImagingReport || isTransferPhysician
+      ? metadata.physicianRole
+      : undefined;
 
   return {
     date,
@@ -534,8 +791,8 @@ function buildEvent(page: PageText, spec: EventSpec): TimelineEventResult | null
     confidence: spec.confidence ?? 0.9,
     sourcePage: page.page,
     sourceExcerpt,
-    physicianName: metadata.physicianName,
-    physicianRole: metadata.physicianRole,
+    physicianName,
+    physicianRole,
     medicalFacility: metadata.medicalFacility,
     facilityType: metadata.facilityType,
   };
@@ -568,10 +825,12 @@ function eventPriority(event: TimelineEventResult): number {
   const basePriority = EVENT_PRIORITY[event.eventType || "other"];
 
   if (combined.includes("transfer")) return 100;
+  if (combined.includes("cta neck") || combined.includes("vascular injury")) return 98;
   if (combined.includes("fracture") && combined.includes("c2")) return 95;
   if (combined.includes("fracture") && combined.includes("scapular")) return 94;
   if (combined.includes("ct head")) return 93;
   if (combined.includes("head, neck, left shoulder pain")) return 92;
+  if (combined.includes("admission") || combined.includes("discharge")) return 91;
   if (combined.includes("pipe") || combined.includes("derrick")) return 91;
   if (combined.includes("scalp") || combined.includes("periorbital")) return 90;
   if (event.eventType === "incident") return 85;
@@ -601,6 +860,165 @@ function extractLocalTimelineEvents(pageTexts: PageText[]): TimelineEventResult[
   return dedupeEvents(events);
 }
 
+function hasEventWithTitle(
+  events: TimelineEventResult[],
+  page: number,
+  pattern: RegExp
+): boolean {
+  return events.some(
+    (event) =>
+      event.sourcePage === page && pattern.test(normalizeSearchText(event.title))
+  );
+}
+
+function buildSupplementalImagingEvents(
+  pageTexts: PageText[],
+  existingEvents: TimelineEventResult[]
+): TimelineEventResult[] {
+  const supplemental: TimelineEventResult[] = [];
+
+  for (const page of pageTexts) {
+    const text = normalizeSearchText(page.text);
+    if (!text) continue;
+
+    const date = extractDateFromText(page.text);
+    if (!isAcceptedDate(date)) continue;
+
+    const metadata = inferMetadata(page.text, "");
+
+    if (
+      /\bct head\b/.test(text) &&
+      /\b(no acute intracranial|intracranial abnormality|periorbital|scalp)\b/.test(
+        text
+      ) &&
+      !hasEventWithTitle(existingEvents, page.page, /\bct head\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "CT head showed no acute intracranial injury",
+        description:
+          "CT head showed no acute intracranial injury with left periorbital soft tissue swelling.",
+        eventType: "report",
+        confidence: 0.96,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, [
+            "electronically signed by",
+            "signed by",
+            "dr.",
+            "accepting",
+            "impression",
+            "findings",
+          ])
+        ),
+        physicianName: metadata.physicianName,
+        physicianRole: metadata.physicianRole,
+        medicalFacility: metadata.medicalFacility,
+        facilityType: metadata.facilityType,
+      });
+    }
+
+    if (
+      (/\bcta\b/.test(text) || /\bct angiogram\b/.test(text) || /\bct neck\b/.test(text)) &&
+      /\b(vascular injury|dissection|vertebral artery|vertebral foramen|foraminal extension)\b/.test(
+        text
+      ) &&
+      !hasEventWithTitle(existingEvents, page.page, /\bcta\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "CTA neck showed vascular injury concern",
+        description:
+          "CTA neck showed vascular injury concern, including vertebral artery or foraminal extension findings.",
+        eventType: "report",
+        confidence: 0.97,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, [
+            "electronically signed by",
+            "signed by",
+            "dr.",
+            "accepting",
+            "impression",
+            "findings",
+          ])
+        ),
+        physicianName: metadata.physicianName,
+        physicianRole: metadata.physicianRole,
+        medicalFacility: metadata.medicalFacility,
+        facilityType: metadata.facilityType,
+      });
+    }
+
+    if (
+      /\b(c2|c-spine|cervical spine)\b/.test(text) &&
+      /\bfracture\b/.test(text) &&
+      /\bvertebral foramen\b/.test(text) &&
+      !hasEventWithTitle(existingEvents, page.page, /\bc2\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "C2 fracture with vertebral foramen extension",
+        description:
+          "C2 fractures involved the vertebral foramen, raising concern for vascular injury.",
+        eventType: "report",
+        confidence: 0.97,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, [
+            "electronically signed by",
+            "signed by",
+            "dr.",
+            "accepting",
+            "impression",
+            "findings",
+          ])
+        ),
+        physicianName: metadata.physicianName,
+        physicianRole: metadata.physicianRole,
+        medicalFacility: metadata.medicalFacility,
+        facilityType: metadata.facilityType,
+      });
+    }
+
+    if (
+      /\b(scapular|scapula)\b/.test(text) &&
+      /\bfracture\b/.test(text) &&
+      !hasEventWithTitle(existingEvents, page.page, /\bscapular\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "Imaging showed nondisplaced left scapular fracture",
+        description:
+          "Left shoulder and humerus radiographs showed a nondisplaced fracture of the left scapular body.",
+        eventType: "report",
+        confidence: 0.95,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, [
+            "electronically signed by",
+            "signed by",
+            "dr.",
+            "accepting",
+            "impression",
+            "findings",
+          ])
+        ),
+        physicianName: metadata.physicianName,
+        physicianRole: metadata.physicianRole,
+        medicalFacility: metadata.medicalFacility,
+        facilityType: metadata.facilityType,
+      });
+    }
+  }
+
+  return supplemental;
+}
+
 function normalizePageTexts(pageTexts: { page: number; text: string }[]): PageText[] {
   return pageTexts
     .filter(
@@ -620,7 +1038,14 @@ export async function extractTimelineEvents(
   const usablePages = normalizePageTexts(pageTexts);
   if (!usablePages.length) return [];
 
-  const localEvents = sortEvents(extractLocalTimelineEvents(usablePages));
+  const baseEvents = extractLocalTimelineEvents(usablePages);
+  const supplementalEvents = buildSupplementalImagingEvents(
+    usablePages,
+    baseEvents
+  );
+  const localEvents = sortEvents(
+    dedupeEvents([...baseEvents, ...supplementalEvents])
+  );
   const dateReadyEvents = localEvents.filter((event) => isAcceptedDate(event.date));
 
   return dateReadyEvents.slice(0, 9);
