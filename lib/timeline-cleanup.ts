@@ -114,6 +114,39 @@ function isStandalonePeriorbitalDuplicate(event: RawTimelineEvent): boolean {
   );
 }
 
+function shouldDropStandAlonePeriorbitalRow(
+  event: RawTimelineEvent,
+  events: RawTimelineEvent[]
+): boolean {
+  const title = normalizeText(event.title || "");
+  const description = normalizeText(event.description || "");
+  const combined = `${title} ${description}`;
+
+  const isNoisyStandalonePeriorbital =
+    combined.includes("left periorbital swelling and bruising documented") ||
+    (/\bperiorbital\b/.test(combined) &&
+      /\b(swelling|bruising|ecchymosis|contusion)\b/.test(combined));
+
+  if (!isNoisyStandalonePeriorbital) return false;
+
+  const eventDate = normalizeDate(event.date);
+
+  return events.some((candidate) => {
+    if (candidate === event) return false;
+
+    const candidateDate = normalizeDate(candidate.date);
+    if (eventDate !== candidateDate) return false;
+
+    const candidateTitle = normalizeText(candidate.title || "");
+    const hasStrongScalpPeriorbitalTitle =
+      /\bscalp\b/.test(candidateTitle) &&
+      /\bperiorbital\b/.test(candidateTitle) &&
+      /\b(injury|findings?)\b/.test(candidateTitle);
+
+    return hasStrongScalpPeriorbitalTitle;
+  });
+}
+
 function normalizeDate(date?: string | null): string {
   if (!date || !isValidDate(date)) return "UNKNOWN";
   return date;
@@ -2821,8 +2854,11 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
 
   const merged = mergeGroupedEvents(filtered);
   const deduped = dedupeEvents(merged);
+  const pruned = deduped.filter(
+    (event) => !shouldDropStandAlonePeriorbitalRow(event, deduped)
+  );
 
-  return sortEvents(deduped);
+  return sortEvents(pruned);
 }
 
 export function rankTimelineEvents(
