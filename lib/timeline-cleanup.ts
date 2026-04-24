@@ -147,6 +147,28 @@ function shouldDropStandAlonePeriorbitalRow(
   });
 }
 
+function restoreProtectedPresentationEvents(
+  originalEvents: RawTimelineEvent[],
+  cleanedEvents: RawTimelineEvent[]
+): RawTimelineEvent[] {
+  const restored = [...cleanedEvents];
+
+  for (const event of originalEvents) {
+    if (!isProtectedPresentationSymptomEvent(event)) continue;
+
+    const normalizedTitle = normalizeText(event.title || "");
+    const alreadyPresent = restored.some(
+      (existing) => normalizeText(existing.title || "") === normalizedTitle
+    );
+
+    if (!alreadyPresent) {
+      restored.push(event);
+    }
+  }
+
+  return restored;
+}
+
 function normalizeDate(date?: string | null): string {
   if (!date || !isValidDate(date)) return "UNKNOWN";
   return date;
@@ -2884,8 +2906,9 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
   const pruned = deduped.filter(
     (event) => !shouldDropStandAlonePeriorbitalRow(event, deduped)
   );
+  const restored = restoreProtectedPresentationEvents(filtered, pruned);
 
-  return sortEvents(pruned);
+  return sortEvents(restored);
 }
 
 export function rankTimelineEvents(
