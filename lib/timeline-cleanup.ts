@@ -3131,6 +3131,7 @@ description = stripImagingSignerNames(stripProviderNames(description));
 
     if (!title) return false;
     if (event.isHidden) return false;
+    if (isProtectedPresentationSymptomEvent(event)) return true;
 
     // Only hide obvious UI noise — do not duplicate backend filtering
     if (isLegalWrapperPacket(combined) && !hasMeaningfulClinicalSignal(combined)) {
