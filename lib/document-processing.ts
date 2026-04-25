@@ -1,5 +1,6 @@
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Prisma, RecordType } from "@prisma/client";
+import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import { extractTimelineEvents } from "@/lib/ai-timeline";
@@ -254,12 +255,14 @@ async function downloadPdfBuffer(fileUrl: string): Promise<Buffer> {
 async function insertProcessingJob(
   db: typeof prisma,
   input: {
+    jobId: string;
     documentId: string;
     caseId: string;
   }
 ): Promise<ProcessingJobRow> {
   const [job] = await db.$queryRaw<ProcessingJobRow[]>(Prisma.sql`
     INSERT INTO "ProcessingJob" (
+      "id",
       "documentId",
       "caseId",
       "status",
@@ -274,9 +277,10 @@ async function insertProcessingJob(
       "createdAt",
       "updatedAt"
     ) VALUES (
+      ${input.jobId},
       ${input.documentId},
       ${input.caseId},
-      ${"QUEUED" as ProcessingJobStatus},
+      ${"QUEUED"}::"ProcessingJobStatus",
       ${null},
       ${0},
       ${"queued"},
@@ -329,7 +333,9 @@ async function updateProcessingJob(
   const assignments: Prisma.Sql[] = [];
 
   if (changes.status !== undefined) {
-    assignments.push(Prisma.sql`"status" = ${changes.status}`);
+    assignments.push(
+      Prisma.sql`"status" = ${changes.status}::"ProcessingJobStatus"`
+    );
   }
   if (changes.totalPages !== undefined) {
     assignments.push(Prisma.sql`"totalPages" = ${changes.totalPages}`);
@@ -391,14 +397,14 @@ async function claimNextQueuedProcessingJob(): Promise<ProcessingJobRow | null> 
     WITH next_job AS (
       SELECT "id"
       FROM "ProcessingJob"
-      WHERE "status" = ${"QUEUED" as ProcessingJobStatus}
+      WHERE "status" = ${"QUEUED"}::"ProcessingJobStatus"
       ORDER BY "createdAt" ASC
       FOR UPDATE SKIP LOCKED
       LIMIT 1
     )
     UPDATE "ProcessingJob" AS job
     SET
-      "status" = ${"PROCESSING" as ProcessingJobStatus},
+      "status" = ${"PROCESSING"}::"ProcessingJobStatus",
       "startedAt" = COALESCE("startedAt", NOW()),
       "currentStep" = ${"claiming queued job"},
       "updatedAt" = NOW()
@@ -461,25 +467,63 @@ async function saveChunkArtifacts(input: {
   cleanedEvents: RawTimelineEvent[];
 }) {
   if (input.chunkResult.pageTexts.length > 0) {
-    await prisma.documentPage.createMany({
-      data: input.chunkResult.pageTexts.map((page) => ({
-        documentId: input.documentId,
-        pageNumber: page.page,
-        text: page.text || null,
-      })),
-    });
+    const pageRows = input.chunkResult.pageTexts.map((page) => ({
+      id: randomUUID(),
+      documentId: input.documentId,
+      pageNumber: page.page,
+      rawText: page.text || null,
+      method: "pdfjs",
+    }));
+
+    await prisma.$executeRaw(Prisma.sql`
+      INSERT INTO "DocumentPage" (
+        "id",
+        "documentId",
+        "pageNumber",
+        "rawText",
+        "method",
+        "createdAt"
+      )
+      VALUES ${Prisma.join(
+        pageRows.map(
+          (page) => Prisma.sql`(
+            ${page.id},
+            ${page.documentId},
+            ${page.pageNumber},
+            ${page.rawText},
+            ${page.method},
+            NOW()
+          )`
+        ),
+        ", "
+      )}
+    `);
   }
 
-  await prisma.documentChunk.create({
-    data: {
-      documentId: input.documentId,
-      chunkIndex: input.chunkIndex,
-      startPage: input.chunkResult.startPage,
-      endPage: input.chunkResult.endPage,
-      extractedText: input.chunkResult.text || null,
-      status: "PROCESSED",
-    },
-  });
+  await prisma.$executeRaw(Prisma.sql`
+    INSERT INTO "DocumentChunk" (
+      "id",
+      "documentId",
+      "chunkIndex",
+      "startPage",
+      "endPage",
+      "status",
+      "rawText",
+      "createdAt",
+      "updatedAt"
+    )
+    VALUES (
+      ${randomUUID()},
+      ${input.documentId},
+      ${input.chunkIndex},
+      ${input.chunkResult.startPage},
+      ${input.chunkResult.endPage},
+      ${"PROCESSED"}::"ChunkStatus",
+      ${input.chunkResult.text || null},
+      NOW(),
+      NOW()
+    )
+  `);
 
   const timelineEvents = input.cleanedEvents
     .map((event) => {
@@ -622,6 +666,7 @@ export async function queueDocumentProcessing(
   }
 
   const sanitizedFileName = sanitizeProcessingFileName(input.fileName);
+  const jobId = randomUUID();
 
   return prisma.$transaction(async (tx) => {
     const db = tx as typeof prisma;
@@ -642,6 +687,7 @@ export async function queueDocumentProcessing(
     });
 
     const job = await insertProcessingJob(db, {
+      jobId,
       documentId: document.id,
       caseId: document.caseId,
     });
