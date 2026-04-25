@@ -489,6 +489,8 @@ function getSourcePage(event?: TimelineEvent | null) {
       const nextEvents = Array.isArray(eventsResult.data?.timelineEvents)
         ? eventsResult.data.timelineEvents
         : [];
+      console.log("TIMELINE API DATA", eventsResult.data);
+      console.log("TIMELINE EVENTS LENGTH", eventsResult.data?.timelineEvents?.length);
       if (!eventsResult.ok || !eventsResult.data?.success) {
         const message = eventsResult.data?.error || eventsResult.error || "Failed to load timeline events";
         warnings.push(message);
