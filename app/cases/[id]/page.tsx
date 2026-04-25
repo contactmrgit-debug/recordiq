@@ -416,7 +416,7 @@ function getSourcePage(event?: TimelineEvent | null) {
     : null;
 }
 
-async function loadCase() {
+  const loadCase = useCallback(async () => {
     if (!caseId) return;
 
     try {
@@ -467,7 +467,7 @@ async function loadCase() {
       const [caseResult, docsResult, eventsResult] = await Promise.all([
         fetchJson(`/api/cases/${caseId}`, "Case"),
         fetchJson(`/api/cases/${caseId}/documents`, "Documents"),
-        fetchJson(`/api/cases/${caseId}/timeline-events`, "Timeline"),
+        fetchJson(`/api/cases/${caseId}/timeline-events?includeHidden=1`, "Timeline"),
       ]);
 
       if (!caseResult.ok || !caseResult.data?.success) {
@@ -518,12 +518,28 @@ setSelectedDocumentId(resolvedSelectedEvent?.documentId ?? null);
     } finally {
       setLoading(false);
     }
-  }
+  }, [caseId, selectedEventId]);
 
   useEffect(() => {
     loadCase();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caseId]);
+  }, [loadCase]);
+
+  useEffect(() => {
+    const hasActiveProcessing = documents.some(
+      (document) =>
+        document.status === "UPLOADED" || document.status === "PROCESSING"
+    );
+
+    if (!caseId || !hasActiveProcessing) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void loadCase();
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [caseId, documents, loadCase]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

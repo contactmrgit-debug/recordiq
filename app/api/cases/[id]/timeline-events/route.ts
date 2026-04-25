@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await context.params;
+    const includeHidden = req.nextUrl.searchParams.get("includeHidden") === "1";
 
     if (!id) {
       return NextResponse.json(
@@ -18,7 +19,10 @@ export async function GET(
     }
 
     const timelineEvents = await prisma.timelineEvent.findMany({
-      where: { caseId: id },
+      where: {
+        caseId: id,
+        ...(includeHidden ? {} : { isHidden: false }),
+      },
       orderBy: {
         eventDate: "asc",
       },
