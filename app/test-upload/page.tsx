@@ -19,9 +19,19 @@ type ApiResponse = {
     recordType?: string | null;
   };
   timelineEventsCreated?: number;
+  uploadUrl?: string;
+  key?: string;
+  bucket?: string;
+  region?: string;
+  expiresInSeconds?: number;
 };
 
-async function safeJson(res: Response, label: string): Promise<ApiResponse | null> {
+type UploadMode = "LOCAL" | "S3";
+
+async function safeJson(
+  res: Response,
+  label: string
+): Promise<ApiResponse | null> {
   const text = await res.text();
   console.log(`${label.toUpperCase()} RAW RESPONSE:`, text);
 
@@ -63,6 +73,7 @@ export default function TestUploadPage() {
   const [caseId, setCaseId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState("MEDICAL_RECORD");
+  const [uploadMode, setUploadMode] = useState<UploadMode>("LOCAL");
   const [status, setStatus] = useState("Idle");
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
@@ -95,6 +106,166 @@ export default function TestUploadPage() {
     }
   }
 
+  async function finishUpload(data: ApiResponse, fallbackRecordType: string) {
+    const documentId = data.document?.id || null;
+    const fileUrl = data.document?.fileUrl || null;
+    const savedRecordType = data.document?.recordType || fallbackRecordType || null;
+    const pageCount =
+      typeof data.document?.pageCount === "number"
+        ? data.document.pageCount
+        : null;
+    const timelineEventsCreated =
+      typeof data.timelineEventsCreated === "number"
+        ? data.timelineEventsCreated
+        : null;
+
+    setStatus(documentId ? `Upload saved (${documentId})` : "Upload saved");
+
+    const [docsRes, timelineRes] = await Promise.all([
+      fetch(`/api/cases/${caseId}/documents`, { cache: "no-store" }),
+      fetch(`/api/cases/${caseId}/timeline-events`, { cache: "no-store" }),
+    ]);
+
+    const [docsJson, timelineJson] = await Promise.all([
+      safeJson(docsRes, "Documents"),
+      safeJson(timelineRes, "Timeline"),
+    ]);
+
+    const warnings: string[] = [];
+
+    if (!docsRes.ok || !docsJson?.success) {
+      warnings.push(docsJson?.error || "Documents endpoint returned an error");
+    }
+
+    if (!timelineRes.ok || !timelineJson?.success) {
+      warnings.push(timelineJson?.error || "Timeline endpoint returned an error");
+    }
+
+    setResult({
+      documentId,
+      fileUrl,
+      recordType: savedRecordType,
+      status: data.document?.status || null,
+      pageCount,
+      timelineEventsCreated,
+      warnings,
+    });
+
+    if (warnings.length) {
+      const message = warnings.join(" â€¢ ");
+      setWarning(message);
+      setStatus(`Upload complete with warnings: ${message}`);
+    } else {
+      setStatus("Complete");
+    }
+
+    setTimeout(() => {
+      router.push(`/cases/${caseId}`);
+    }, 1500);
+  }
+
+  async function handleLocalUpload() {
+    if (!file) {
+      throw new Error("Missing file");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("caseId", caseId);
+    formData.append("recordType", recordType);
+
+    const saveRes = await fetch(`/api/cases/${caseId}/documents/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await safeJson(saveRes, "Upload");
+
+    if (!saveRes.ok || !data?.success) {
+      throw new Error(getResponseError(saveRes, data, "Upload save failed"));
+    }
+
+    await finishUpload(data, recordType);
+  }
+
+  async function handleS3Upload() {
+    if (!file) {
+      throw new Error("Missing file");
+    }
+
+    const presignRes = await fetch("/api/upload/presign", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        caseId,
+        fileName: file.name,
+        contentType: file.type || "application/pdf",
+      }),
+    });
+
+    const presignData = await safeJson(presignRes, "Presign");
+
+    if (!presignRes.ok || !presignData?.success) {
+      throw new Error(getResponseError(presignRes, presignData, "Presign failed"));
+    }
+
+    if (
+      !presignData.uploadUrl ||
+      !presignData.key ||
+      !presignData.bucket ||
+      !presignData.region
+    ) {
+      throw new Error("Presign response missing required S3 fields");
+    }
+
+    const uploadRes = await fetch(presignData.uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/pdf",
+      },
+      body: file,
+    });
+
+    if (!uploadRes.ok) {
+      throw new Error(`S3 upload failed (HTTP ${uploadRes.status})`);
+    }
+
+    const fileUrl = `https://${presignData.bucket}.s3.${presignData.region}.amazonaws.com/${presignData.key}`;
+
+    const processRes = await fetch(
+      `/api/cases/${caseId}/documents/process-s3`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          caseId,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type || "application/pdf",
+          recordType,
+          s3Key: presignData.key,
+          s3Bucket: presignData.bucket,
+          s3Region: presignData.region,
+          fileUrl,
+        }),
+      }
+    );
+
+    const processData = await safeJson(processRes, "Process S3");
+
+    if (!processRes.ok || !processData?.success) {
+      throw new Error(
+        getResponseError(processRes, processData, "S3 processing failed")
+      );
+    }
+
+    await finishUpload(processData, recordType);
+  }
+
   async function handleUpload() {
     if (!caseId || !file) {
       alert("Need caseId and file");
@@ -105,99 +276,18 @@ export default function TestUploadPage() {
       setWarning(null);
       setResult(null);
       setLoading(true);
-      setStatus("Uploading file...");
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("caseId", caseId);
-
-      if (recordType) {
-        formData.append("recordType", recordType);
-      }
-
-      await new Promise((r) => setTimeout(r, 300));
-      setStatus("Extracting text...");
-
-      await new Promise((r) => setTimeout(r, 300));
-      setStatus("Building timeline...");
-
-      const res = await fetch(`/api/cases/${caseId}/documents/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await safeJson(res, "Upload");
-
-      if (!res.ok || !data?.success) {
-        throw new Error(getResponseError(res, data, "Upload failed"));
-      }
-
-      const documentId = data.document?.id || null;
-      const fileUrl = data.document?.fileUrl || null;
-      const savedRecordType = data.document?.recordType || recordType || null;
-      const pageCount = typeof data.document?.pageCount === "number"
-        ? data.document.pageCount
-        : null;
-      const timelineEventsCreated =
-        typeof data.timelineEventsCreated === "number"
-          ? data.timelineEventsCreated
-          : null;
 
       setStatus(
-        documentId ? `Upload saved (${documentId})` : "Upload saved"
+        uploadMode === "LOCAL"
+          ? "Uploading PDF and extracting timeline..."
+          : "Uploading via S3 and extracting timeline..."
       );
 
-      const [docsRes, timelineRes] = await Promise.all([
-        fetch(`/api/cases/${caseId}/documents`, { cache: "no-store" }),
-        fetch(`/api/cases/${caseId}/timeline-events`, { cache: "no-store" }),
-      ]);
-
-      const [docsJson, timelineJson] = await Promise.all([
-        safeJson(docsRes, "Documents"),
-        safeJson(timelineRes, "Timeline"),
-      ]);
-
-      const warnings: string[] = [];
-
-      if (!docsRes.ok || !docsJson?.success) {
-        warnings.push(docsJson?.error || "Documents endpoint returned an error");
-      }
-
-      if (!timelineRes.ok || !timelineJson?.success) {
-        warnings.push(
-          timelineJson?.error || "Timeline endpoint returned an error"
-        );
-      }
-
-      if (warnings.length) {
-        const message = warnings.join(" • ");
-        setWarning(message);
-        setResult({
-          documentId,
-          fileUrl,
-          recordType: savedRecordType,
-          status: data.document?.status || null,
-          pageCount,
-          timelineEventsCreated,
-          warnings,
-        });
-        setStatus(`Upload complete with warnings: ${message}`);
+      if (uploadMode === "LOCAL") {
+        await handleLocalUpload();
       } else {
-        setResult({
-          documentId,
-          fileUrl,
-          recordType: savedRecordType,
-          status: data.document?.status || null,
-          pageCount,
-          timelineEventsCreated,
-          warnings: [],
-        });
-        setStatus("Complete");
+        await handleS3Upload();
       }
-
-      setTimeout(() => {
-        router.push(`/cases/${caseId}`);
-      }, 1500);
     } catch (err) {
       console.error(err);
       setWarning(null);
@@ -216,10 +306,7 @@ export default function TestUploadPage() {
     <div className="max-w-xl space-y-4 p-6">
       <h1 className="text-xl font-bold">Test Upload</h1>
 
-      <button
-        onClick={handleCreateCase}
-        className="rounded border px-3 py-2"
-      >
+      <button onClick={handleCreateCase} className="rounded border px-3 py-2">
         Create Case
       </button>
 
@@ -241,6 +328,15 @@ export default function TestUploadPage() {
         <option value="IMAGING">IMAGING</option>
         <option value="LEGAL_DOCUMENT">LEGAL_DOCUMENT</option>
         <option value="OTHER">OTHER</option>
+      </select>
+
+      <select
+        value={uploadMode}
+        onChange={(e) => setUploadMode(e.target.value as UploadMode)}
+        className="border p-2"
+      >
+        <option value="LOCAL">LOCAL</option>
+        <option value="S3">S3</option>
       </select>
 
       <button
@@ -266,6 +362,7 @@ export default function TestUploadPage() {
           <div className="mb-3 text-sm font-semibold text-slate-900">
             Upload Result
           </div>
+
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-500">
@@ -275,23 +372,20 @@ export default function TestUploadPage() {
                 {result.documentId || "N/A"}
               </div>
             </div>
+
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 File URL
               </div>
               {result.fileUrl ? (
-                <a
-                  href={result.fileUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all font-mono text-blue-600 underline underline-offset-2 hover:text-blue-700"
-                >
+                <div className="break-all font-mono text-slate-900">
                   {result.fileUrl}
-                </a>
+                </div>
               ) : (
                 <div className="font-mono text-slate-900">N/A</div>
               )}
             </div>
+
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Record Type
@@ -300,6 +394,7 @@ export default function TestUploadPage() {
                 {result.recordType || "N/A"}
               </div>
             </div>
+
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Document Status
@@ -308,6 +403,7 @@ export default function TestUploadPage() {
                 {result.status || "N/A"}
               </div>
             </div>
+
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Page Count
@@ -316,6 +412,7 @@ export default function TestUploadPage() {
                 {result.pageCount ?? "N/A"}
               </div>
             </div>
+
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Timeline Events
@@ -325,6 +422,7 @@ export default function TestUploadPage() {
               </div>
             </div>
           </div>
+
           {result.warnings.length ? (
             <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
               <div className="mb-1 text-xs font-semibold uppercase tracking-wide">
