@@ -309,7 +309,6 @@ export default function CasePage() {
 
   const downloadRef = useRef<HTMLDivElement | null>(null);
   const setSelectedSourceDocument = setSelectedDocumentId;
-  const selectedSourceDocument = selectedDocumentId;
 
   function handleSelectEvent(event: TimelineEvent) {
     setSelectedEventId(event.id);
@@ -1425,67 +1424,38 @@ Status: ${row.reviewStatus}
   id="source-document-viewer"
   className="overflow-hidden rounded-3xl border border-slate-200"
 >
-            <div className="border-b border-slate-200 bg-white px-4 py-3">
-              <div className="text-sm font-semibold text-slate-900">
-                Source document preview
-              </div>
-              <div className="mt-1 text-xs text-slate-500">
-                {activeDocument?.fileName || "No source document"}
-              </div>
-            </div>
-
            <div className="bg-slate-100 p-3">
-  {activeDocument ? (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">
-            {activeDocument.fileName}
-          </p>
-          <p className="text-xs text-slate-500">
-            Page {currentSourcePage ?? "N/A"}
-          </p>
+  <div className="mx-auto max-w-4xl">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-5">
+        <div className="text-sm font-semibold text-slate-900">
+          Source Document Viewer
+        </div>
+        <div className="mt-1 text-xs text-slate-500">
+          {activeDocument?.fileName
+            ? `${activeDocument.fileName} · Page ${currentSourcePage ?? "N/A"}`
+            : "Click Source on a timeline event to preview the supporting document page."}
         </div>
       </div>
 
-      {sourcePreviewStatus === "ready" && sourceDocumentIframeSrc ? (
+      {sourceDocumentIframeSrc ? (
         <iframe
           key={`${sourceDocumentIframeSrc}-${currentSourcePage ?? "nopage"}-${selectedEventId ?? "noevent"}`}
           src={sourceDocumentIframeSrc}
           title={activeDocument?.fileName || "Source document"}
-          className="h-[760px] w-full bg-white"
+          className="h-[850px] w-full rounded-xl border border-slate-200 bg-white shadow-sm"
         />
-      ) : sourcePreviewStatus === "loading" ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-          Loading source document preview...
-        </div>
       ) : sourcePreviewStatus === "error" ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+        <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 text-sm text-slate-500">
           Unable to load the source document preview. Please try again.
         </div>
-      ) : sourcePreviewStatus === "no-document" ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-          This event does not have a source document attached.
-        </div>
-      ) : sourcePreviewStatus === "no-page" ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-          This event has a source document, but no mapped page number.
-        </div>
-      ) : selectedSourceDocument ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-          Loading source document preview...
-        </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+        <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 text-sm text-slate-500">
           Click Source on a timeline event to preview the supporting document page.
         </div>
       )}
     </div>
-  ) : (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-sm text-slate-500">
-      Select an event or click Source to open its document.
-    </div>
-  )}
+  </div>
 </div>
           </div>
         </div>
