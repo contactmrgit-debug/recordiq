@@ -291,6 +291,9 @@ export default function CasePage() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [activeSourcePage, setActiveSourcePage] = useState<number | null>(null);
+  const [sourceDocumentViewUrl, setSourceDocumentViewUrl] = useState<string | null>(null);
+  const [sourceDocumentIframeSrc, setSourceDocumentIframeSrc] = useState<string | null>(null);
+  const [sourcePreviewRequestFailed, setSourcePreviewRequestFailed] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -303,6 +306,66 @@ export default function CasePage() {
   const [downloadOpen, setDownloadOpen] = useState(false);
 
   const downloadRef = useRef<HTMLDivElement | null>(null);
+  const setSelectedSourceDocument = setSelectedDocumentId;
+
+  function handleSelectEvent(event: TimelineEvent) {
+    setSelectedEventId(event.id);
+    setSelectedSourceDocument(event.documentId ?? null);
+    setActiveSourcePage(getSourcePage(event));
+    setSourceDocumentViewUrl(null);
+    setSourceDocumentIframeSrc(null);
+    setSourcePreviewRequestFailed(false);
+  }
+
+  async function openSourceDocument(event: TimelineEvent) {
+    if (!event.documentId) {
+      return;
+    }
+
+    setSelectedEventId(event.id);
+    setSelectedSourceDocument(event.documentId);
+    setActiveSourcePage(getSourcePage(event));
+    setSourceDocumentViewUrl(null);
+    setSourceDocumentIframeSrc(null);
+    setSourcePreviewRequestFailed(false);
+
+    const sourcePage = getSourcePage(event);
+    if (!sourcePage) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/documents/${event.documentId}/view-url`, {
+        cache: "no-store",
+      });
+      const text = await response.text();
+
+      let json: { success?: boolean; url?: string; error?: string } | null = null;
+      if (text.trim()) {
+        try {
+          json = JSON.parse(text);
+        } catch (parseError) {
+          console.error("Document view URL parse error:", parseError);
+        }
+      }
+
+      if (!response.ok || !json?.success || !json.url) {
+        throw new Error(json?.error || "Failed to load document view URL");
+      }
+
+      const iframeSrc = `${json.url}#page=${sourcePage}`;
+      setSourceDocumentViewUrl(json.url);
+      setSourceDocumentIframeSrc(iframeSrc);
+    } catch (error) {
+      setSourcePreviewRequestFailed(true);
+      console.error("Document view URL error:", error);
+    }
+
+    const viewer = document.getElementById("source-document-viewer");
+    if (viewer) {
+      viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
 
   const getDocumentName = useCallback(
     (documentId?: string | null) =>
@@ -334,34 +397,6 @@ function getSourcePage(event?: TimelineEvent | null) {
   return typeof event?.sourcePage === "number" && event.sourcePage > 0
     ? event.sourcePage
     : null;
-}
-
-function handleSelectEvent(event: TimelineEvent) {
-  setSelectedEventId(event.id);
-  setSelectedDocumentId(event.documentId ?? null);
-  setActiveSourcePage(getSourcePage(event));
-}
-
-function handleSourceClick(
-  e: React.MouseEvent,
-  eventId: string,
-  documentId?: string | null,
-  sourcePage?: number | null
-) {
-  e.stopPropagation();
-
-  if (!documentId) return;
-
-  setSelectedEventId(eventId);
-  setSelectedDocumentId(documentId);
-  setActiveSourcePage(
-    typeof sourcePage === "number" && sourcePage > 0 ? sourcePage : null
-  );
-
-  const viewer = document.getElementById("source-document-viewer");
-  if (viewer) {
-    viewer.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 }
 
 async function loadCase() {
@@ -649,9 +684,18 @@ const filteredEvents = useMemo(() => {
     null;
 
   const currentSourcePage = getSourcePage(selectedEvent) ?? activeSourcePage;
+  const sourcePreviewEmptyMessage = !selectedEvent
+    ? "Click Source on a timeline event to preview the supporting document page."
+    : !selectedEvent.documentId
+    ? "This event does not have a source document attached."
+    : !getSourcePage(selectedEvent)
+    ? "This event has a source document, but no mapped page number."
+    : sourcePreviewRequestFailed
+    ? "Unable to load the source document preview. Please try again."
+    : "Click Source on a timeline event to preview the supporting document page.";
 
   useEffect(() => {
-    setSelectedDocumentId(selectedEvent?.documentId ?? null);
+    setSelectedSourceDocument(selectedEvent?.documentId ?? null);
     setActiveSourcePage(getSourcePage(selectedEvent));
   }, [selectedEvent]);
 
@@ -1051,11 +1095,12 @@ Status: ${row.reviewStatus}
                             
 
 {event.documentId ? (
-<button
+                          <button
   type="button"
   onClick={(e) => {
-  handleSourceClick(e, event.id, event.documentId, event.sourcePage);
-}}
+    e.stopPropagation();
+    void openSourceDocument(event);
+  }}
   className={`rounded-full px-3 py-1 text-xs font-medium ${
     event.documentId === selectedDocumentId
       ? "border border-blue-500 bg-blue-600 text-white"
@@ -1325,9 +1370,9 @@ Status: ${row.reviewStatus}
     {activeDocument?.fileName || "No source document"}
   </div>
 
-  {activeDocument?.fileUrl ? (
+  {sourceDocumentViewUrl ? (
     <a
-      href={activeDocument.fileUrl}
+      href={sourceDocumentViewUrl}
       target="_blank"
       rel="noreferrer"
       className="mt-2 inline-block text-sm font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
@@ -1394,35 +1439,31 @@ Status: ${row.reviewStatus}
         </div>
       </div>
 
-      {activeDocument.fileUrl ? (
-  fileIsPdf(activeDocument) ? (
-    <iframe
-      key={`${activeDocument.fileUrl}-${currentSourcePage ?? "nopage"}-${selectedEventId ?? "noevent"}`}
-      src={
-        currentSourcePage
-          ? `${activeDocument.fileUrl}?sourcePage=${currentSourcePage}&t=${selectedEventId ?? Date.now()}#page=${currentSourcePage}&zoom=page-fit`
-          : `${activeDocument.fileUrl}`
-      }
-      title={activeDocument.fileName || "Source document"}
-      className="h-[760px] w-full bg-white"
-    />
-  ) : (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6">
-      <a
-        href={activeDocument.fileUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-      >
-        Open document
-      </a>
-    </div>
-  )
-) : (
-  <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-    No preview available for this event.
-  </div>
-)}
+      {sourceDocumentIframeSrc ? (
+        fileIsPdf(activeDocument) ? (
+          <iframe
+            key={`${sourceDocumentIframeSrc}-${currentSourcePage ?? "nopage"}-${selectedEventId ?? "noevent"}`}
+            src={sourceDocumentIframeSrc}
+            title={activeDocument?.fileName || "Source document"}
+            className="h-[760px] w-full bg-white"
+          />
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6">
+            <a
+              href={sourceDocumentViewUrl ?? undefined}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Open document
+            </a>
+          </div>
+        )
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+          {sourcePreviewEmptyMessage}
+        </div>
+      )}
     </div>
   ) : (
     <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-sm text-slate-500">

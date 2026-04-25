@@ -73,7 +73,7 @@ export default function TestUploadPage() {
   const [caseId, setCaseId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState("MEDICAL_RECORD");
-  const [uploadMode, setUploadMode] = useState<UploadMode>("LOCAL");
+  const [uploadMode, setUploadMode] = useState<UploadMode>("S3");
   const [status, setStatus] = useState("Idle");
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
@@ -338,6 +338,10 @@ export default function TestUploadPage() {
         <option value="LOCAL">LOCAL</option>
         <option value="S3">S3</option>
       </select>
+
+      <div className="text-xs text-slate-500">
+        S3 is production-style. LOCAL is fallback/dev only.
+      </div>
 
       <button
         onClick={handleUpload}
