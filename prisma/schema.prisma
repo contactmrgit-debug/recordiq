@@ -42,6 +42,14 @@ enum DocumentStatus {
   FAILED
 }
 
+enum ProcessingJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
 enum ReviewStatus {
   PENDING
   APPROVED
@@ -81,6 +89,7 @@ model Case {
 
   documents      Document[]
   timelineEvents TimelineEvent[]
+  processingJobs ProcessingJob[]
   auditLogs      AuditLog[]
 
   @@index([ownerId])
@@ -102,6 +111,7 @@ model Document {
   case           Case            @relation(fields: [caseId], references: [id], onDelete: Cascade)
   pages          DocumentPage[]
   chunks         DocumentChunk[]
+  processingJobs ProcessingJob[]
   timelineEvents TimelineEvent[]
 
   @@index([caseId])
@@ -184,5 +194,30 @@ model AuditLog {
   @@index([userId])
   @@index([caseId])
   @@index([action])
+  @@index([createdAt])
+}
+
+model ProcessingJob {
+  id             String              @id @default(cuid())
+  documentId     String
+  caseId         String
+  status         ProcessingJobStatus @default(QUEUED)
+  totalPages     Int?
+  processedPages Int                 @default(0)
+  currentStep    String?
+  errorMessage   String?
+  attempts       Int                 @default(0)
+  maxAttempts    Int                 @default(3)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  case     Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([caseId])
+  @@index([status])
   @@index([createdAt])
 }

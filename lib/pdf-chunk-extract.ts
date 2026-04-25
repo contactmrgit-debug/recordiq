@@ -4,14 +4,30 @@ type PdfTextItem = {
   str?: string;
 };
 
+export type PdfChunkPageText = {
+  page: number;
+  text: string;
+};
+
 type PdfChunkResult = {
   success: boolean;
   text: string;
   startPage: number;
   endPage: number;
   totalPages: number;
+  pageTexts: PdfChunkPageText[];
   error?: string;
 };
+
+export async function getPdfPageCount(buffer: Buffer): Promise<number> {
+  if (!buffer || !Buffer.isBuffer(buffer)) {
+    throw new Error("Invalid PDF buffer");
+  }
+
+  const uint8Array = new Uint8Array(buffer);
+  const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+  return pdf.numPages;
+}
 
 export async function extractPdfChunkText(
   buffer: Buffer,
@@ -36,6 +52,7 @@ export async function extractPdfChunkText(
     }
 
     const pageTexts: string[] = [];
+    const pageTextEntries: PdfChunkPageText[] = [];
 
     for (let pageNum = safeStart; pageNum <= safeEnd; pageNum++) {
       const page = await pdf.getPage(pageNum);
@@ -49,6 +66,10 @@ export async function extractPdfChunkText(
         .trim();
 
       pageTexts.push(pageText);
+      pageTextEntries.push({
+        page: pageNum,
+        text: pageText,
+      });
     }
 
     return {
@@ -57,6 +78,7 @@ export async function extractPdfChunkText(
       startPage: safeStart,
       endPage: safeEnd,
       totalPages,
+      pageTexts: pageTextEntries,
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "PDF chunk extraction failed";
@@ -68,6 +90,7 @@ export async function extractPdfChunkText(
       startPage,
       endPage,
       totalPages: 0,
+      pageTexts: [],
       error: message,
     };
   }

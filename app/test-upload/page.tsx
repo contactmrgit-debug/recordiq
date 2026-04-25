@@ -18,6 +18,9 @@ type ApiResponse = {
     pageCount?: number | null;
     recordType?: string | null;
   };
+  documentId?: string;
+  jobId?: string;
+  status?: string;
   timelineEventsCreated?: number;
   uploadUrl?: string;
   key?: string;
@@ -59,9 +62,11 @@ function getResponseError(
 
 type UploadDebugResult = {
   documentId: string | null;
+  jobId: string | null;
   fileUrl: string | null;
   recordType: string | null;
   status: string | null;
+  jobStatus: string | null;
   pageCount: number | null;
   timelineEventsCreated: number | null;
   warnings: string[];
@@ -107,9 +112,11 @@ export default function TestUploadPage() {
   }
 
   async function finishUpload(data: ApiResponse, fallbackRecordType: string) {
-    const documentId = data.document?.id || null;
+    const documentId = data.documentId || data.document?.id || null;
+    const jobId = data.jobId || null;
     const fileUrl = data.document?.fileUrl || null;
     const savedRecordType = data.document?.recordType || fallbackRecordType || null;
+    const savedStatus = data.status || data.document?.status || null;
     const pageCount =
       typeof data.document?.pageCount === "number"
         ? data.document.pageCount
@@ -119,7 +126,13 @@ export default function TestUploadPage() {
         ? data.timelineEventsCreated
         : null;
 
-    setStatus(documentId ? `Upload saved (${documentId})` : "Upload saved");
+    setStatus(
+      jobId
+        ? `Upload queued (${jobId})`
+        : documentId
+          ? `Upload saved (${documentId})`
+          : "Upload saved"
+    );
 
     const [docsRes, timelineRes] = await Promise.all([
       fetch(`/api/cases/${caseId}/documents`, { cache: "no-store" }),
@@ -143,9 +156,11 @@ export default function TestUploadPage() {
 
     setResult({
       documentId,
+      jobId,
       fileUrl,
       recordType: savedRecordType,
-      status: data.document?.status || null,
+      status: savedStatus,
+      jobStatus: data.status || null,
       pageCount,
       timelineEventsCreated,
       warnings,
