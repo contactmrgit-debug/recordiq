@@ -309,6 +309,7 @@ export default function CasePage() {
 
   const downloadRef = useRef<HTMLDivElement | null>(null);
   const setSelectedSourceDocument = setSelectedDocumentId;
+  const selectedSourceDocument = selectedDocumentId;
 
   function handleSelectEvent(event: TimelineEvent) {
     setSelectedEventId(event.id);
@@ -1448,36 +1449,35 @@ Status: ${row.reviewStatus}
       </div>
 
       {sourcePreviewStatus === "ready" && sourceDocumentIframeSrc ? (
-        fileIsPdf(activeDocument) ? (
-          <iframe
-            key={`${sourceDocumentIframeSrc}-${currentSourcePage ?? "nopage"}-${selectedEventId ?? "noevent"}`}
-            src={sourceDocumentIframeSrc}
-            title={activeDocument?.fileName || "Source document"}
-            className="h-[760px] w-full bg-white"
-          />
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6">
-            <a
-              href={sourceDocumentViewUrl ?? undefined}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Open document
-            </a>
-          </div>
-        )
+        <iframe
+          key={`${sourceDocumentIframeSrc}-${currentSourcePage ?? "nopage"}-${selectedEventId ?? "noevent"}`}
+          src={sourceDocumentIframeSrc}
+          title={activeDocument?.fileName || "Source document"}
+          className="h-[760px] w-full bg-white"
+        />
+      ) : sourcePreviewStatus === "loading" ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+          Loading source document preview...
+        </div>
+      ) : sourcePreviewStatus === "error" ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+          Unable to load the source document preview. Please try again.
+        </div>
+      ) : sourcePreviewStatus === "no-document" ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+          This event does not have a source document attached.
+        </div>
+      ) : sourcePreviewStatus === "no-page" ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+          This event has a source document, but no mapped page number.
+        </div>
+      ) : selectedSourceDocument ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+          Loading source document preview...
+        </div>
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-          {sourcePreviewStatus === "loading"
-            ? "Loading source document preview..."
-            : sourcePreviewStatus === "error"
-            ? "Unable to load the source document preview. Please try again."
-            : sourcePreviewStatus === "no-document"
-            ? "This event does not have a source document attached."
-            : sourcePreviewStatus === "no-page"
-            ? "This event has a source document, but no mapped page number."
-            : "Click Source on a timeline event to preview the supporting document page."}
+          Click Source on a timeline event to preview the supporting document page.
         </div>
       )}
     </div>
