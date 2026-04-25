@@ -293,7 +293,9 @@ export default function CasePage() {
   const [activeSourcePage, setActiveSourcePage] = useState<number | null>(null);
   const [sourceDocumentViewUrl, setSourceDocumentViewUrl] = useState<string | null>(null);
   const [sourceDocumentIframeSrc, setSourceDocumentIframeSrc] = useState<string | null>(null);
-  const [sourcePreviewRequestFailed, setSourcePreviewRequestFailed] = useState(false);
+  const [sourcePreviewStatus, setSourcePreviewStatus] = useState<
+    "idle" | "loading" | "ready" | "error" | "no-document" | "no-page"
+  >("idle");
   const [showHidden, setShowHidden] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -314,11 +316,23 @@ export default function CasePage() {
     setActiveSourcePage(getSourcePage(event));
     setSourceDocumentViewUrl(null);
     setSourceDocumentIframeSrc(null);
-    setSourcePreviewRequestFailed(false);
+    if (!event.documentId) {
+      setSourcePreviewStatus("no-document");
+    } else if (!getSourcePage(event)) {
+      setSourcePreviewStatus("no-page");
+    } else {
+      setSourcePreviewStatus("idle");
+    }
   }
 
   async function openSourceDocument(event: TimelineEvent) {
     if (!event.documentId) {
+      setSelectedEventId(event.id);
+      setSelectedSourceDocument(null);
+      setActiveSourcePage(getSourcePage(event));
+      setSourceDocumentViewUrl(null);
+      setSourceDocumentIframeSrc(null);
+      setSourcePreviewStatus("no-document");
       return;
     }
 
@@ -327,10 +341,11 @@ export default function CasePage() {
     setActiveSourcePage(getSourcePage(event));
     setSourceDocumentViewUrl(null);
     setSourceDocumentIframeSrc(null);
-    setSourcePreviewRequestFailed(false);
+    setSourcePreviewStatus("loading");
 
     const sourcePage = getSourcePage(event);
     if (!sourcePage) {
+      setSourcePreviewStatus("no-page");
       return;
     }
 
@@ -356,8 +371,10 @@ export default function CasePage() {
       const iframeSrc = `${json.url}#page=${sourcePage}`;
       setSourceDocumentViewUrl(json.url);
       setSourceDocumentIframeSrc(iframeSrc);
+      setSourcePreviewStatus("ready");
     } catch (error) {
-      setSourcePreviewRequestFailed(true);
+      setSourceDocumentIframeSrc(null);
+      setSourcePreviewStatus("error");
       console.error("Document view URL error:", error);
     }
 
@@ -684,15 +701,6 @@ const filteredEvents = useMemo(() => {
     null;
 
   const currentSourcePage = getSourcePage(selectedEvent) ?? activeSourcePage;
-  const sourcePreviewEmptyMessage = !selectedEvent
-    ? "Click Source on a timeline event to preview the supporting document page."
-    : !selectedEvent.documentId
-    ? "This event does not have a source document attached."
-    : !getSourcePage(selectedEvent)
-    ? "This event has a source document, but no mapped page number."
-    : sourcePreviewRequestFailed
-    ? "Unable to load the source document preview. Please try again."
-    : "Click Source on a timeline event to preview the supporting document page.";
 
   useEffect(() => {
     setSelectedSourceDocument(selectedEvent?.documentId ?? null);
@@ -1439,7 +1447,7 @@ Status: ${row.reviewStatus}
         </div>
       </div>
 
-      {sourceDocumentIframeSrc ? (
+      {sourcePreviewStatus === "ready" && sourceDocumentIframeSrc ? (
         fileIsPdf(activeDocument) ? (
           <iframe
             key={`${sourceDocumentIframeSrc}-${currentSourcePage ?? "nopage"}-${selectedEventId ?? "noevent"}`}
@@ -1461,7 +1469,15 @@ Status: ${row.reviewStatus}
         )
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-          {sourcePreviewEmptyMessage}
+          {sourcePreviewStatus === "loading"
+            ? "Loading source document preview..."
+            : sourcePreviewStatus === "error"
+            ? "Unable to load the source document preview. Please try again."
+            : sourcePreviewStatus === "no-document"
+            ? "This event does not have a source document attached."
+            : sourcePreviewStatus === "no-page"
+            ? "This event has a source document, but no mapped page number."
+            : "Click Source on a timeline event to preview the supporting document page."}
         </div>
       )}
     </div>
