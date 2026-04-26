@@ -817,10 +817,34 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
       throw new Error(chunkResult.error || "Chunk extraction failed");
     }
 
-    const extractedEvents = await extractTimelineEvents(chunkResult.pageTexts);
-    const cleanedEvents = cleanTimelineEvents(extractedEvents);
-    allRawChunkEvents.push(...extractedEvents);
-    allCleanedChunkEvents.push(...cleanedEvents);
+ const extractedEvents = await extractTimelineEvents(chunkResult.pageTexts);
+
+console.log("S3 CHUNK RAW TIMELINE COUNT:", extractedEvents.length);
+console.log(
+  "S3 CHUNK RAW TIMELINE EVENTS:",
+  extractedEvents.map((event) => ({
+    date: event.date,
+    title: event.title,
+    eventType: event.eventType,
+    sourcePage: event.sourcePage,
+  }))
+);
+
+const cleanedEvents = cleanTimelineEvents(extractedEvents);
+
+console.log("S3 CHUNK CLEANED TIMELINE COUNT:", cleanedEvents.length);
+console.log(
+  "S3 CHUNK CLEANED TIMELINE EVENTS:",
+  cleanedEvents.map((event) => ({
+    date: event.date,
+    title: event.title,
+    eventType: event.eventType,
+    sourcePage: event.sourcePage,
+  }))
+);
+
+allRawChunkEvents.push(...extractedEvents);
+allCleanedChunkEvents.push(...cleanedEvents);
 
     await saveChunkArtifacts({
       documentId: document.id,
@@ -852,9 +876,42 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
   }
 
   const finalCandidateEvents = cleanTimelineEvents([
-    ...allRawChunkEvents,
-    ...allCleanedChunkEvents,
-  ]);
+  ...allRawChunkEvents,
+  ...allCleanedChunkEvents,
+]);
+
+console.log("S3 ALL RAW TIMELINE COUNT:", allRawChunkEvents.length);
+console.log(
+  "S3 ALL RAW TIMELINE EVENTS:",
+  allRawChunkEvents.map((event) => ({
+    date: event.date,
+    title: event.title,
+    eventType: event.eventType,
+    sourcePage: event.sourcePage,
+  }))
+);
+
+console.log("S3 ALL CLEANED CHUNK TIMELINE COUNT:", allCleanedChunkEvents.length);
+console.log(
+  "S3 ALL CLEANED CHUNK TIMELINE EVENTS:",
+  allCleanedChunkEvents.map((event) => ({
+    date: event.date,
+    title: event.title,
+    eventType: event.eventType,
+    sourcePage: event.sourcePage,
+  }))
+);
+
+console.log("S3 FINAL CANDIDATE TIMELINE COUNT:", finalCandidateEvents.length);
+console.log(
+  "S3 FINAL CANDIDATE TIMELINE EVENTS:",
+  finalCandidateEvents.map((event) => ({
+    date: event.date,
+    title: event.title,
+    eventType: event.eventType,
+    sourcePage: event.sourcePage,
+  }))
+);
   const finalTimelineEvents = toTimelineEventInsertRows(
     {
       caseId: document.caseId,
