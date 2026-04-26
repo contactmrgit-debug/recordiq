@@ -816,7 +816,22 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
     if (!chunkResult.success) {
       throw new Error(chunkResult.error || "Chunk extraction failed");
     }
+console.log("S3 CHUNK PAGE RANGE:", {
+  chunkIndex,
+  startPage: chunkResult.startPage,
+  endPage: chunkResult.endPage,
+  pageTextCount: chunkResult.pageTexts.length,
+  textLength: chunkResult.text.length,
+});
 
+console.log(
+  "S3 CHUNK PAGE TEXT PREVIEW:",
+  chunkResult.pageTexts.map((page) => ({
+    page: page.page,
+    length: page.text?.length || 0,
+    preview: (page.text || "").slice(0, 500),
+  }))
+);
  const extractedEvents = await extractTimelineEvents(chunkResult.pageTexts);
 
 console.log("S3 CHUNK RAW TIMELINE COUNT:", extractedEvents.length);
