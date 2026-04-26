@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   parseRecordType,
-  processNextQueuedDocumentJob,
+  processQueuedDocumentJobById,
   queueDocumentProcessing,
   sanitizeProcessingFileName,
 } from "@/lib/document-processing";
@@ -133,7 +133,7 @@ export async function POST(
   recordType: providedRecordType,
 });
 
-const processingOutcome = await processNextQueuedDocumentJob();
+const processingOutcome = await processQueuedDocumentJobById(queuedJob.jobId);
 
 return NextResponse.json({
   success: true,

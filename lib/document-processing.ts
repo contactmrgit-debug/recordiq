@@ -956,7 +956,101 @@ async function processQueuedJobOnce(): Promise<ProcessingOutcome | null> {
     };
   }
 }
+async function claimQueuedProcessingJobById(
+  jobId: string
+): Promise<ProcessingJobRow | null> {
+  const [job] = await prisma.$queryRaw<ProcessingJobRow[]>(Prisma.sql`
+    UPDATE "ProcessingJob"
+    SET
+      "status" = ${"PROCESSING"}::"ProcessingJobStatus",
+      "startedAt" = COALESCE("startedAt", NOW()),
+      "currentStep" = ${"claiming queued job"},
+      "updatedAt" = NOW()
+    WHERE "id" = ${jobId}
+      AND "status" = ${"QUEUED"}::"ProcessingJobStatus"
+    RETURNING
+      "id",
+      "documentId",
+      "caseId",
+      "status",
+      "totalPages",
+      "processedPages",
+      "currentStep",
+      "errorMessage",
+      "attempts",
+      "maxAttempts",
+      "startedAt",
+      "completedAt",
+      "createdAt",
+      "updatedAt"
+  `);
 
+  return job ?? null;
+}
+
+export async function processQueuedDocumentJobById(
+  jobId: string
+): Promise<ProcessingOutcome | null> {
+  const job = await claimQueuedProcessingJobById(jobId);
+
+  if (!job) {
+    return null;
+  }
+
+  try {
+    return await processClaimedJob(job);
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Document processing failed";
+
+    const document = await loadDocumentForProcessing(job.documentId);
+    const totalPages = job.totalPages ?? document?.pageCount ?? 0;
+    const processedPages = job.processedPages;
+
+    const failedJob = await finalizeJobFailure({
+      job,
+      errorMessage,
+      totalPages,
+      processedPages,
+    });
+
+    if (failedJob.status === "FAILED") {
+      await prisma.document.update({
+        where: { id: job.documentId },
+        data: {
+          status: "FAILED",
+        },
+      });
+    } else {
+      await prisma.document.update({
+        where: { id: job.documentId },
+        data: {
+          status: "PROCESSING",
+        },
+      });
+    }
+
+    console.error("PROCESS JOB FAILED", {
+      jobId: job.id,
+      documentId: job.documentId,
+      caseId: job.caseId,
+      attempts: failedJob.attempts,
+      maxAttempts: failedJob.maxAttempts,
+      status: failedJob.status,
+      errorMessage,
+    });
+
+    return {
+      success: false,
+      job: failedJob,
+      documentId: job.documentId,
+      totalPages,
+      processedPages,
+      errorMessage,
+      finalStatus: failedJob.status as Exclude<ProcessingJobStatus, "QUEUED">,
+    };
+  }
+}
 export async function processNextQueuedDocumentJob(): Promise<ProcessingOutcome | null> {
   return processQueuedJobOnce();
 }
