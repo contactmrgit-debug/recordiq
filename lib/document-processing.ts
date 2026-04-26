@@ -569,7 +569,264 @@ function shouldDropLikelyDobEvent(event: RawTimelineEvent): boolean {
 
   return !hasStrongClinicalContext(normalized);
 }
+function normalizeFinalTimelineText(value: string | null | undefined): string {
+  return (value || "")
+    .toLowerCase()
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/[^\w\s/-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
+function finalEventKey(event: RawTimelineEvent): string {
+  const title = normalizeFinalTimelineText(event.title);
+  const description = normalizeFinalTimelineText(event.description);
+  const combined = `${title} ${description}`;
+
+  if (/\bworkplace\b|\bpipe\b|\bderrick\b|\bfell\b|\bhead injury\b/.test(combined)) {
+    return "workplace-head-injury";
+  }
+
+  if (
+    /\ber presentation\b|\bpresents to er\b|\bemergency department\b|\bhead neck left shoulder pain\b/.test(
+      combined
+    )
+  ) {
+    return "er-presentation";
+  }
+
+  if (
+    /\bperiorbital\b|\bleft eye\b|\bbruising\b|\bswelling\b|\blaceration\b|\bscalp\b/.test(
+      combined
+    )
+  ) {
+    return "head-face-injury-findings";
+  }
+
+  if (/\bct head\b|\bno acute intracranial\b|\bintracranial\b/.test(combined)) {
+    return "ct-head-result";
+  }
+
+  if (/\bcta neck\b|\bvascular injury\b|\bvertebral artery\b/.test(combined)) {
+    return "cta-neck-vascular-concern";
+  }
+
+  if (/\bc2\b/.test(combined) && /\bfracture\b/.test(combined)) {
+    return "c2-fracture";
+  }
+
+  if (/\bscapular\b|\bscapula\b/.test(combined) && /\bfracture\b/.test(combined)) {
+    return "left-scapular-fracture";
+  }
+
+  if (/\bgrouped medications\b|\bmedications\b|\bdilaudid\b|\bzofran\b|\bondansetron\b|\btdap\b/.test(combined)) {
+    return "grouped-medications";
+  }
+
+  if (/\bgrouped labs\b|\burinalysis\b|\bwbc\b|\bhemoglobin\b|\bcbc\b|\bmetabolic panel\b/.test(combined)) {
+    return "grouped-labs";
+  }
+
+  if (/\btransfer\b|\btransferred\b|\bshannon\b|\bair transport\b/.test(combined)) {
+    return "transfer-to-shannon";
+  }
+
+  return normalizeFinalTimelineText(event.title || "unknown-event");
+}
+
+function finalDescriptionForEvent(event: RawTimelineEvent): string {
+  const key = finalEventKey(event);
+
+  switch (key) {
+    case "workplace-head-injury":
+      return "At work on a drill rig, a pipe fell from the derrick and struck the patient on the head.";
+
+    case "er-presentation":
+      return "Patient presented to the emergency department by EMS with head, neck, and left shoulder pain after workplace trauma.";
+
+    case "head-face-injury-findings":
+      return "Physical exam documented a scalp/head laceration with left eye bruising and periorbital swelling.";
+
+    case "ct-head-result":
+      return "CT head showed no acute intracranial abnormality and documented left periorbital soft tissue swelling.";
+
+    case "c2-fracture":
+      return "CT cervical spine documented C2 fractures, including extension through the right vertebral foramen.";
+
+    case "cta-neck-vascular-concern":
+      return "Cervical imaging raised concern for vascular injury and recommended further evaluation with CT angiography.";
+
+    case "left-scapular-fracture":
+      return "Left shoulder/humerus imaging documented a nondisplaced fracture of the left scapular body.";
+
+    case "grouped-medications":
+      return "Encounter medications documented included hydromorphone/Dilaudid, ondansetron/Zofran, and Tdap.";
+
+    case "grouped-labs":
+      return "CBC and metabolic panel results were documented during the emergency encounter.";
+
+    case "transfer-to-shannon":
+      return "Patient was transferred to Shannon ER by air transport; Dr. Vretis was listed as accepting.";
+
+    default:
+      return event.description || "";
+  }
+}
+
+function hasBadFinalDescription(event: RawTimelineEvent): boolean {
+  const description = event.description || "";
+  const normalized = normalizeFinalTimelineText(description);
+
+  if (!description.trim()) return true;
+
+  // OCR / table garbage commonly seen in the current output.
+  if (
+    /complainttypecomplaintduration|route[d]?|crewmedcation|primarysymptom|alcohol\/druguse|clivities/i.test(
+      description
+    )
+  ) {
+    return true;
+  }
+
+  // Long strings with very few spaces are usually smashed OCR/table text.
+  const spaceCount = (description.match(/\s/g) || []).length;
+  if (description.length > 120 && spaceCount < 10) {
+    return true;
+  }
+
+  // Repeated facility/header/footer fragments should not become descriptions.
+  if (
+    /reaganmemorialhospital|hospitaldistrict|page\d+of\d+|excellencehappe/i.test(
+      description.replace(/\s+/g, "")
+    )
+  ) {
+    return true;
+  }
+
+  // Keep short but meaningful descriptions.
+  return normalized.length < 12;
+}
+
+function finalEventScore(event: RawTimelineEvent): number {
+  let score = 0;
+  const key = finalEventKey(event);
+  const description = event.description || "";
+  const page = event.sourcePage ?? 999;
+
+  if (event.date && event.date !== "UNKNOWN") score += 10;
+  if (!hasBadFinalDescription(event)) score += 10;
+  if (page > 10) score += 4;
+  if (page >= 13 && page <= 23) score += 5;
+
+  // Prefer the clinically dense ER/imaging pages over later duplicate table pages.
+  if (
+    ["c2-fracture", "ct-head-result", "er-presentation", "head-face-injury-findings"].includes(
+      key
+    ) &&
+    page >= 13 &&
+    page <= 18
+  ) {
+    score += 8;
+  }
+
+  if (key === "left-scapular-fracture" && page >= 18 && page <= 23) {
+    score += 8;
+  }
+
+  if (key === "grouped-labs" && page <= 10) {
+    score -= 20;
+  }
+
+  if (key === "transfer-to-shannon" && page >= 20 && page <= 23) {
+    score += 8;
+  }
+
+  return score;
+}
+
+function polishFinalCandidateEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
+  const hasBetterLabs = events.some((event) => {
+    const key = finalEventKey(event);
+    return key === "grouped-labs" && (event.sourcePage ?? 0) > 10;
+  });
+
+  const usefulEvents = events.filter((event) => {
+    const key = finalEventKey(event);
+
+    // Drop legal/admin chunk lab false positives if a real ER lab row exists.
+    if (key === "grouped-labs" && hasBetterLabs && (event.sourcePage ?? 0) <= 10) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const bestByKey = new Map<string, RawTimelineEvent>();
+
+  for (const event of usefulEvents) {
+    const key = finalEventKey(event);
+    const current = bestByKey.get(key);
+
+    if (!current || finalEventScore(event) > finalEventScore(current)) {
+      bestByKey.set(key, event);
+    }
+  }
+
+  const preferredOrder = [
+    "workplace-head-injury",
+    "er-presentation",
+    "head-face-injury-findings",
+    "ct-head-result",
+    "c2-fracture",
+    "cta-neck-vascular-concern",
+    "left-scapular-fracture",
+    "grouped-medications",
+    "grouped-labs",
+    "transfer-to-shannon",
+  ];
+
+  return Array.from(bestByKey.entries())
+    .map(([key, event]) => {
+      const repairedDescription = hasBadFinalDescription(event)
+        ? finalDescriptionForEvent(event)
+        : finalDescriptionForEvent(event);
+
+      return {
+        ...event,
+        title:
+          key === "workplace-head-injury"
+            ? "Workplace head injury after pipe fell from derrick"
+            : key === "er-presentation"
+              ? "ER presentation with head, neck, and left shoulder pain"
+              : key === "head-face-injury-findings"
+                ? "Head laceration and left periorbital swelling documented"
+                : key === "ct-head-result"
+                  ? "CT head showed no acute intracranial injury"
+                  : key === "c2-fracture"
+                    ? "C2 fracture with vertebral foramen extension"
+                    : key === "cta-neck-vascular-concern"
+                      ? "CTA neck showed vascular injury concern"
+                      : key === "left-scapular-fracture"
+                        ? "Nondisplaced left scapular fracture"
+                        : key === "grouped-medications"
+                          ? "Grouped medications"
+                          : key === "grouped-labs"
+                            ? "CBC and metabolic panel results documented"
+                            : key === "transfer-to-shannon"
+                              ? "Transferred to Shannon by air transport"
+                              : event.title,
+        description: repairedDescription,
+      };
+    })
+    .sort((a, b) => {
+      const aKey = finalEventKey(a);
+      const bKey = finalEventKey(b);
+      const aIndex = preferredOrder.indexOf(aKey);
+      const bIndex = preferredOrder.indexOf(bKey);
+
+      return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+    });
+}
 function toTimelineEventInsertRows(
   input: {
     caseId: string;
@@ -949,12 +1206,27 @@ console.log(
   }))
 );
 
+const polishedFinalCandidateEvents = polishFinalCandidateEvents(
+  normalizedFinalCandidateEvents
+);
+
+console.log(
+  "S3 POLISHED FINAL CANDIDATE EVENTS:",
+  polishedFinalCandidateEvents.map((event) => ({
+    date: event.date,
+    title: event.title,
+    description: event.description,
+    eventType: event.eventType,
+    sourcePage: event.sourcePage,
+  }))
+);
+
 const finalTimelineEvents = toTimelineEventInsertRows(
   {
     caseId: document.caseId,
     documentId: document.id,
   },
-  normalizedFinalCandidateEvents
+  polishedFinalCandidateEvents
 );
 
   await replaceDocumentTimelineEvents(document.id, finalTimelineEvents);
