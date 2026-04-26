@@ -97,7 +97,7 @@
     {
       "date": "2025-06-23",
       "title": "Respiratory viral PCR negative",
-      "description": "Respiratory viral PCR was final and showed adenovirus not detected, influenza A/B negative, and RSV negative.",
+      "description": null,
       "eventType": "report",
       "sourcePage": 8,
       "providerName": null,
@@ -115,7 +115,7 @@
     {
       "date": "2025-06-23",
       "title": "Urinalysis showed positive nitrite, positive leukocyte esterase, proteinuria",
-      "description": "Urinalysis showed positive nitrite and leukocyte esterase.",
+      "description": "Urinalysis showed positive nitrite and positive leukocyte esterase. Protein was present.",
       "eventType": "observation",
       "sourcePage": 8,
       "providerName": null,

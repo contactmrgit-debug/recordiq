@@ -2255,6 +2255,7 @@ function improveTitle(event: RawTimelineEvent): string {
   ) {
     return "CTA neck showed vascular injury concern";
   }
+  
 
   if (
     /\burinalysis\b/.test(combined) &&
@@ -3059,7 +3060,179 @@ function sortEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
     return cleanTitle(a.title).localeCompare(cleanTitle(b.title));
   });
 }
+function isHybridEncounterKeepEvent(event: RawTimelineEvent): boolean {
+  const title = normalizeText(event.title || "");
+  const desc = normalizeText(event.description || "");
+  const combined = `${title} ${desc}`;
 
+  // Keep the main ED / encounter reason
+  if (
+    /\b(ed|emergency department|er)\b/.test(combined) &&
+    /\b(arrival|presented|presentation|chief complaint|evaluation|encounter|admitted|seen for)\b/.test(combined)
+  ) {
+    return true;
+  }
+
+  // Keep seizure history / seizure-related treatment
+  if (
+    /\bseizure|seizures|epilepsy|antiepileptic|anti epileptic|keppra|levetiracetam|dilantin|phenytoin|depakote|valproate|lamictal|lamotrigine\b/.test(
+      combined
+    )
+  ) {
+    return true;
+  }
+
+  // Keep consult recommendations
+  if (
+    /\bconsult|consultation|neurology|cardiology|orthopedics|ortho|neurosurgery|psychiatry|recommendation|recommended|advised|plan\b/.test(
+      combined
+    ) &&
+    /\b(recommend|recommended|advised|continue|start|stop|increase|decrease|follow up|follow-up|outpatient|discharge)\b/.test(
+      combined
+    )
+  ) {
+    return true;
+  }
+
+  // Keep medication changes
+  if (
+    /\b(started|started on|discontinued|stopped|held|resumed|increased|decreased|changed|adjusted|prescribed|continue|continued)\b/.test(
+      combined
+    ) &&
+    /\b(medication|medications|meds|dose|dosage|tablet|capsule|mg|keppra|levetiracetam|antibiotic|steroid|insulin|anticoagulant|pain medication)\b/.test(
+      combined
+    )
+  ) {
+    return true;
+  }
+
+  // Keep discharge and follow-up instructions
+  if (
+    /\b(discharge|discharged|follow up|follow-up|return precautions|outpatient|home|instructions|aftercare)\b/.test(
+      combined
+    )
+  ) {
+    return true;
+  }
+
+  // Keep clinically meaningful diagnoses / assessments
+  if (
+    /\b(diagnosis|diagnoses|assessment|impression|final impression|clinical impression)\b/.test(
+      combined
+    ) &&
+    !/\b(questionnaire|screening form|demographics|flowsheet)\b/.test(combined)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function isHybridEncounterNoiseEvent(event: RawTimelineEvent): boolean {
+  const title = normalizeText(event.title || "");
+  const desc = normalizeText(event.description || "");
+  const combined = `${title} ${desc}`;
+
+  // Never suppress if it matches a keeper rule
+  if (isHybridEncounterKeepEvent(event)) {
+    return false;
+  }
+
+  const noisePatterns: RegExp[] = [
+    // Flowsheets / nursing repetitive documentation
+    /\bflowsheet\b/,
+    /\bflow sheet\b/,
+    /\bnursing assessment\b/,
+    /\bshift assessment\b/,
+    /\breassessment\b/,
+    /\brounding\b/,
+    /\bhourly rounding\b/,
+    /\bfall risk\b/,
+    /\bbraden\b/,
+    /\bskin assessment\b/,
+    /\bintake and output\b/,
+    /\bi\/o\b/,
+    /\bcare plan\b/,
+
+    // Demographics / registration / admin
+    /\bdemographics\b/,
+    /\bpatient information\b/,
+    /\binsurance\b/,
+    /\bguarantor\b/,
+    /\bregistration\b/,
+    /\baccount number\b/,
+    /\bmedical record number\b/,
+    /\bmrn\b/,
+    /\baddress\b/,
+    /\bphone number\b/,
+    /\bemergency contact\b/,
+    /\bmarital status\b/,
+    /\brace\b/,
+    /\bethnicity\b/,
+    /\blanguage preference\b/,
+
+    // Vitals-only rows
+    /\bvital signs\b/,
+    /\btemperature\b/,
+    /\bpulse\b/,
+    /\brespirations\b/,
+    /\bblood pressure\b/,
+    /\boxygen saturation\b/,
+    /\bspo2\b/,
+    /\bpain score\b/,
+    /\bheight\b/,
+    /\bweight\b/,
+    /\bbmi\b/,
+
+    // Questionnaire / portal / screening messages
+    /\bquestionnaire\b/,
+    /\bscreening questionnaire\b/,
+    /\bpatient portal\b/,
+    /\bmessage sent\b/,
+    /\bmessage received\b/,
+    /\bmychart\b/,
+    /\bportal message\b/,
+    /\bsurvey\b/,
+    /\bform completed\b/,
+
+    // Boilerplate labs / tables without clinical interpretation
+    /\blab table\b/,
+    /\blaboratory table\b/,
+    /\bcomponent result reference range\b/,
+    /\bnormal range\b/,
+    /\breference range\b/,
+    /\bflag units\b/,
+    /\bresulted labs\b/,
+    /\bcbc resulted\b/,
+    /\bcmp resulted\b/,
+    /\burinalysis resulted\b/,
+
+    // Generic boilerplate
+    /\belectronically signed\b/,
+    /\bdocument generated\b/,
+    /\bprinted by\b/,
+    /\bpage \d+ of \d+\b/,
+    /\bcopy of\b/,
+    /\bscanned document\b/,
+    /\bfile imported\b/,
+  ];
+
+  if (noisePatterns.some((pattern) => pattern.test(combined))) {
+    return true;
+  }
+
+  // Suppress very short generic rows that do not contain clinical signal
+  const hasClinicalSignal =
+    /\b(ed|emergency|seizure|diagnosis|assessment|consult|recommend|medication|discharge|follow|treatment|plan|impression|admitted|presented)\b/.test(
+      combined
+    );
+
+  if (!hasClinicalSignal && combined.length < 90) {
+    return true;
+  }
+
+  return false;
+}
 export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
   const normalized = normalizeEvents(events);
 
@@ -3323,7 +3496,9 @@ export function filterTimelineForDisplay(
   return events.filter((event) => {
     let title = cleanTitle(event.title);
     let description = normalizeText(event.description);
-
+if (isHybridEncounterNoiseEvent(event)) {
+  return false;
+}
     // Remove provider name leakage from visible text
    title = stripImagingSignerNames(stripProviderNames(title));
 description = stripImagingSignerNames(stripProviderNames(description));

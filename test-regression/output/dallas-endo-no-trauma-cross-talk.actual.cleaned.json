@@ -1,7 +1,7 @@
 {
   "documentName": "dallas-endo-no-trauma-cross-talk",
   "rawSource": "dallas-endo-no-trauma-cross-talk.raw.json (page texts)",
-  "rawEventCount": 2,
+  "rawEventCount": 3,
   "cleanedEventCount": 2,
   "cleanedEvents": [
     {
@@ -14,7 +14,7 @@
       "providerRole": null,
       "eventActorType": null,
       "physicianName": null,
-      "physicianRole": "Author",
+      "physicianRole": null,
       "medicalFacility": null,
       "facilityType": null,
       "confidence": 0.9,
@@ -36,7 +36,7 @@
       "medicalFacility": null,
       "facilityType": null,
       "confidence": 0.9,
-      "sourceExcerpt": "t Medications include lidocaine-prilocaine cream, hyoscyamine, magnesium oxide, ondansetron, polyethylene glycol, cyanocobalamin, hydrocortisone, and fludrocortisone.",
+      "sourceExcerpt": "oscyamine, magnesium oxide, ondansetron, polyethylene glycol, cyanocobalamin, hydrocortisone, and fludrocortisone.",
       "reviewStatus": "PENDING",
       "isHidden": false
     }

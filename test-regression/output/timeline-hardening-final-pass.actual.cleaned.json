@@ -25,7 +25,7 @@
     {
       "date": "2004-06-02",
       "title": "Unstable angina suspected",
-      "description": "Because symptoms were increasing and pain occurred at rest, the presentation was considered consistent with unstable angina and hospitalization was indicated.",
+      "description": "Hospital admission or inpatient transfer documented.",
       "eventType": "diagnosis",
       "sourcePage": 4,
       "providerName": null,

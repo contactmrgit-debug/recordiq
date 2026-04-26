@@ -8,7 +8,7 @@
       "date": "2025-06-23",
       "title": "CBC showed leukopenia, thrombocytopenia, anemia",
       "description": "Same-panel laboratory results documented leukopenia, thrombocytopenia, anemia.",
-      "eventType": "observation",
+      "eventType": "report",
       "sourcePage": null,
       "providerName": null,
       "providerRole": null,
@@ -17,7 +17,7 @@
       "physicianRole": null,
       "medicalFacility": null,
       "facilityType": null,
-      "confidence": 0.99,
+      "confidence": 0.97,
       "sourceExcerpt": null,
       "reviewStatus": "PENDING",
       "isHidden": false
@@ -25,7 +25,7 @@
     {
       "date": "2025-06-23",
       "title": "Critical lab values verbally reported",
-      "description": "Platelet count of 42 x10^3/µL and lactate 4.8 mmol/L were verbally read back to J. Mercer, RN at 10:34.",
+      "description": null,
       "eventType": "communication",
       "sourcePage": null,
       "providerName": null,
@@ -97,7 +97,7 @@
     {
       "date": "2025-06-23",
       "title": "Respiratory viral PCR negative",
-      "description": "Respiratory viral PCR was final and showed adenovirus not detected, influenza A/B negative, and RSV negative at 11:06.",
+      "description": null,
       "eventType": "report",
       "sourcePage": null,
       "providerName": null,

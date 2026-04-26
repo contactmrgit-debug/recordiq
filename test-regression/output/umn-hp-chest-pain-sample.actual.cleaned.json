@@ -223,7 +223,7 @@
     {
       "date": "2004-06-02",
       "title": "Hospitalization deemed indicated",
-      "description": "Assessment stated that hospitalization was indicated due to suspected unstable angina.",
+      "description": "Plan was to admit the patient to the telemetry floor for careful monitoring for increased chest pain and possible impending myocardial infarction.",
       "eventType": "treatment",
       "sourcePage": null,
       "providerName": null,
@@ -295,7 +295,7 @@
     {
       "date": "2004-06-02",
       "title": "Unstable angina suspected",
-      "description": "Because symptoms were increasing and pain occurred at rest, the presentation was considered consistent with unstable angina and hospitalization was indicated.",
+      "description": "Hospital admission or inpatient transfer documented.",
       "eventType": "diagnosis",
       "sourcePage": null,
       "providerName": null,
