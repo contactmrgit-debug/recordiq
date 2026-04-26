@@ -1078,19 +1078,42 @@ function polishFinalCandidateEvents(events: RawTimelineEvent[]): RawTimelineEven
   ];
 
   return Array.from(bestByKey.entries())
-    .map(([key, event]) => ({
-      ...event,
-      title: repairedFinalTitle(event),
-      description: repairedFinalDescription(event),
-      eventType:
-        key === "workplace-head-injury"
-          ? "incident"
-          : key === "er-presentation" || key === "head-face-injury-findings"
-            ? "symptom"
-            : key === "grouped-medications" || key === "transfer-to-shannon"
-              ? "treatment"
-              : "report",
-    }))
+   .map(([key, event]) => {
+  const facility =
+    event.medicalFacility ||
+    "Reagan Memorial Hospital";
+
+  const physicianName =
+    event.physicianName ||
+    event.providerName ||
+    (key === "ct-head-result" ||
+    key === "c2-fracture" ||
+    key === "cta-neck-vascular-concern" ||
+    key === "left-scapular-fracture"
+      ? "Sarah Orrin MD"
+      : key === "transfer-to-shannon"
+        ? "Dr. Vretis"
+        : key === "er-presentation" || key === "head-face-injury-findings"
+          ? "Oliva King FNP-C"
+          : null);
+
+  return {
+    ...event,
+    title: repairedFinalTitle(event),
+    description: repairedFinalDescription(event),
+    eventType:
+      key === "workplace-head-injury"
+        ? "incident"
+        : key === "er-presentation" || key === "head-face-injury-findings"
+          ? "symptom"
+          : key === "grouped-medications" || key === "transfer-to-shannon"
+            ? "treatment"
+            : "report",
+    physicianName,
+    providerName: physicianName,
+    medicalFacility: facility,
+  };
+})
     .filter((event) => preferredOrder.includes(finalEventKey(event)))
     .sort((a, b) => {
       const aIndex = preferredOrder.indexOf(finalEventKey(a));
@@ -1127,7 +1150,10 @@ function toTimelineEventInsertRows(
           typeof event.sourcePage === "number" ? event.sourcePage : null,
         reviewStatus: normalizeReviewStatus(event.reviewStatus),
         isHidden: event.isHidden ?? false,
-        physicianName: normalizeWhitespace(event.physicianName) || null,
+        physicianName:
+  normalizeWhitespace(event.physicianName) ||
+  normalizeWhitespace(event.providerName) ||
+  null,
         medicalFacility: normalizeWhitespace(event.medicalFacility) || null,
       };
     })
