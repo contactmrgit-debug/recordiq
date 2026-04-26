@@ -4,7 +4,11 @@ import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import { extractTimelineEvents } from "@/lib/ai-timeline";
-import { cleanTimelineEvents, RawTimelineEvent } from "@/lib/timeline-cleanup";
+import {
+  cleanTimelineEvents,
+  hasMeaningfulClinicalSignal,
+  RawTimelineEvent,
+} from "@/lib/timeline-cleanup";
 import {
   extractPdfChunkText,
   getPdfPageCount,
@@ -456,7 +460,6 @@ async function resetGeneratedDocumentArtifacts(documentId: string) {
 
 async function saveChunkArtifacts(input: {
   documentId: string;
-  caseId: string;
   chunkIndex: number;
   chunkResult: {
     text: string;
@@ -464,7 +467,6 @@ async function saveChunkArtifacts(input: {
     endPage: number;
     pageTexts: PdfChunkPageText[];
   };
-  cleanedEvents: RawTimelineEvent[];
 }) {
   if (input.chunkResult.pageTexts.length > 0) {
     const pageRows = input.chunkResult.pageTexts.map((page) => ({
@@ -524,8 +526,59 @@ async function saveChunkArtifacts(input: {
       NOW()
     )
   `);
+}
 
-  const timelineEvents = input.cleanedEvents
+type TimelineEventInsertRow = {
+  caseId: string;
+  documentId: string;
+  eventDate: Date;
+  title: string;
+  description: string | null;
+  eventType: string;
+  sourcePage: number | null;
+  reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
+  isHidden: boolean;
+  physicianName: string | null;
+  medicalFacility: string | null;
+};
+
+function hasStrongClinicalContext(text: string): boolean {
+  return (
+    hasMeaningfulClinicalSignal(text) ||
+    /\b(ct|cta|x ray|xray|imaging|trauma|injury|fracture|laceration|swelling|periorbital|scalp|transfer|admit|admission|discharge|impression|findings|lab|cbc|cmp|urinalysis|medication|treatment|procedure|consult|exam|evaluation|diagnosis|hospital|emergency department)\b/.test(
+      text
+    )
+  );
+}
+
+function shouldDropLikelyDobEvent(event: RawTimelineEvent): boolean {
+  const combined = normalizeWhitespace(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+  );
+  const normalized = combined.toLowerCase();
+  const hasDobCue = /\b(dob|date of birth|birth date|born|born on|birthday)\b/.test(
+    normalized
+  );
+  const isDatedClinicalRecord =
+    /^\d{4}-\d{2}-\d{2}$/.test(event.date) &&
+    Number.parseInt(event.date.slice(0, 4), 10) <= 1995;
+
+  if (!hasDobCue && !isDatedClinicalRecord) {
+    return false;
+  }
+
+  return !hasStrongClinicalContext(normalized);
+}
+
+function toTimelineEventInsertRows(
+  input: {
+    caseId: string;
+    documentId: string;
+  },
+  events: RawTimelineEvent[]
+): TimelineEventInsertRow[] {
+  return events
+    .filter((event) => !shouldDropLikelyDobEvent(event))
     .map((event) => {
       const eventDate = parseDateToUtc(event.date);
       const title = normalizeWhitespace(event.title);
@@ -550,28 +603,26 @@ async function saveChunkArtifacts(input: {
       };
     })
     .filter(
-      (
-        event
-      ): event is {
-        caseId: string;
-        documentId: string;
-        eventDate: Date;
-        title: string;
-        description: string | null;
-        eventType: string;
-        sourcePage: number | null;
-        reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
-        isHidden: boolean;
-        physicianName: string | null;
-        medicalFacility: string | null;
-      } => event !== null
+      (event): event is TimelineEventInsertRow =>
+        event !== null
     );
+}
 
-  if (timelineEvents.length > 0) {
-    await prisma.timelineEvent.createMany({
-      data: timelineEvents,
+async function replaceDocumentTimelineEvents(
+  documentId: string,
+  timelineEvents: TimelineEventInsertRow[]
+) {
+  await prisma.$transaction(async (tx) => {
+    await tx.timelineEvent.deleteMany({
+      where: { documentId },
     });
-  }
+
+    if (timelineEvents.length > 0) {
+      await tx.timelineEvent.createMany({
+        data: timelineEvents,
+      });
+    }
+  });
 }
 
 async function finalizeJobSuccess(
@@ -746,7 +797,8 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
 
   let processedPages = 0;
   let chunkIndex = 0;
-  const allCleanedEvents: RawTimelineEvent[] = [];
+  const allRawChunkEvents: RawTimelineEvent[] = [];
+  const allCleanedChunkEvents: RawTimelineEvent[] = [];
 
   for (let startPage = 1; startPage <= totalPages; startPage += PDF_CHUNK_SIZE) {
     const endPage = Math.min(startPage + PDF_CHUNK_SIZE - 1, totalPages);
@@ -767,11 +819,11 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
 
     const extractedEvents = await extractTimelineEvents(chunkResult.pageTexts);
     const cleanedEvents = cleanTimelineEvents(extractedEvents);
-    allCleanedEvents.push(...cleanedEvents);
+    allRawChunkEvents.push(...extractedEvents);
+    allCleanedChunkEvents.push(...cleanedEvents);
 
     await saveChunkArtifacts({
       documentId: document.id,
-      caseId: document.caseId,
       chunkIndex,
       chunkResult: {
         text: chunkResult.text,
@@ -779,7 +831,6 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
         endPage: chunkResult.endPage,
         pageTexts: chunkResult.pageTexts,
       },
-      cleanedEvents,
     });
 
     processedPages = endPage;
@@ -799,6 +850,20 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
       processedPages,
     });
   }
+
+  const finalCandidateEvents = cleanTimelineEvents([
+    ...allRawChunkEvents,
+    ...allCleanedChunkEvents,
+  ]);
+  const finalTimelineEvents = toTimelineEventInsertRows(
+    {
+      caseId: document.caseId,
+      documentId: document.id,
+    },
+    finalCandidateEvents
+  );
+
+  await replaceDocumentTimelineEvents(document.id, finalTimelineEvents);
 
   const completedJob = await finalizeJobSuccess(
     initialJob,
@@ -820,7 +885,7 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
     caseId: document.caseId,
     totalPages,
     processedPages,
-    savedEvents: allCleanedEvents.length,
+    savedEvents: finalTimelineEvents.length,
   });
 
   return {
@@ -829,7 +894,7 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
     documentId: document.id,
     totalPages,
     processedPages,
-    savedEvents: allCleanedEvents.length,
+    savedEvents: finalTimelineEvents.length,
   };
 }
 

@@ -1,0 +1,80 @@
+[
+  {
+    "date": "1978-09-29",
+    "title": "Workplace head injury after pipe fell from derrick",
+    "description": "Work-related head injury after a pipe fell from the derrick onto the patient's head while working on a drill rig. Denied loss of consciousness.",
+    "eventType": "incident",
+    "sourcePage": 1,
+    "sourceExcerpt": "Patient information. DOB 09/29/1978. D.O.B. 09/29/1978. DATE OF SERVICE: 02/02/2019. Work-related head injury after a pipe fell from the derrick onto the patient's head while working on a drill rig."
+  },
+  {
+    "date": "1978-09-29",
+    "title": "ER presentation with head, neck, left shoulder pain",
+    "description": "Emergency Department presentation with head pain, neck pain, and left shoulder pain after the injury.",
+    "eventType": "presentation",
+    "sourcePage": 2,
+    "sourceExcerpt": "Patient information. DOB 09/29/1978. DATE OF SERVICE: 02/02/2019. Emergency Department presentation with head pain, neck pain, and left shoulder pain after the injury."
+  },
+  {
+    "date": "1978-09-29",
+    "title": "Left scalp/periorbital injury findings",
+    "description": "Exam found left scalp swelling and periorbital bruising around the left eye.",
+    "eventType": "observation",
+    "sourcePage": 3,
+    "sourceExcerpt": "Patient information. DOB 09/29/1978. DATE OF SERVICE: 02/02/2019. Exam found left scalp swelling and periorbital bruising around the left eye."
+  },
+  {
+    "date": "1978-09-29",
+    "title": "CT head result",
+    "description": "CT head with soft tissue swelling and no intracranial hemorrhage.",
+    "eventType": "report",
+    "sourcePage": 4,
+    "providerName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Patient information. DOB 09/29/1978. DATE OF SERVICE: 02/02/2019. CT head with soft tissue swelling and no intracranial hemorrhage. Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical."
+  },
+  {
+    "date": "1978-09-29",
+    "title": "C2 fracture imaging result",
+    "description": "CT cervical spine showed a nondisplaced C2 facet and lamina fracture.",
+    "eventType": "report",
+    "sourcePage": 5,
+    "providerName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Patient information. DOB 09/29/1978. DATE OF SERVICE: 02/02/2019. CT cervical spine showed a nondisplaced C2 facet and lamina fracture. Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical."
+  },
+  {
+    "date": "1978-09-29",
+    "title": "Scapular fracture imaging result",
+    "description": "Left shoulder and humerus radiographs showed a left scapular body fracture.",
+    "eventType": "report",
+    "sourcePage": 6,
+    "providerName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Patient information. DOB 09/29/1978. DATE OF SERVICE: 02/02/2019. Left shoulder and humerus radiographs showed a left scapular body fracture. Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical."
+  },
+  {
+    "date": "2019-02-02",
+    "title": "Grouped medications",
+    "description": "Medications given during the encounter included hydromorphone, ondansetron, acetaminophen, ketorolac, and Tdap.",
+    "eventType": "treatment",
+    "sourcePage": 7
+  },
+  {
+    "date": "2019-02-02",
+    "title": "Grouped labs/urinalysis",
+    "description": "Urinalysis reviewed during the encounter.",
+    "eventType": "report",
+    "sourcePage": 8
+  },
+  {
+    "date": "2019-02-02",
+    "title": "Transferred to Shannon for higher level care",
+    "description": "Patient was accepting physician: Dr. Vretis at Shannon ER for higher level of care. Transfer arranged from Reagan Memorial Hospital - Medical to Shannon Medical Center.",
+    "eventType": "treatment",
+    "sourcePage": 9,
+    "physicianName": "Dr. Vretis",
+    "medicalFacility": "Shannon ER",
+    "sourceExcerpt": "Patient was accepting physician: Dr. Vretis at Shannon ER for higher level of care. Transfer arranged from Reagan Memorial Hospital - Medical to Shannon Medical Center."
+  }
+]

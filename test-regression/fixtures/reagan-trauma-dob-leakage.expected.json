@@ -1,0 +1,79 @@
+{
+  "documentName": "reagan-trauma-dob-leakage",
+  "minEvents": 9,
+  "maxEvents": 9,
+  "expectedTitlesInOrder": [
+    "C2 fracture imaging result",
+    "CT head result",
+    "ER presentation with head, neck, left shoulder pain",
+    "Grouped labs/urinalysis",
+    "Grouped medications",
+    "Left scalp/periorbital injury findings",
+    "Scapular fracture imaging result",
+    "Transferred to Shannon for higher level care",
+    "Workplace head injury after pipe fell from derrick"
+  ],
+  "mustIncludeTitles": [
+    "Workplace head injury after pipe fell from derrick",
+    "ER presentation with head, neck, left shoulder pain",
+    "Left scalp/periorbital injury findings",
+    "CT head result",
+    "C2 fracture imaging result",
+    "Scapular fracture imaging result",
+    "Grouped medications",
+    "Grouped labs/urinalysis",
+    "Transferred to Shannon for higher level care"
+  ],
+  "mustNotIncludeTitles": [
+    "09/29/1978"
+  ],
+  "mustNotIncludeProviderNames": [
+    "Oliva King FNP-C"
+  ],
+  "mustIncludeMedicalFacilities": [
+    "Reagan Memorial Hospital - Medical",
+    "Shannon ER"
+  ],
+  "maxEventsOnDate": {
+    "1978-09-29": 0
+  },
+  "minEventsOnDate": {
+    "2019-02-02": 9
+  },
+  "expectedNoDuplicateNormalizedKeys": true,
+  "eventAssertions": [
+    {
+      "title": "Workplace head injury after pipe fell from derrick",
+      "sourcePage": 1
+    },
+    {
+      "title": "ER presentation with head, neck, left shoulder pain",
+      "sourcePage": 2
+    },
+    {
+      "title": "Left scalp/periorbital injury findings",
+      "sourcePage": 3
+    },
+    {
+      "title": "CT head result",
+      "sourcePage": 4,
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "C2 fracture imaging result",
+      "sourcePage": 5,
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "Scapular fracture imaging result",
+      "sourcePage": 6,
+      "medicalFacility": "Reagan Memorial Hospital - Medical"
+    },
+    {
+      "title": "Transferred to Shannon for higher level care",
+      "sourcePage": 9,
+      "physicianName": "Dr. Vretis",
+      "medicalFacility": "Shannon ER"
+    }
+  ]
+}

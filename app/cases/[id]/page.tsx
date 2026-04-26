@@ -277,6 +277,7 @@ function fileIsPdf(documentItem?: DocumentItem | null) {
   );
 }
 
+
 export default function CasePage() {
   const params = useParams();
   const caseId = typeof params?.id === "string" ? params.id : "";
@@ -306,9 +307,24 @@ export default function CasePage() {
   const [updatingEventId, setUpdatingEventId] = useState<string | null>(null);
   const [bulkVerifying, setBulkVerifying] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const [copiedCaseId, setCopiedCaseId] = useState(false);
 
   const downloadRef = useRef<HTMLDivElement | null>(null);
+  const selectedEventIdRef = useRef<string | null>(null);
   const setSelectedSourceDocument = setSelectedDocumentId;
+
+  async function copyCaseId() {
+    const value = caseData?.id || caseId;
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedCaseId(true);
+      window.setTimeout(() => setCopiedCaseId(false), 1500);
+    } catch (error) {
+      console.error("Copy case ID failed:", error);
+    }
+  }
 
   function handleSelectEvent(event: TimelineEvent) {
     setSelectedEventId(event.id);
@@ -500,17 +516,19 @@ function getSourcePage(event?: TimelineEvent | null) {
       setEvents(nextEvents);
       setLoadWarning(warnings.length ? warnings.join(" • ") : null);
 
+      const currentSelectedEventId = selectedEventIdRef.current;
       const resolvedSelectedEventId =
-  selectedEventId && nextEvents.some((event: TimelineEvent) => event.id === selectedEventId)
-    ? selectedEventId
-    : nextEvents[0]?.id || null;
+        currentSelectedEventId &&
+        nextEvents.some((event: TimelineEvent) => event.id === currentSelectedEventId)
+          ? currentSelectedEventId
+          : nextEvents[0]?.id || null;
 
-setSelectedEventId(resolvedSelectedEventId);
+      setSelectedEventId(resolvedSelectedEventId);
 
-const resolvedSelectedEvent =
-  nextEvents.find((event: TimelineEvent) => event.id === resolvedSelectedEventId) || null;
+      const resolvedSelectedEvent =
+        nextEvents.find((event: TimelineEvent) => event.id === resolvedSelectedEventId) || null;
 
-setSelectedDocumentId(resolvedSelectedEvent?.documentId ?? null);
+      setSelectedDocumentId(resolvedSelectedEvent?.documentId ?? null);
     } catch (err) {
       console.error("Load case error:", err);
       setError(err instanceof Error ? err.message : "Failed to load case");
@@ -518,28 +536,15 @@ setSelectedDocumentId(resolvedSelectedEvent?.documentId ?? null);
     } finally {
       setLoading(false);
     }
-  }, [caseId, selectedEventId]);
+  }, [caseId]);
 
   useEffect(() => {
     loadCase();
   }, [loadCase]);
 
   useEffect(() => {
-    const hasActiveProcessing = documents.some(
-      (document) =>
-        document.status === "UPLOADED" || document.status === "PROCESSING"
-    );
-
-    if (!caseId || !hasActiveProcessing) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      void loadCase();
-    }, 5000);
-
-    return () => window.clearInterval(interval);
-  }, [caseId, documents, loadCase]);
+    selectedEventIdRef.current = selectedEventId;
+  }, [selectedEventId]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -755,6 +760,8 @@ const activeDocument = useMemo(() => {
     return { pending, approved, hidden };
   }, [events]);
 
+  console.log("RENDER EVENTS LENGTH", events.length);
+
   function handleExport(format: "pdf" | "word" | "excel" | "zip") {
     setDownloadOpen(false);
 
@@ -949,7 +956,19 @@ Status: ${row.reviewStatus}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-slate-500">
-          {caseData?.subjectName ? <span>{caseData.subjectName}</span> : null}
+          <div className="w-full text-center">
+            <div>Subject: {caseData?.subjectName || "Not specified"}</div>
+            <div className="mt-1 flex items-center justify-center gap-2 text-xs text-slate-400">
+              <span>Case ID: {caseData?.id || caseId}</span>
+              <button
+                type="button"
+                onClick={copyCaseId}
+                className="rounded-full border border-slate-300 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+              >
+                {copiedCaseId ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
           <span>• {documents.length} documents</span>
           <span>• {events.length} events</span>
           <span>• {stats.pending} pending</span>
