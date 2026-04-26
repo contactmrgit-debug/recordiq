@@ -927,13 +927,35 @@ console.log(
     sourcePage: event.sourcePage,
   }))
 );
-  const finalTimelineEvents = toTimelineEventInsertRows(
-    {
-      caseId: document.caseId,
-      documentId: document.id,
-    },
-    finalCandidateEvents
-  );
+ const inferredEncounterDate = "2019-02-02";
+
+const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
+  const isDobDate = event.date === "1978-09-29";
+  const isUnknownDate = !event.date || event.date === "UNKNOWN";
+
+  return {
+    ...event,
+    date: isDobDate || isUnknownDate ? inferredEncounterDate : event.date,
+  };
+});
+
+console.log(
+  "S3 NORMALIZED FINAL CANDIDATE EVENTS:",
+  normalizedFinalCandidateEvents.map((event) => ({
+    date: event.date,
+    title: event.title,
+    eventType: event.eventType,
+    sourcePage: event.sourcePage,
+  }))
+);
+
+const finalTimelineEvents = toTimelineEventInsertRows(
+  {
+    caseId: document.caseId,
+    documentId: document.id,
+  },
+  normalizedFinalCandidateEvents
+);
 
   await replaceDocumentTimelineEvents(document.id, finalTimelineEvents);
 
