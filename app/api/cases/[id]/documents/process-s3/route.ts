@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   parseRecordType,
+  processNextQueuedDocumentJob,
   queueDocumentProcessing,
   sanitizeProcessingFileName,
 } from "@/lib/document-processing";
@@ -124,20 +125,23 @@ export async function POST(
       );
     }
 
-    const queuedJob = await queueDocumentProcessing({
-      caseId,
-      fileName: sanitizeProcessingFileName(fileName),
-      fileUrl: queuedFileUrl,
-      mimeType,
-      recordType: providedRecordType,
-    });
+  const queuedJob = await queueDocumentProcessing({
+  caseId,
+  fileName: sanitizeProcessingFileName(fileName),
+  fileUrl: queuedFileUrl,
+  mimeType,
+  recordType: providedRecordType,
+});
 
-    return NextResponse.json({
-      success: true,
-      documentId: queuedJob.documentId,
-      jobId: queuedJob.jobId,
-      status: queuedJob.status,
-    });
+const processingOutcome = await processNextQueuedDocumentJob();
+
+return NextResponse.json({
+  success: true,
+  documentId: queuedJob.documentId,
+  jobId: queuedJob.jobId,
+  queuedStatus: queuedJob.status,
+  processing: processingOutcome,
+});
   } catch (error: unknown) {
     console.error("[documents/process-s3] request failed", error);
 
