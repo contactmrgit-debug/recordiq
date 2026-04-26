@@ -96,6 +96,18 @@ function pickBetterString(a?: string, b?: string): string | undefined {
   }
   return a || b || undefined;
 }
+
+function pickEarlierSourcePage(a?: number, b?: number): number | undefined {
+  const validPages = [a, b].filter(
+    (page): page is number => typeof page === "number" && page > 0
+  );
+
+  if (!validPages.length) {
+    return a || b;
+  }
+
+  return Math.min(...validPages);
+}
 function mergeEvents(
   a: TimelineEventInput,
   b: TimelineEventInput
@@ -108,7 +120,7 @@ function mergeEvents(
     title: bScore > aScore ? b.title : a.title,
     description: mergeDescriptions(a.description, b.description),
     confidence: Math.max(a.confidence ?? 0, b.confidence ?? 0),
-    sourcePage: a.sourcePage ?? b.sourcePage,
+    sourcePage: pickEarlierSourcePage(a.sourcePage, b.sourcePage),
     physicianName: pickBetterString(a.physicianName, b.physicianName),
     medicalFacility: pickBetterString(a.medicalFacility, b.medicalFacility),
     eventType: resolveEventType(a.eventType, b.eventType),

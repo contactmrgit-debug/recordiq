@@ -29,33 +29,75 @@ async function parsePdf(buffer: Buffer) {
   });
 }
 
+function cleanText(input: string) {
+  return (input || "")
+    .replace(/\u0000/g, " ")
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export async function getPdfPageCount(buffer: Buffer): Promise<number> {
   const parsed = await parsePdf(buffer);
   return parsed.numpages || 1;
 }
 
-function splitTextIntoPageBuckets(text: string, totalPages: number): PdfChunkPageText[] {
-  const cleanText = (text || "").replace(/\s+/g, " ").trim();
+async function extractPerPageTextWithPdfParse(
+  buffer: Buffer
+): Promise<{ text: string; pages: number; pageTexts: PdfChunkPageText[] }> {
+  const pageTexts: PdfChunkPageText[] = [];
 
-  if (!cleanText) {
-    return Array.from({ length: totalPages }, (_, index) => ({
-      page: index + 1,
-      text: "",
-    }));
+  const parsed = await pdfParse(buffer, {
+    max: 0,
+    pagerender: async (pageData: {
+      getTextContent: () => Promise<{ items: Array<{ str?: string }> }>;
+      pageIndex?: number;
+    }) => {
+      const textContent = await pageData.getTextContent();
+      const items = textContent?.items || [];
+      const pageText = cleanText(items.map((item) => item.str || "").join(" "));
+
+      const pageNumber =
+        typeof pageData.pageIndex === "number"
+          ? pageData.pageIndex + 1
+          : pageTexts.length + 1;
+
+      pageTexts.push({
+        page: pageNumber,
+        text: pageText,
+      });
+
+      return pageText;
+    },
+  });
+
+  const pages = parsed.numpages || pageTexts.length || 1;
+  pageTexts.sort((a, b) => a.page - b.page);
+
+  if (pageTexts.length < pages) {
+    const existingPages = new Set(pageTexts.map((p) => p.page));
+    for (let i = 1; i <= pages; i++) {
+      if (!existingPages.has(i)) {
+        pageTexts.push({ page: i, text: "" });
+      }
+    }
+    pageTexts.sort((a, b) => a.page - b.page);
   }
 
-  const safeTotalPages = Math.max(1, totalPages);
-  const approxCharsPerPage = Math.ceil(cleanText.length / safeTotalPages);
+  return {
+    text: cleanText(parsed.text || ""),
+    pages,
+    pageTexts,
+  };
+}
 
-  return Array.from({ length: safeTotalPages }, (_, index) => {
-    const start = index * approxCharsPerPage;
-    const end = start + approxCharsPerPage;
-
-    return {
-      page: index + 1,
-      text: cleanText.slice(start, end).trim(),
-    };
-  });
+function slicePageTexts(
+  pageTexts: PdfChunkPageText[],
+  startPage: number,
+  endPage: number
+): PdfChunkPageText[] {
+  return pageTexts.filter((page) => page.page >= startPage && page.page <= endPage);
 }
 
 export async function extractPdfChunkText(
@@ -64,8 +106,8 @@ export async function extractPdfChunkText(
   endPage: number
 ): Promise<PdfChunkResult> {
   try {
-    const parsed = await parsePdf(buffer);
-    const totalPages = parsed.numpages || 1;
+    const parsed = await extractPerPageTextWithPdfParse(buffer);
+    const totalPages = parsed.pages;
 
     const safeStart = Math.max(1, startPage);
     const safeEnd = Math.min(endPage, totalPages);
@@ -74,10 +116,7 @@ export async function extractPdfChunkText(
       throw new Error(`Invalid page range: ${startPage}-${endPage}`);
     }
 
-    const allPageTexts = splitTextIntoPageBuckets(parsed.text || "", totalPages);
-    const pageTextEntries = allPageTexts.filter(
-      (page) => page.page >= safeStart && page.page <= safeEnd
-    );
+    const pageTextEntries = slicePageTexts(parsed.pageTexts, safeStart, safeEnd);
 
     const text = pageTextEntries
       .map((page) => page.text)

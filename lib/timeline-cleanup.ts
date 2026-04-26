@@ -2163,6 +2163,21 @@ function chooseBetterEvent(a: RawTimelineEvent, b: RawTimelineEvent): RawTimelin
   return a;
 }
 
+function pickEarlierSourcePage(
+  a?: number | null,
+  b?: number | null
+): number | null | undefined {
+  const validPages = [a, b].filter(
+    (page): page is number => typeof page === "number" && page > 0
+  );
+
+  if (validPages.length === 0) {
+    return a ?? b ?? null;
+  }
+
+  return Math.min(...validPages);
+}
+
 function dedupeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
   const deduped: RawTimelineEvent[] = [];
 
@@ -2174,7 +2189,14 @@ function dedupeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
     if (existingIndex === -1) {
       deduped.push(event);
     } else {
-      deduped[existingIndex] = chooseBetterEvent(deduped[existingIndex], event);
+      const chosen = chooseBetterEvent(deduped[existingIndex], event);
+      deduped[existingIndex] = {
+        ...chosen,
+        sourcePage: pickEarlierSourcePage(
+          deduped[existingIndex].sourcePage,
+          event.sourcePage
+        ),
+      };
     }
   }
 
