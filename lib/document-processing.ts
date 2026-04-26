@@ -1077,43 +1077,41 @@ function polishFinalCandidateEvents(events: RawTimelineEvent[]): RawTimelineEven
     "transfer-to-shannon",
   ];
 
-  return Array.from(bestByKey.entries())
-   .map(([key, event]) => {
-  const facility =
-    event.medicalFacility ||
-    "Reagan Memorial Hospital";
+   return Array.from(bestByKey.entries())
+    .map(([key, event]) => {
+      const facility = event.medicalFacility || "Reagan Memorial Hospital";
 
-  const physicianName =
-    event.physicianName ||
-    event.providerName ||
-    (key === "ct-head-result" ||
-    key === "c2-fracture" ||
-    key === "cta-neck-vascular-concern" ||
-    key === "left-scapular-fracture"
-      ? "Sarah Orrin MD"
-      : key === "transfer-to-shannon"
-        ? "Dr. Vretis"
-        : key === "er-presentation" || key === "head-face-injury-findings"
-          ? "Oliva King FNP-C"
-          : null);
+      const physicianName =
+        event.physicianName ||
+        event.providerName ||
+        (key === "ct-head-result" ||
+        key === "c2-fracture" ||
+        key === "cta-neck-vascular-concern" ||
+        key === "left-scapular-fracture"
+          ? "Sarah Orrin MD"
+          : key === "transfer-to-shannon"
+            ? "Dr. Vretis"
+            : key === "er-presentation" || key === "head-face-injury-findings"
+              ? "Oliva King FNP-C"
+              : null);
 
-  return {
-    ...event,
-    title: repairedFinalTitle(event),
-    description: repairedFinalDescription(event),
-    eventType:
-      key === "workplace-head-injury"
-        ? "incident"
-        : key === "er-presentation" || key === "head-face-injury-findings"
-          ? "symptom"
-          : key === "grouped-medications" || key === "transfer-to-shannon"
-            ? "treatment"
-            : "report",
-    physicianName,
-    providerName: physicianName,
-    medicalFacility: facility,
-  };
-})
+      return {
+        ...event,
+        title: repairedFinalTitle(event),
+        description: repairedFinalDescription(event),
+        eventType:
+          key === "workplace-head-injury"
+            ? "incident"
+            : key === "er-presentation" || key === "head-face-injury-findings"
+              ? "symptom"
+              : key === "grouped-medications" || key === "transfer-to-shannon"
+                ? "treatment"
+                : "report",
+        physicianName,
+        providerName: physicianName,
+        medicalFacility: facility,
+      };
+    })
     .filter((event) => preferredOrder.includes(finalEventKey(event)))
     .sort((a, b) => {
       const aIndex = preferredOrder.indexOf(finalEventKey(a));
@@ -1529,7 +1527,23 @@ console.log(
     sourcePage: event.sourcePage,
   }))
 );
-
+console.log(
+  "S3 POLISHED PROVIDER FACILITY CHECK:",
+  polishedFinalCandidateEvents.map((event) => ({
+    title: event.title,
+    physicianName: event.physicianName,
+    providerName: event.providerName,
+    medicalFacility: event.medicalFacility,
+  }))
+);console.log(
+  "S3 POLISHED PROVIDER FACILITY CHECK:",
+  polishedFinalCandidateEvents.map((event) => ({
+    title: event.title,
+    physicianName: event.physicianName,
+    providerName: event.providerName,
+    medicalFacility: event.medicalFacility,
+  }))
+);
 const finalTimelineEvents = toTimelineEventInsertRows(
   {
     caseId: document.caseId,
