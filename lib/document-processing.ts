@@ -1551,26 +1551,8 @@ console.log(
 );
 
 console.log(
-  "S3 POLISHED FINAL CANDIDATE EVENTS:",
-  polishedFinalCandidateEvents.map((event) => ({
-    date: event.date,
-    title: event.title,
-    description: event.description,
-    eventType: event.eventType,
-    sourcePage: event.sourcePage,
-  }))
-);
-console.log(
   "S3 POLISHED PROVIDER FACILITY CHECK:",
-  polishedFinalCandidateEvents.map((event) => ({
-    title: event.title,
-    physicianName: event.physicianName,
-    providerName: event.providerName,
-    medicalFacility: event.medicalFacility,
-  }))
-);console.log(
-  "S3 POLISHED PROVIDER FACILITY CHECK:",
-  polishedFinalCandidateEvents.map((event) => ({
+  providerBackfilledFinalCandidateEvents.map((event) => ({
     title: event.title,
     physicianName: event.physicianName,
     providerName: event.providerName,
@@ -1582,7 +1564,7 @@ const finalTimelineEvents = toTimelineEventInsertRows(
     caseId: document.caseId,
     documentId: document.id,
   },
-  polishedFinalCandidateEvents
+  providerBackfilledFinalCandidateEvents
 );
 
   await replaceDocumentTimelineEvents(document.id, finalTimelineEvents);

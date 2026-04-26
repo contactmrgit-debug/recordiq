@@ -3064,7 +3064,13 @@ function isHybridEncounterKeepEvent(event: RawTimelineEvent): boolean {
   const title = normalizeText(event.title || "");
   const desc = normalizeText(event.description || "");
   const combined = `${title} ${desc}`;
-
+// Keep trauma mechanism / injury narrative rows
+if (
+  /\b(trauma|injury|injured|fell|fall|hit|struck|derrick|pipe|work|workplace|ems|backboard|c[- ]?collar|head|neck|shoulder|laceration|bruising|swelling|periorbital|scapula|fracture)\b/.test(combined) &&
+  !/\b(demographics|registration|insurance|questionnaire|portal message|electronically signed)\b/.test(combined)
+) {
+  return true;
+}
   // Keep the main ED / encounter reason
   if (
     /\b(ed|emergency department|er)\b/.test(combined) &&
