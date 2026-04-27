@@ -1,5 +1,3 @@
-import { traceSourcePageEvents } from "@/lib/source-page-trace";
-
 export type RawTimelineEvent = {
   date: string;
   title: string;
@@ -2139,32 +2137,6 @@ function chooseBetterEvent(a: RawTimelineEvent, b: RawTimelineEvent): RawTimelin
   const aTargetedPageScore = getTargetedSourcePageScore(a);
   const bTargetedPageScore = getTargetedSourcePageScore(b);
 
-  if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
-    const aTitleText = normalizeText(a.title);
-    const bTitleText = normalizeText(b.title);
-
-    if (
-      /\bc2 fracture\b/.test(aTitleText) ||
-      /\bscapular fracture\b/.test(aTitleText) ||
-      /\bgrouped medications\b/.test(aTitleText) ||
-      /\btransfer\b/.test(aTitleText) ||
-      /\bc2 fracture\b/.test(bTitleText) ||
-      /\bscapular fracture\b/.test(bTitleText) ||
-      /\bgrouped medications\b/.test(bTitleText) ||
-      /\btransfer\b/.test(bTitleText)
-    ) {
-      console.info("[SOURCE_PAGE_SCORE]", {
-        stage: "chooseBetterEvent",
-        aTitle: a.title,
-        aPage: a.sourcePage ?? null,
-        aTargetedPageScore,
-        bTitle: b.title,
-        bPage: b.sourcePage ?? null,
-        bTargetedPageScore,
-      });
-    }
-  }
-
   if (bTargetedPageScore > aTargetedPageScore) return b;
   if (aTargetedPageScore > bTargetedPageScore) return a;
 
@@ -2232,22 +2204,6 @@ function getTargetedSourcePageScore(event: RawTimelineEvent): number {
     if (/\baccepting physician|accepted|accepting\b/.test(text)) score += 22;
     if (/\bair transport\b|\bhigher level of care\b/.test(text)) score += 22;
     if (/\btransfer memorandum\b|\btransfer note\b/.test(text)) score += 16;
-  }
-
-  if (
-    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
-    (/\bc2 fracture\b/.test(text) ||
-      /\bscapular fracture\b/.test(text) ||
-      /\bgrouped medications\b/.test(text) ||
-      /\btransfer\b/.test(text))
-  ) {
-    console.info("[SOURCE_PAGE_SCORE]", {
-      stage: "getTargetedSourcePageScore",
-      title: event.title,
-      sourcePage: event.sourcePage ?? null,
-      score,
-      preview: text.slice(0, 240),
-    });
   }
 
   return score;
@@ -3331,7 +3287,6 @@ function isHybridEncounterNoiseEvent(event: RawTimelineEvent): boolean {
 }
 export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
   const normalized = normalizeEvents(events);
-  traceSourcePageEvents("cleanup normalized", normalized);
 
   const filtered = normalized.filter((event) => {
     const combined = normalizeText(
@@ -3374,17 +3329,13 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
 
     return !shouldDropLowSignalEvent(event);
   });
-  traceSourcePageEvents("cleanup filtered", filtered);
 
   const merged = mergeGroupedEvents(filtered);
-  traceSourcePageEvents("cleanup merge output", merged);
   const deduped = dedupeEvents(merged);
-  traceSourcePageEvents("cleanup dedupe/merge output", deduped);
   const pruned = deduped.filter(
     (event) => !shouldDropStandAlonePeriorbitalRow(event, deduped)
   );
   const restored = restoreProtectedPresentationEvents(filtered, pruned);
-  traceSourcePageEvents("cleanup output", restored);
 
   return sortEvents(restored);
 }

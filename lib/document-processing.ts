@@ -4,10 +4,7 @@ import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import { extractTimelineEvents } from "@/lib/ai-timeline";
-import {
-  traceSourcePageEvents,
-  traceSourcePagePageTexts,
-} from "@/lib/source-page-trace";
+import { traceSourcePageEvents } from "@/lib/source-page-trace";
 import {
   cleanTimelineEvents,
   hasMeaningfulClinicalSignal,
@@ -1351,37 +1348,9 @@ function applySupportPageOverrides(
     }
 
     const currentPage = event.sourcePage ?? null;
-    const currentText = `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`;
     const bestPage = getBestSupportPage(pageTexts, event.title || "");
 
-    if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
-      console.info("[SOURCE_PAGE_SCORE]", {
-        stage: "process-s3 support override entry",
-        title: event.title,
-        currentPage,
-        pageTextsLength: pageTexts.length,
-      });
-
-      console.info("[SOURCE_PAGE_SCORE]", {
-        stage: "process-s3 support override scan",
-        title: event.title,
-        currentPage,
-        bestPage: bestPage?.page ?? null,
-        bestScore: bestPage?.score ?? null,
-        currentExcerpt: event.sourceExcerpt ?? null,
-        currentTextPreview: normalizeSupportPageText(currentText).slice(0, 220),
-      });
-    }
-
     if (!bestPage || bestPage.page === currentPage) {
-      if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
-        console.info("[SOURCE_PAGE_SCORE]", {
-          stage: "process-s3 support override skipped",
-          title: event.title,
-          currentPage,
-          reason: !bestPage ? "no support page found" : "best page matched current page",
-        });
-      }
       return event;
     }
 
@@ -1391,17 +1360,6 @@ function applySupportPageOverrides(
       sourcePage: bestPage.page,
       sourceExcerpt: supportExcerpt || event.sourceExcerpt,
     };
-
-    if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
-      console.info("[SOURCE_PAGE_SCORE]", {
-        stage: "process-s3 support override applied",
-        title: event.title,
-        previousPage: currentPage,
-        sourcePage: overridden.sourcePage ?? null,
-        bestPage: bestPage.page,
-        bestScore: bestPage.score,
-      });
-    }
 
     return overridden;
   });
@@ -1551,13 +1509,11 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
     if (!chunkResult.success) {
       throw new Error(chunkResult.error || "Chunk extraction failed");
     }
-traceSourcePagePageTexts("chunk pageTexts", chunkResult.pageTexts);
 allPageTexts.push(...chunkResult.pageTexts);
 const extractedEvents = await extractTimelineEvents(chunkResult.pageTexts);
 traceSourcePageEvents("raw AI candidate event", extractedEvents);
 
 const cleanedEvents = cleanTimelineEvents(extractedEvents);
-traceSourcePageEvents("cleanup output", cleanedEvents);
 
 allRawChunkEvents.push(...extractedEvents);
 allCleanedChunkEvents.push(...cleanedEvents);
@@ -1591,11 +1547,10 @@ allCleanedChunkEvents.push(...cleanedEvents);
     });
   }
 
-  const finalCandidateEvents = cleanTimelineEvents([
+const finalCandidateEvents = cleanTimelineEvents([
   ...allRawChunkEvents,
   ...allCleanedChunkEvents,
 ]);
-traceSourcePageEvents("cleanup output", finalCandidateEvents);
  const inferredEncounterDate = "2019-02-02";
 
 const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
@@ -1610,28 +1565,13 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
 
 traceSourcePageEvents("cleanup output", normalizedFinalCandidateEvents);
 
-traceSourcePageEvents(
-  "process-s3 polished/final candidate before support override",
-  normalizedFinalCandidateEvents
-);
-
 const polishedFinalCandidateEvents = polishFinalCandidateEvents(
   normalizedFinalCandidateEvents
-);
-
-traceSourcePageEvents(
-  "process-s3 polished/final candidate before direct support override",
-  polishedFinalCandidateEvents
 );
 
 const supportOverriddenFinalCandidateEvents = applySupportPageOverrides(
   polishedFinalCandidateEvents,
   allPageTexts
-);
-
-traceSourcePageEvents(
-  "process-s3 polished/final candidate after direct support override",
-  supportOverriddenFinalCandidateEvents
 );
 
 const providerBackfilledFinalCandidateEvents = supportOverriddenFinalCandidateEvents.map((event) => {

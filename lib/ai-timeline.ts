@@ -3,8 +3,6 @@ import {
   isLegalWrapperPacket,
   isOcrGarbageText,
 } from "@/lib/timeline-cleanup";
-import { traceSourcePageEvents } from "@/lib/source-page-trace";
-
 export type TimelineEventResult = {
   date: string;
   dateType?: string;
@@ -679,17 +677,6 @@ function findBestSupportPage(
   let best: PageText | undefined;
   let bestScore = Number.NEGATIVE_INFINITY;
 
-  if (
-    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
-    (spec.title === "Grouped medications" || spec.title === "Transferred to Shannon")
-  ) {
-    console.info("[SOURCE_PAGE_SCORE]", {
-      stage: "supportPage scan start",
-      title: spec.title,
-      pageTextsLength: pages.length,
-    });
-  }
-
   for (const page of pages) {
     const normalized = normalizeSearchText(page.text);
     if (!normalized) continue;
@@ -701,32 +688,6 @@ function findBestSupportPage(
       best = page;
       bestScore = score;
     }
-
-    if (
-      process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
-      (spec.title === "Grouped medications" || spec.title === "Transferred to Shannon")
-    ) {
-      console.info("[SOURCE_PAGE_SCORE]", {
-        stage: "supportPage candidate",
-        title: spec.title,
-        page: page.page,
-        score,
-        bestPage: best?.page ?? null,
-        bestScore,
-      });
-    }
-  }
-
-  if (
-    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
-    (spec.title === "Grouped medications" || spec.title === "Transferred to Shannon")
-  ) {
-    console.info("[SOURCE_PAGE_SCORE]", {
-      stage: "supportPage chosen",
-      title: spec.title,
-      page: best?.page ?? null,
-      score: bestScore,
-    });
   }
 
   return best;
@@ -854,18 +815,6 @@ function titleSpecificPageScore(titleText: string, pageText: string): number {
     }
   }
 
-  if (
-    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
-    shouldTraceSourcePageScoring(titleText)
-  ) {
-    console.info("[SOURCE_PAGE_SCORE]", {
-      stage: "titleSpecificPageScore",
-      titleText,
-      score,
-      preview: text.slice(0, 240),
-    });
-  }
-
   return score;
 }
 
@@ -917,32 +866,6 @@ function findBestPage(pages: PageText[], spec: EventSpec): PageText | undefined 
       best = page;
     }
 
-    if (
-      process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
-      shouldTraceSourcePageScoring(titleText)
-    ) {
-      console.info("[SOURCE_PAGE_SCORE]", {
-        stage: "findBestPage candidate",
-        title: spec.title,
-        page: page.page,
-        termScore,
-        score,
-        bestPage: best?.page ?? null,
-        bestScore,
-      });
-    }
-  }
-
-  if (
-    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
-    shouldTraceSourcePageScoring(titleText)
-  ) {
-    console.info("[SOURCE_PAGE_SCORE]", {
-      stage: "findBestPage chosen",
-      title: spec.title,
-      page: best?.page ?? null,
-      score: bestScore,
-    });
   }
 
   return best;
@@ -1236,36 +1159,11 @@ function extractLocalTimelineEvents(pageTexts: PageText[]): TimelineEventResult[
         spec.title === "Transferred to Shannon";
       const isWeakExcerpt = isWeakSourceExcerpt(event.sourceExcerpt);
 
-      if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" && isOverrideCandidate) {
-        console.info("[SOURCE_PAGE_SCORE]", {
-          stage: "supportPage override entry",
-          title: spec.title,
-          currentPage: event.sourcePage ?? null,
-          currentExcerpt: event.sourceExcerpt ?? null,
-          pageTextsLength: pageTexts.length,
-          isWeakExcerpt,
-          skipReason: !isOverrideCandidate
-            ? "title not eligible"
-            : !isWeakExcerpt
-              ? "excerpt not weak"
-              : null,
-        });
-      }
-
       if (
         isOverrideCandidate &&
         isWeakExcerpt
       ) {
         const supportPage = findBestSupportPage(pageTexts, spec);
-        if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
-          console.info("[SOURCE_PAGE_SCORE]", {
-            stage: "supportPage override result",
-            title: spec.title,
-            currentPage: event.sourcePage ?? null,
-            supportPage: supportPage?.page ?? null,
-            supportChosen: supportPage ? supportPage.page !== event.sourcePage : false,
-          });
-        }
 
         if (supportPage && supportPage.page !== event.sourcePage) {
           const supportExcerpt = compactSentence(
@@ -1301,24 +1199,6 @@ function extractLocalTimelineEvents(pageTexts: PageText[]): TimelineEventResult[
           } else {
             event.sourcePage = supportPage.page;
           }
-
-          if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
-            console.info("[SOURCE_PAGE_SCORE]", {
-              stage: "supportPage override",
-              title: spec.title,
-              previousPage: page.page,
-              sourcePage: event.sourcePage,
-              supportPage: supportPage.page,
-              supportPreview: normalizeSearchText(supportPage.text).slice(0, 240),
-            });
-          }
-        } else if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
-          console.info("[SOURCE_PAGE_SCORE]", {
-            stage: "supportPage no override",
-            title: spec.title,
-            currentPage: event.sourcePage ?? null,
-            reason: supportPage ? "support page matched current page" : "no support page found",
-          });
         }
       }
 
@@ -1515,7 +1395,6 @@ export async function extractTimelineEvents(
   const localEvents = sortEvents(
     dedupeEvents([...baseEvents, ...supplementalEvents])
   );
-  traceSourcePageEvents("raw AI candidate event", localEvents);
   const dateReadyEvents = localEvents.filter((event) => isAcceptedDate(event.date));
 
   return dateReadyEvents.slice(0, 9);
