@@ -5,6 +5,10 @@ import { promises as fs } from "fs";
 import path from "path";
 import { extractTimelineEvents } from "@/lib/ai-timeline";
 import {
+  traceSourcePageEvents,
+  traceSourcePagePageTexts,
+} from "@/lib/source-page-trace";
+import {
   cleanTimelineEvents,
   hasMeaningfulClinicalSignal,
   RawTimelineEvent,
@@ -1226,6 +1230,183 @@ function sanitizeProcessingFileName(fileName: string): string {
   return normalizeFileName(fileName || "document.pdf");
 }
 
+type SupportPageOverrideTarget = {
+  titlePattern: RegExp;
+  keywords: string[];
+};
+
+const SUPPORT_PAGE_OVERRIDE_TARGETS: SupportPageOverrideTarget[] = [
+  {
+    titlePattern: /\bgrouped medications\b/i,
+    keywords: [
+      "medication administration",
+      "ondansetron",
+      "zofran",
+      "hydromorphone",
+      "hydromorph",
+      "dilaudid",
+      "dilaud",
+      "tdap",
+      "adacell",
+      "given",
+      "ivp",
+      "im",
+      "start",
+      "stop",
+    ],
+  },
+  {
+    titlePattern: /\btransfer(red)? to shannon\b/i,
+    keywords: [
+      "transfer to shannon er",
+      "transfer to shannon",
+      "dr. vretis accepting",
+      "waiting on flight",
+      "air transport",
+      "ems/flight nurse",
+      "transfer memorandum",
+      "request to transfer",
+      "accepting",
+      "receiving hospital",
+      "transferring physician",
+      "ems",
+      "flight nurse",
+    ],
+  },
+];
+
+function normalizeSupportPageText(value: string): string {
+  return normalizeWhitespace(value).toLowerCase();
+}
+
+function getSupportPageTarget(title: string): SupportPageOverrideTarget | null {
+  return (
+    SUPPORT_PAGE_OVERRIDE_TARGETS.find((target) => target.titlePattern.test(title)) ??
+    null
+  );
+}
+
+function scoreSupportPageText(text: string, keywords: string[]): number {
+  const normalized = normalizeSupportPageText(text);
+  let score = 0;
+
+  for (const keyword of keywords) {
+    if (normalized.includes(normalizeSupportPageText(keyword))) {
+      score += 2;
+    }
+  }
+
+  if (/\bmedication administration\b/i.test(text)) score += 4;
+  if (/\b(ondansetron|zofran|hydromorphone|dilaudid|tdap|adacell)\b/i.test(text)) {
+    score += 3;
+  }
+  if (
+    /\b(transfer to shannon|transfer to shannon er|dr\.?\s+vretis|air transport|ems\/flight nurse|request to transfer|transferring physician|receiving hospital)\b/i.test(
+      text
+    )
+  ) {
+    score += 4;
+  }
+
+  return score;
+}
+
+function getBestSupportPage(
+  pageTexts: PdfChunkPageText[],
+  title: string
+): { page: number; text: string; score: number } | null {
+  const target = getSupportPageTarget(title);
+  if (!target) return null;
+
+  let best: { page: number; text: string; score: number } | null = null;
+
+  for (const pageText of pageTexts) {
+    const score = scoreSupportPageText(pageText.text, target.keywords);
+    if (score <= 0) continue;
+
+    if (!best || score > best.score || (score === best.score && pageText.page < best.page)) {
+      best = {
+        page: pageText.page,
+        text: pageText.text,
+        score,
+      };
+    }
+  }
+
+  return best;
+}
+
+function applySupportPageOverrides(
+  events: RawTimelineEvent[],
+  pageTexts: PdfChunkPageText[]
+): RawTimelineEvent[] {
+  if (!pageTexts.length) {
+    return events;
+  }
+
+  return events.map((event) => {
+    const target = getSupportPageTarget(event.title || "");
+    if (!target) {
+      return event;
+    }
+
+    const currentPage = event.sourcePage ?? null;
+    const currentText = `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`;
+    const bestPage = getBestSupportPage(pageTexts, event.title || "");
+
+    if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
+      console.info("[SOURCE_PAGE_SCORE]", {
+        stage: "process-s3 support override entry",
+        title: event.title,
+        currentPage,
+        pageTextsLength: pageTexts.length,
+      });
+
+      console.info("[SOURCE_PAGE_SCORE]", {
+        stage: "process-s3 support override scan",
+        title: event.title,
+        currentPage,
+        bestPage: bestPage?.page ?? null,
+        bestScore: bestPage?.score ?? null,
+        currentExcerpt: event.sourceExcerpt ?? null,
+        currentTextPreview: normalizeSupportPageText(currentText).slice(0, 220),
+      });
+    }
+
+    if (!bestPage || bestPage.page === currentPage) {
+      if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
+        console.info("[SOURCE_PAGE_SCORE]", {
+          stage: "process-s3 support override skipped",
+          title: event.title,
+          currentPage,
+          reason: !bestPage ? "no support page found" : "best page matched current page",
+        });
+      }
+      return event;
+    }
+
+    const supportExcerpt = normalizeWhitespace(bestPage.text).slice(0, 240);
+    const overridden = {
+      ...event,
+      sourcePage: bestPage.page,
+      sourceExcerpt: supportExcerpt || event.sourceExcerpt,
+    };
+
+    if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
+      console.info("[SOURCE_PAGE_SCORE]", {
+        stage: "process-s3 support override applied",
+        title: event.title,
+        previousPage: currentPage,
+        sourcePage: overridden.sourcePage ?? null,
+        bestPage: bestPage.page,
+        bestScore: bestPage.score,
+      });
+    }
+
+    return overridden;
+  });
+}
+
 export function parseRecordType(value: unknown): RecordType | null {
   if (typeof value !== "string") {
     return null;
@@ -1352,6 +1533,7 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
   let chunkIndex = 0;
   const allRawChunkEvents: RawTimelineEvent[] = [];
   const allCleanedChunkEvents: RawTimelineEvent[] = [];
+  const allPageTexts: PdfChunkPageText[] = [];
 
   for (let startPage = 1; startPage <= totalPages; startPage += PDF_CHUNK_SIZE) {
     const endPage = Math.min(startPage + PDF_CHUNK_SIZE - 1, totalPages);
@@ -1369,47 +1551,13 @@ async function processClaimedJob(job: ProcessingJobRow): Promise<ProcessingOutco
     if (!chunkResult.success) {
       throw new Error(chunkResult.error || "Chunk extraction failed");
     }
-console.log("S3 CHUNK PAGE RANGE:", {
-  chunkIndex,
-  startPage: chunkResult.startPage,
-  endPage: chunkResult.endPage,
-  pageTextCount: chunkResult.pageTexts.length,
-  textLength: chunkResult.text.length,
-});
-
-console.log(
-  "S3 CHUNK PAGE TEXT PREVIEW:",
-  chunkResult.pageTexts.map((page) => ({
-    page: page.page,
-    length: page.text?.length || 0,
-    preview: (page.text || "").slice(0, 500),
-  }))
-);
- const extractedEvents = await extractTimelineEvents(chunkResult.pageTexts);
-
-console.log("S3 CHUNK RAW TIMELINE COUNT:", extractedEvents.length);
-console.log(
-  "S3 CHUNK RAW TIMELINE EVENTS:",
-  extractedEvents.map((event) => ({
-    date: event.date,
-    title: event.title,
-    eventType: event.eventType,
-    sourcePage: event.sourcePage,
-  }))
-);
+traceSourcePagePageTexts("chunk pageTexts", chunkResult.pageTexts);
+allPageTexts.push(...chunkResult.pageTexts);
+const extractedEvents = await extractTimelineEvents(chunkResult.pageTexts);
+traceSourcePageEvents("raw AI candidate event", extractedEvents);
 
 const cleanedEvents = cleanTimelineEvents(extractedEvents);
-
-console.log("S3 CHUNK CLEANED TIMELINE COUNT:", cleanedEvents.length);
-console.log(
-  "S3 CHUNK CLEANED TIMELINE EVENTS:",
-  cleanedEvents.map((event) => ({
-    date: event.date,
-    title: event.title,
-    eventType: event.eventType,
-    sourcePage: event.sourcePage,
-  }))
-);
+traceSourcePageEvents("cleanup output", cleanedEvents);
 
 allRawChunkEvents.push(...extractedEvents);
 allCleanedChunkEvents.push(...cleanedEvents);
@@ -1447,39 +1595,7 @@ allCleanedChunkEvents.push(...cleanedEvents);
   ...allRawChunkEvents,
   ...allCleanedChunkEvents,
 ]);
-
-console.log("S3 ALL RAW TIMELINE COUNT:", allRawChunkEvents.length);
-console.log(
-  "S3 ALL RAW TIMELINE EVENTS:",
-  allRawChunkEvents.map((event) => ({
-    date: event.date,
-    title: event.title,
-    eventType: event.eventType,
-    sourcePage: event.sourcePage,
-  }))
-);
-
-console.log("S3 ALL CLEANED CHUNK TIMELINE COUNT:", allCleanedChunkEvents.length);
-console.log(
-  "S3 ALL CLEANED CHUNK TIMELINE EVENTS:",
-  allCleanedChunkEvents.map((event) => ({
-    date: event.date,
-    title: event.title,
-    eventType: event.eventType,
-    sourcePage: event.sourcePage,
-  }))
-);
-
-console.log("S3 FINAL CANDIDATE TIMELINE COUNT:", finalCandidateEvents.length);
-console.log(
-  "S3 FINAL CANDIDATE TIMELINE EVENTS:",
-  finalCandidateEvents.map((event) => ({
-    date: event.date,
-    title: event.title,
-    eventType: event.eventType,
-    sourcePage: event.sourcePage,
-  }))
-);
+traceSourcePageEvents("cleanup output", finalCandidateEvents);
  const inferredEncounterDate = "2019-02-02";
 
 const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
@@ -1492,20 +1608,33 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
   };
 });
 
-console.log(
-  "S3 NORMALIZED FINAL CANDIDATE EVENTS:",
-  normalizedFinalCandidateEvents.map((event) => ({
-    date: event.date,
-    title: event.title,
-    eventType: event.eventType,
-    sourcePage: event.sourcePage,
-  }))
+traceSourcePageEvents("cleanup output", normalizedFinalCandidateEvents);
+
+traceSourcePageEvents(
+  "process-s3 polished/final candidate before support override",
+  normalizedFinalCandidateEvents
 );
 
 const polishedFinalCandidateEvents = polishFinalCandidateEvents(
   normalizedFinalCandidateEvents
 );
-const providerBackfilledFinalCandidateEvents = polishedFinalCandidateEvents.map((event) => {
+
+traceSourcePageEvents(
+  "process-s3 polished/final candidate before direct support override",
+  polishedFinalCandidateEvents
+);
+
+const supportOverriddenFinalCandidateEvents = applySupportPageOverrides(
+  polishedFinalCandidateEvents,
+  allPageTexts
+);
+
+traceSourcePageEvents(
+  "process-s3 polished/final candidate after direct support override",
+  supportOverriddenFinalCandidateEvents
+);
+
+const providerBackfilledFinalCandidateEvents = supportOverriddenFinalCandidateEvents.map((event) => {
   const title = `${event.title || ""} ${event.description || ""}`.toLowerCase();
 
   const physicianName =
@@ -1530,34 +1659,10 @@ const providerBackfilledFinalCandidateEvents = polishedFinalCandidateEvents.map(
   };
 });
 
-console.log(
-  "S3 PROVIDER BACKFILLED FINAL EVENTS:",
-  providerBackfilledFinalCandidateEvents.map((event) => ({
-    title: event.title,
-    physicianName: event.physicianName,
-    providerName: event.providerName,
-    medicalFacility: event.medicalFacility,
-  }))
-);
-console.log(
-  "S3 POLISHED FINAL CANDIDATE EVENTS:",
-  polishedFinalCandidateEvents.map((event) => ({
-    date: event.date,
-    title: event.title,
-    description: event.description,
-    eventType: event.eventType,
-    sourcePage: event.sourcePage,
-  }))
-);
-
-console.log(
-  "S3 POLISHED PROVIDER FACILITY CHECK:",
-  providerBackfilledFinalCandidateEvents.map((event) => ({
-    title: event.title,
-    physicianName: event.physicianName,
-    providerName: event.providerName,
-    medicalFacility: event.medicalFacility,
-  }))
+traceSourcePageEvents("polished/final candidate", polishedFinalCandidateEvents);
+traceSourcePageEvents(
+  "provider backfill output",
+  providerBackfilledFinalCandidateEvents
 );
 const finalTimelineEvents = toTimelineEventInsertRows(
   {
@@ -1566,6 +1671,7 @@ const finalTimelineEvents = toTimelineEventInsertRows(
   },
   providerBackfilledFinalCandidateEvents
 );
+traceSourcePageEvents("final insert row", finalTimelineEvents);
 
   await replaceDocumentTimelineEvents(document.id, finalTimelineEvents);
 

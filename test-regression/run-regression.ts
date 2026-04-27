@@ -475,6 +475,8 @@ async function main() {
   const rootDir = process.cwd();
   const fixturesDir = path.join(rootDir, "test-regression", "fixtures");
   const outputDir = path.join(rootDir, "test-regression", "output");
+  const shouldWriteOutputs =
+    process.env.TIMELINE_REGRESSION_WRITE_OUTPUT === "1";
 
   if (!fs.existsSync(fixturesDir)) {
     console.error("Fixtures directory not found: test-regression/fixtures");
@@ -582,22 +584,24 @@ async function main() {
       );
       results.push(result);
 
-      const outFile = path.join(outputDir, `${baseName}.actual.cleaned.json`);
+      if (shouldWriteOutputs) {
+        const outFile = path.join(outputDir, `${baseName}.actual.cleaned.json`);
 
-      fs.writeFileSync(
-        outFile,
-        JSON.stringify(
-          {
-            documentName: spec.documentName ?? baseName,
-            rawSource: rawSourceLabel,
-            rawEventCount: extractedEvents.length,
-            cleanedEventCount: cleanedEvents.length,
-            cleanedEvents,
-          },
-          null,
-          2
-        )
-      );
+        fs.writeFileSync(
+          outFile,
+          JSON.stringify(
+            {
+              documentName: spec.documentName ?? baseName,
+              rawSource: rawSourceLabel,
+              rawEventCount: extractedEvents.length,
+              cleanedEventCount: cleanedEvents.length,
+              cleanedEvents,
+            },
+            null,
+            2
+          )
+        );
+      }
     } catch (error) {
       results.push({
         documentName: spec.documentName ?? baseName,

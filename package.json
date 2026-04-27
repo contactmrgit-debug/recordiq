@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "process:queued-documents": "tsx scripts/process-queued-documents.ts",
-    "test:timeline": "tsx test-regression/run-regression.ts",
+    "test:timeline": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-timeline-regression.ps1",
     "test:regression": "npm run test:timeline",
     "postinstall": "prisma generate"
   },

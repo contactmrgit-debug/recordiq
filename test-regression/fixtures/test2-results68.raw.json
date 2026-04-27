@@ -1,0 +1,83 @@
+[
+  {
+    "date": "2025-06-15",
+    "title": "Workplace head injury after pipe fell from derrick",
+    "description": "At work on a drill rig, a pipe fell from the derrick onto his head.",
+    "eventType": "incident",
+    "sourcePage": 10,
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Reagan Memorial Hospital - Medical"
+  },
+  {
+    "date": "2025-06-15",
+    "title": "ER presentation with head, neck, left shoulder pain",
+    "description": "Emergency Department presentation with head pain, neck pain, and left shoulder pain after the injury.",
+    "eventType": "symptom",
+    "sourcePage": 2,
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Reagan Memorial Hospital - Medical"
+  },
+  {
+    "date": "2025-06-15",
+    "title": "Left scalp/periorbital injury findings",
+    "description": "Exam found left scalp swelling and periorbital bruising around the left eye.",
+    "eventType": "observation",
+    "sourcePage": 3,
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Reagan Memorial Hospital - Medical"
+  },
+  {
+    "date": "2025-06-15",
+    "title": "CT head result",
+    "description": "CT head impression: soft tissue swelling and no intracranial hemorrhage.",
+    "eventType": "report",
+    "sourcePage": 12,
+    "physicianName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical."
+  },
+  {
+    "date": "2025-06-15",
+    "title": "C2 fracture imaging result",
+    "description": "Cervical spine impression: nondisplaced C2 facet and lamina fracture.",
+    "eventType": "report",
+    "sourcePage": 12,
+    "physicianName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical."
+  },
+  {
+    "date": "2025-06-15",
+    "title": "Scapular fracture imaging result",
+    "description": "Left shoulder and humerus radiographs impression: left scapular body fracture.",
+    "eventType": "report",
+    "sourcePage": 14,
+    "physicianName": "Sarah Orrin MD",
+    "medicalFacility": "Reagan Memorial Hospital - Medical",
+    "sourceExcerpt": "Electronically signed by Sarah Orrin MD. Reagan Memorial Hospital - Medical."
+  },
+  {
+    "date": "2025-06-15",
+    "title": "Grouped medications",
+    "description": "Encounter medications documented: hydromorphone, ondansetron, ketorolac, tdap, acetaminophen.",
+    "eventType": "treatment",
+    "sourcePage": 18
+  },
+  {
+    "date": "2025-06-15",
+    "title": "Grouped labs/urinalysis",
+    "description": "Labs and urinalysis documented: urinalysis.",
+    "eventType": "report",
+    "sourcePage": 19
+  },
+  {
+    "date": "2025-06-15",
+    "title": "Transferred to Shannon for higher level care",
+    "description": "Transferred to Shannon Medical Center for higher-level trauma care.",
+    "eventType": "treatment",
+    "sourcePage": 16,
+    "physicianName": "Dr. Vretis",
+    "medicalFacility": "Shannon ER",
+    "sourceExcerpt": "Patient was accepting physician: Dr. Vretis at Shannon ER for higher level of care."
+  }
+]

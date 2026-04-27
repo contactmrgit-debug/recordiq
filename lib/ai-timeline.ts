@@ -3,6 +3,7 @@ import {
   isLegalWrapperPacket,
   isOcrGarbageText,
 } from "@/lib/timeline-cleanup";
+import { traceSourcePageEvents } from "@/lib/source-page-trace";
 
 export type TimelineEventResult = {
   date: string;
@@ -255,16 +256,39 @@ const EVENT_SPECS: EventSpec[] = [
     dateType: "service_date",
     pageTerms: [
       "medication",
+      "medications",
+      "medication administration",
+      "administered",
+      "given",
+      "received",
       "hydromorphone",
+      "hydromor",
       "ondansetron",
+      "ondanset",
       "dilaudid",
+      "dilaud",
       "zofran",
+      "zofr",
       "tdap",
+      "adacell",
       "acetaminophen",
       "morphine",
       "ketorolac",
+      "ivp",
+      "im",
+      "start",
+      "stop",
     ],
-    sourceTerms: ["hydromorphone", "ondansetron", "tdap", "medication"],
+    sourceTerms: [
+      "medication administration",
+      "hydromorphone",
+      "ondansetron",
+      "tdap",
+      "adacell",
+      "given",
+      "ivp",
+      "im",
+    ],
     descriptionBuilder: (text) => {
       const meds = collectMedications(text);
       if (meds.length > 0) {
@@ -295,8 +319,33 @@ const EVENT_SPECS: EventSpec[] = [
     title: "Transferred to Shannon",
     eventType: "treatment",
     dateType: "service_date",
-    pageTerms: ["transfer", "shannon", "accepted", "air transport", "higher level"],
-    sourceTerms: ["transfer", "shannon", "accepted"],
+    pageTerms: [
+      "transfer",
+      "transferring",
+      "transfer to shannon",
+      "request to transfer",
+      "shannon",
+      "accepting",
+      "accepted",
+      "air transport",
+      "higher level",
+      "receiving hospital",
+      "ems",
+      "flight nurse",
+      "vretis",
+    ],
+    sourceTerms: [
+      "transfer to shannon",
+      "request to transfer",
+      "shannon",
+      "accepting",
+      "accepted",
+      "air transport",
+      "receiving hospital",
+      "ems",
+      "flight nurse",
+      "vretis",
+    ],
     minMatches: 2,
     descriptionBuilder: (text) => {
       const snippet =
@@ -533,23 +582,325 @@ function sourcePageToText(page: PageText | undefined): string {
   return page?.text || "";
 }
 
-function findBestPage(pages: PageText[], terms: string[]): PageText | undefined {
+function shouldTraceSourcePageScoring(titleText: string): boolean {
+  return (
+    /\bc2 fracture\b/.test(titleText) ||
+    /\bscapular fracture\b/.test(titleText) ||
+    /\bgrouped medications\b/.test(titleText) ||
+    /\btransfer\b/.test(titleText)
+  );
+}
+
+function isWeakSourceExcerpt(excerpt?: string | null): boolean {
+  const text = normalizeSearchText(excerpt ?? undefined);
+  if (!text) return true;
+  if (text.length < 45) return true;
+  if (/^(iv|ems|transfer|patient|encounter|document|note)\b/.test(text)) return true;
+
+  return false;
+}
+
+function getSupportPageScoreForEvent(
+  spec: EventSpec,
+  page: PageText
+): { score: number; reason: string } {
+  const text = normalizeSearchText(page.text);
+  let score = 0;
+  const reasons: string[] = [];
+
+  if (spec.title.includes("Grouped medications")) {
+    const medMatches = [
+      "medication administration",
+      "hydromorphone",
+      "hydromor",
+      "dilaudid",
+      "dilaud",
+      "ondansetron",
+      "ondanset",
+      "zofran",
+      "zofr",
+      "tdap",
+      "adacell",
+      "given",
+      "ivp",
+      "im",
+      "start",
+      "stop",
+    ].filter((term) => text.includes(normalizeSearchText(term)));
+
+    score += medMatches.length * 10;
+    if (/\bmedication administration\b/.test(text)) {
+      score += 25;
+      reasons.push("medication administration");
+    }
+    if (/\bhydromor|dilaudid|ondanset|zofr|tdap|adacell\b/.test(text)) {
+      score += 20;
+      reasons.push("med admin meds");
+    }
+    if (/\bgiven\b|\breceived\b|\bivp\b|\bim\b/.test(text)) {
+      score += 12;
+      reasons.push("given/route");
+    }
+    if (/\bpatient\b/.test(text) && !/\bmedication\b/.test(text)) {
+      score -= 6;
+    }
+  }
+
+  if (spec.title.includes("Transferred to Shannon")) {
+    if (/\btransfer to shannon\b/.test(text)) {
+      score += 30;
+      reasons.push("transfer to Shannon");
+    }
+    if (/\btransfer to shannon er\b/.test(text)) {
+      score += 32;
+      reasons.push("transfer to Shannon ER");
+    }
+    if (/\bdr\.?\s*vretis\b.*\baccepting\b|\baccepting\b.*\bdr\.?\s*vretis\b/.test(text)) {
+      score += 28;
+      reasons.push("Vretis accepting");
+    }
+    if (/\bwaiting on flight\b|\bair transport\b|\bems\b\/?\bflight nurse\b/.test(text)) {
+      score += 24;
+      reasons.push("flight/air transport");
+    }
+    if (/\btransfer memorandum\b|\brequest to transfer\b|\breceiving hospital\b/.test(text)) {
+      score += 20;
+      reasons.push("transfer memorandum/request");
+    }
+  }
+
+  return { score, reason: reasons.join(", ") };
+}
+
+function findBestSupportPage(
+  pages: PageText[],
+  spec: EventSpec
+): PageText | undefined {
   let best: PageText | undefined;
   let bestScore = Number.NEGATIVE_INFINITY;
+
+  if (
+    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
+    (spec.title === "Grouped medications" || spec.title === "Transferred to Shannon")
+  ) {
+    console.info("[SOURCE_PAGE_SCORE]", {
+      stage: "supportPage scan start",
+      title: spec.title,
+      pageTextsLength: pages.length,
+    });
+  }
+
+  for (const page of pages) {
+    const normalized = normalizeSearchText(page.text);
+    if (!normalized) continue;
+
+    const { score } = getSupportPageScoreForEvent(spec, page);
+    if (score <= 0) continue;
+
+    if (score > bestScore || (score === bestScore && page.page < (best?.page ?? Number.POSITIVE_INFINITY))) {
+      best = page;
+      bestScore = score;
+    }
+
+    if (
+      process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
+      (spec.title === "Grouped medications" || spec.title === "Transferred to Shannon")
+    ) {
+      console.info("[SOURCE_PAGE_SCORE]", {
+        stage: "supportPage candidate",
+        title: spec.title,
+        page: page.page,
+        score,
+        bestPage: best?.page ?? null,
+        bestScore,
+      });
+    }
+  }
+
+  if (
+    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
+    (spec.title === "Grouped medications" || spec.title === "Transferred to Shannon")
+  ) {
+    console.info("[SOURCE_PAGE_SCORE]", {
+      stage: "supportPage chosen",
+      title: spec.title,
+      page: best?.page ?? null,
+      score: bestScore,
+    });
+  }
+
+  return best;
+}
+
+function titleSpecificPageScore(titleText: string, pageText: string): number {
+  const text = normalizeSearchText(pageText);
+  let score = 0;
+
+  if (!titleText) {
+    return score;
+  }
+
+  if (titleText.includes("ct head")) {
+    if (/\bct head\b/.test(text)) score += 10;
+    if (/\bimpression\b/.test(text)) score += 6;
+    if (/\bno acute intracranial|intracranial hemorrhage|periorbital swelling\b/.test(text)) {
+      score += 10;
+    }
+  }
+
+  if (titleText.includes("c2 fracture")) {
+    if (/\bcervical spine\b/.test(text)) score += 10;
+    if (/\bimpression\b/.test(text)) score += 8;
+    if (/\bc2\b/.test(text)) score += 8;
+    if (/\bfracture\b/.test(text)) score += 8;
+    if (/\bct head\b/.test(text)) score -= 4;
+  }
+
+  if (titleText.includes("cta neck")) {
+    if (/\bcta neck\b/.test(text)) score += 10;
+    if (/\bvascular injury|vertebral artery|dissection\b/.test(text)) score += 10;
+    if (/\bimpression\b/.test(text)) score += 6;
+  }
+
+  if (titleText.includes("scapular fracture")) {
+    if (/\bnondisplaced fracture of the scapular body\b/.test(text)) score += 40;
+    if (/\bscapular body\b/.test(text)) score += 28;
+    if (/\b(?:x ?ray|xr|xray)\s+(shoulder|humerus)\b/.test(text)) score += 20;
+    if (/\bleft shoulder\b/.test(text)) score += 8;
+    if (/\bhumerus\b/.test(text)) score += 6;
+    if (/\bscapular body|scapular fracture|scapula\b/.test(text)) score += 10;
+    if (/\bimpression\b/.test(text)) score += 6;
+    if (/\bct head\b|\bc2\b|\bcervical spine\b/.test(text)) score -= 8;
+  }
+
+  if (titleText.includes("grouped medications")) {
+    const medCount = countMatches(text, [
+      "hydromorphone",
+      "dilaudid",
+      "ondansetron",
+      "zofran",
+      "morphine",
+      "fentanyl",
+      "ketorolac",
+      "toradol",
+      "tdap",
+      "tetanus",
+      "acetaminophen",
+      "tylenol",
+      "ibuprofen",
+      "naproxen",
+      "lidocaine",
+    ]);
+
+    score += medCount * 6;
+    if (medCount >= 3) score += 8;
+    if (/\bmedication administration\b|\bmedications? administered\b|\bgiven\b|\breceived\b/.test(text)) {
+      score += 18;
+    }
+    if (/\bhydromorphone\b|\bdilaudid\b|\mondansetron\b|\bzofran\b|\btdap\b|\bketorolac\b/.test(text)) {
+      score += 12;
+    }
+    if (/\burinalysis|cbc|cmp|bmp|lab\b/.test(text)) score -= 4;
+    if (/\bdischarge summary\b|\bmedication list\b|\bfollow[- ]?up\b/.test(text)) score -= 8;
+  }
+
+  if (titleText.includes("grouped labs")) {
+    const labCount = countMatches(text, [
+      "cbc",
+      "bmp",
+      "cmp",
+      "urinalysis",
+      "ua",
+      "wbc",
+      "hemoglobin",
+      "nitrite",
+      "leukocyte esterase",
+      "protein",
+    ]);
+
+    score += labCount * 6;
+    if (labCount >= 2) score += 8;
+    if (/\bhydromorphone|ondansetron|tdap|transfer|shannon\b/.test(text)) score -= 4;
+  }
+
+  if (titleText.includes("transfer")) {
+    if (/\btransfer to shannon\b|\btransferred to shannon\b|\btransfer arranged\b/.test(text)) {
+      score += 22;
+    }
+    if (/\baccepting physician|accepted|accepting\b/.test(text)) score += 18;
+    if (/\bshannon er|shannon medical center|air transport|higher level of care\b/.test(text)) {
+      score += 18;
+    }
+    if (/\btransfer memorandum\b|\btransfer note\b/.test(text)) {
+      score += 14;
+    }
+  }
+
+  if (titleText.includes("workplace head injury")) {
+    if (/\bpipe fell from the derrick|drill rig|work-related head injury\b/.test(text)) {
+      score += 12;
+    }
+  }
+
+  if (titleText.includes("er presentation")) {
+    if (/\bemergency department|head pain|neck pain|left shoulder pain\b/.test(text)) {
+      score += 12;
+    }
+  }
+
+  if (titleText.includes("left scalp/periorbital")) {
+    if (/\bscalp swelling|periorbital bruising|left eye\b/.test(text)) {
+      score += 12;
+    }
+  }
+
+  if (
+    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
+    shouldTraceSourcePageScoring(titleText)
+  ) {
+    console.info("[SOURCE_PAGE_SCORE]", {
+      stage: "titleSpecificPageScore",
+      titleText,
+      score,
+      preview: text.slice(0, 240),
+    });
+  }
+
+  return score;
+}
+
+function findBestPage(pages: PageText[], spec: EventSpec): PageText | undefined {
+  let best: PageText | undefined;
+  let bestScore = Number.NEGATIVE_INFINITY;
+  const titleText = normalizeSearchText(spec.title);
+  const sourceTerms = spec.sourceTerms ?? [];
+  const pageTerms = spec.pageTerms;
 
   for (const page of pages) {
     const text = normalizeSearchText(page.text);
     if (!text) continue;
     if (isLowQualityTimelinePage(page.text)) continue;
 
-    const termScore = countMatches(page.text, terms);
+    const termScore = countMatches(page.text, pageTerms);
     if (termScore <= 0) continue;
 
     let score = termScore * 10;
+    score += countMatches(page.text, sourceTerms) * 12;
     score += pageSignalScore(page.text);
+    score += titleSpecificPageScore(titleText, page.text);
 
     const clinicalOverlap = countMatches(page.text, HIGH_VALUE_FINDINGS);
     score += clinicalOverlap;
+
+    if (titleText) {
+      if (text.includes(titleText)) {
+        score += 4;
+      }
+
+      if (/\b(fracture|report|impression|findings|result|evaluation|transfer|medication|medications)\b/.test(titleText)) {
+        score += countMatches(page.text, ["impression", "findings", "result", "report", "evaluation"]) * 2;
+      }
+    }
 
     if (/\b(cta neck|vascular injury|vertebral artery|dissection)\b/.test(text)) {
       score += 6;
@@ -561,10 +912,37 @@ function findBestPage(pages: PageText[], terms: string[]): PageText | undefined 
       score += 5;
     }
 
-    if (score > bestScore) {
+    if (score > bestScore || (score === bestScore && page.page < (best?.page ?? Number.POSITIVE_INFINITY))) {
       bestScore = score;
       best = page;
     }
+
+    if (
+      process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
+      shouldTraceSourcePageScoring(titleText)
+    ) {
+      console.info("[SOURCE_PAGE_SCORE]", {
+        stage: "findBestPage candidate",
+        title: spec.title,
+        page: page.page,
+        termScore,
+        score,
+        bestPage: best?.page ?? null,
+        bestScore,
+      });
+    }
+  }
+
+  if (
+    process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" &&
+    shouldTraceSourcePageScoring(titleText)
+  ) {
+    console.info("[SOURCE_PAGE_SCORE]", {
+      stage: "findBestPage chosen",
+      title: spec.title,
+      page: best?.page ?? null,
+      score: bestScore,
+    });
   }
 
   return best;
@@ -848,11 +1226,102 @@ function extractLocalTimelineEvents(pageTexts: PageText[]): TimelineEventResult[
   const events: TimelineEventResult[] = [];
 
   for (const spec of EVENT_SPECS) {
-    const page = findBestPage(pageTexts, spec.pageTerms);
+    const page = findBestPage(pageTexts, spec);
     if (!page) continue;
 
     const event = buildEvent(page, spec);
     if (event) {
+      const isOverrideCandidate =
+        spec.title === "Grouped medications" ||
+        spec.title === "Transferred to Shannon";
+      const isWeakExcerpt = isWeakSourceExcerpt(event.sourceExcerpt);
+
+      if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1" && isOverrideCandidate) {
+        console.info("[SOURCE_PAGE_SCORE]", {
+          stage: "supportPage override entry",
+          title: spec.title,
+          currentPage: event.sourcePage ?? null,
+          currentExcerpt: event.sourceExcerpt ?? null,
+          pageTextsLength: pageTexts.length,
+          isWeakExcerpt,
+          skipReason: !isOverrideCandidate
+            ? "title not eligible"
+            : !isWeakExcerpt
+              ? "excerpt not weak"
+              : null,
+        });
+      }
+
+      if (
+        isOverrideCandidate &&
+        isWeakExcerpt
+      ) {
+        const supportPage = findBestSupportPage(pageTexts, spec);
+        if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
+          console.info("[SOURCE_PAGE_SCORE]", {
+            stage: "supportPage override result",
+            title: spec.title,
+            currentPage: event.sourcePage ?? null,
+            supportPage: supportPage?.page ?? null,
+            supportChosen: supportPage ? supportPage.page !== event.sourcePage : false,
+          });
+        }
+
+        if (supportPage && supportPage.page !== event.sourcePage) {
+          const supportExcerpt = compactSentence(
+            findSnippet(supportPage.text, [
+              "medication administration",
+              "hydromorphone",
+              "dilaudid",
+              "ondansetron",
+              "zofran",
+              "tdap",
+              "adacell",
+              "given",
+              "ivp",
+              "im",
+              "start",
+              "stop",
+              "transfer to shannon",
+              "transfer to shannon er",
+              "dr. vretis",
+              "accepting",
+              "request to transfer",
+              "transfer memorandum",
+              "air transport",
+              "ems",
+              "flight nurse",
+              "receiving hospital",
+            ])
+          );
+
+          if (supportExcerpt) {
+            event.sourcePage = supportPage.page;
+            event.sourceExcerpt = supportExcerpt;
+          } else {
+            event.sourcePage = supportPage.page;
+          }
+
+          if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
+            console.info("[SOURCE_PAGE_SCORE]", {
+              stage: "supportPage override",
+              title: spec.title,
+              previousPage: page.page,
+              sourcePage: event.sourcePage,
+              supportPage: supportPage.page,
+              supportPreview: normalizeSearchText(supportPage.text).slice(0, 240),
+            });
+          }
+        } else if (process.env.TIMELINE_SOURCE_PAGE_TRACE === "1") {
+          console.info("[SOURCE_PAGE_SCORE]", {
+            stage: "supportPage no override",
+            title: spec.title,
+            currentPage: event.sourcePage ?? null,
+            reason: supportPage ? "support page matched current page" : "no support page found",
+          });
+        }
+      }
+
       events.push(event);
     }
   }
@@ -1046,6 +1515,7 @@ export async function extractTimelineEvents(
   const localEvents = sortEvents(
     dedupeEvents([...baseEvents, ...supplementalEvents])
   );
+  traceSourcePageEvents("raw AI candidate event", localEvents);
   const dateReadyEvents = localEvents.filter((event) => isAcceptedDate(event.date));
 
   return dateReadyEvents.slice(0, 9);
