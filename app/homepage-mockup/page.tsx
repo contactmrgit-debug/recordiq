@@ -319,16 +319,22 @@ export default function HomepageMockupPage() {
       gap: 18px;
     }
 
-    .riq-card-icon {
-      width: 54px;
-      height: 54px;
-      border-radius: 14px;
-      background: #edf5ff;
-      display: grid;
-      place-items: center;
-      color: var(--riq-blue);
-      font-size: 26px;
-    }
+   .riq-card-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: #edf5ff;
+  display: grid;
+  place-items: center;
+  color: var(--riq-blue);
+  flex: 0 0 auto;
+}
+
+.riq-card-icon svg {
+  width: 30px;
+  height: 30px;
+  stroke: currentColor;
+}
 
     .riq-feature-card h3,
     .riq-audience-card h3 {
@@ -654,7 +660,14 @@ export default function HomepageMockupPage() {
 
         <div class="riq-feature-grid">
           <div class="riq-feature-card">
-            <div class="riq-card-icon">▧</div>
+            <div class="riq-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <path d="M14 2v6h6"/>
+    <path d="M12 17V11"/>
+    <path d="M9 14l3-3 3 3"/>
+  </svg>
+</div>
             <div>
               <h3>Upload & Extract</h3>
               <p>Securely upload PDFs. We extract and organize every record.</p>
@@ -662,7 +675,16 @@ export default function HomepageMockupPage() {
           </div>
 
           <div class="riq-feature-card">
-            <div class="riq-card-icon">☷</div>
+            <div class="riq-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+    <path d="M8 6h13"/>
+    <path d="M8 12h13"/>
+    <path d="M8 18h13"/>
+    <circle cx="3.5" cy="6" r="1.5"/>
+    <circle cx="3.5" cy="12" r="1.5"/>
+    <circle cx="3.5" cy="18" r="1.5"/>
+  </svg>
+</div>
             <div>
               <h3>Chronological Timeline</h3>
               <p>All events are arranged in order with source page references.</p>
@@ -670,7 +692,13 @@ export default function HomepageMockupPage() {
           </div>
 
           <div class="riq-feature-card">
-            <div class="riq-card-icon">▤</div>
+            <div class="riq-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+    <path d="M4 6h16"/>
+    <path d="M4 12h16"/>
+    <path d="M4 18h10"/>
+  </svg>
+</div>
             <div>
               <h3>Case Summary</h3>
               <p>AI-generated summaries highlight key events, diagnoses, and treatments.</p>
@@ -678,7 +706,13 @@ export default function HomepageMockupPage() {
           </div>
 
           <div class="riq-feature-card">
-            <div class="riq-card-icon">↓</div>
+            <div class="riq-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+    <path d="M12 3v12"/>
+    <path d="M7 10l5 5 5-5"/>
+    <path d="M5 21h14"/>
+  </svg>
+</div>
             <div>
               <h3>Export & Share</h3>
               <p>Export timelines and summaries for your case in seconds.</p>
@@ -730,7 +764,14 @@ export default function HomepageMockupPage() {
 
         <div class="riq-audience-grid">
           <div class="riq-audience-card">
-            <div class="riq-card-icon">⚖</div>
+            <div class="riq-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+    <path d="M12 3v18"/>
+    <path d="M5 7h14"/>
+    <path d="M6 7l-3 7h6l-3-7z"/>
+    <path d="M18 7l-3 7h6l-3-7z"/>
+  </svg>
+</div>
             <div>
               <h3>Personal Injury Attorneys</h3>
               <p>Save hours. Understand records faster. Build stronger cases.</p>
@@ -739,7 +780,14 @@ export default function HomepageMockupPage() {
           </div>
 
           <div class="riq-audience-card">
-            <div class="riq-card-icon">♁</div>
+            <div class="riq-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+    <circle cx="12" cy="7" r="4"/>
+    <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+    <path d="M12 14v7"/>
+    <path d="M9 18h6"/>
+  </svg>
+</div>
             <div>
               <h3>Medical Professionals</h3>
               <p>Quickly review patient histories and treatment timelines.</p>
@@ -748,7 +796,15 @@ export default function HomepageMockupPage() {
           </div>
 
           <div class="riq-audience-card">
-            <div class="riq-card-icon">🩺</div>
+            <div class="riq-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+    <path d="M6 3v6a4 4 0 0 0 8 0V3"/>
+    <path d="M6 3H4"/>
+    <path d="M14 3h2"/>
+    <path d="M10 13v2a5 5 0 0 0 10 0v-2"/>
+    <circle cx="20" cy="11" r="2"/>
+  </svg>
+</div>
             <div>
               <h3>Medical Experts</h3>
               <p>Review complex records, clarify medical findings, and support case strategy with organized source-backed timelines.</p>
@@ -757,7 +813,12 @@ export default function HomepageMockupPage() {
           </div>
 
           <div class="riq-audience-card">
-            <div class="riq-card-icon">⬟</div>
+            <div class="riq-card-icon">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+    <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"/>
+    <path d="M9 12l2 2 4-5"/>
+  </svg>
+</div>
             <div>
               <h3>Insurance & Claims</h3>
               <p>Streamline review. Reduce back-and-forth. Speed decisions.</p>
