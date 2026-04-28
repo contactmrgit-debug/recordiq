@@ -519,7 +519,52 @@ export default function HomepageMockupPage() {
       .riq-sidebar {
         display: none;
       }
+.riq-security-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #20314b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
 
+.riq-security-item strong {
+  display: block;
+  color: #071831;
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.riq-security-item span {
+  display: block;
+}
+
+.riq-security-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  color: var(--riq-blue);
+  box-shadow: 0 10px 24px rgba(17, 44, 81, 0.08);
+  flex: 0 0 auto;
+}
+
+.riq-security-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+}
+
+.riq-security-note {
+  color: #56657b;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 650;
+}
       .riq-security-grid,
       .riq-feature-grid,
       .riq-steps,
@@ -642,14 +687,65 @@ export default function HomepageMockupPage() {
     </section>
 
     <section id="security" class="riq-security-strip">
-      <div class="riq-container riq-security-grid">
-        <div>Built for Privacy.<br />Designed for Trust.</div>
-        <div>HIPAA<br />READY</div>
-        <div>SOC 2<br />PLANNED</div>
-        <div>AES-256<br />ENCRYPTION</div>
-        <div>Your data is designed to stay secure, private, and protected.</div>
+  <div class="riq-container riq-security-grid">
+    <div class="riq-security-item">
+      <span class="riq-security-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"></path>
+          <path d="M9 12l2 2 4-5"></path>
+        </svg>
+      </span>
+      <div>
+        <strong>Built for Privacy.</strong>
+        <span>Designed for Trust.</span>
       </div>
-    </section>
+    </div>
+
+    <div class="riq-security-item">
+      <span class="riq-security-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"></path>
+          <path d="M9 12l2 2 4-5"></path>
+        </svg>
+      </span>
+      <div>
+        <strong>HIPAA</strong>
+        <span>READY</span>
+      </div>
+    </div>
+
+    <div class="riq-security-item">
+      <span class="riq-security-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+          <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+        </svg>
+      </span>
+      <div>
+        <strong>SOC 2</strong>
+        <span>PLANNED</span>
+      </div>
+    </div>
+
+    <div class="riq-security-item">
+      <span class="riq-security-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"></path>
+          <path d="M12 8v8"></path>
+          <path d="M8 12h8"></path>
+        </svg>
+      </span>
+      <div>
+        <strong>AES-256</strong>
+        <span>ENCRYPTION</span>
+      </div>
+    </div>
+
+    <div class="riq-security-note">
+      Your data is designed to stay secure, private, and protected.
+    </div>
+  </div>
+</section>
 
     <section id="product" class="riq-section">
       <div class="riq-container">
@@ -669,8 +765,8 @@ export default function HomepageMockupPage() {
   </svg>
 </div>
             <div>
-              <h3>Upload & Extract</h3>
-              <p>Securely upload PDFs. We extract and organize every record.</p>
+             <h3>Precise, Secure Extraction</h3>
+<p>AI extracts key medical facts from records with structure, speed, and security.</p>
             </div>
           </div>
 
@@ -737,8 +833,8 @@ export default function HomepageMockupPage() {
 
           <div>
             <div class="riq-step-circle">▧</div>
-            <h3><span class="riq-step-number">2</span>We Extract & Organize</h3>
-            <p>Our AI extracts important information and organizes it chronologically.</p>
+          <h3><span class="riq-step-number">2</span>AI Identifies Key Facts</h3>
+<p>Our AI pulls out the important medical events, diagnoses, treatments, and dates.</p>
           </div>
 
           <div>
