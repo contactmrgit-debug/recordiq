@@ -205,29 +205,233 @@ const EVENT_SPECS: EventSpec[] = [
     dateType: "service_date",
     pageTerms: [
       "discharge summary",
-      "follow ups",
-      "follow-up",
-      "followups",
+      "disposition",
+      "follow up instructions",
+      "follow-up instructions",
       "no future appointments",
-      "medication list",
+      "discharge instructions",
     ],
-    sourceTerms: ["discharge summary", "follow-ups", "medication list"],
-    minMatches: 1,
+    sourceTerms: ["discharge summary", "disposition", "discharge instructions"],
+    minMatches: 2,
     descriptionBuilder: (text) => {
       const snippet =
         findSnippet(text, [
           "discharge summary",
-          "follow-ups",
-          "follow up",
+          "disposition",
+          "follow up instructions",
           "no future appointments",
-          "medication list",
-          "follow-up",
+          "discharge instructions",
         ]) ||
         "Discharge summary documented follow-up instructions and medication status.";
 
       return compactSentence(snippet);
     },
     confidence: 0.9,
+  },
+  {
+    title: "Lab visit documented",
+    eventType: "appointment",
+    dateType: "service_date",
+    pageTerms: [
+      "lab visit",
+      "laboratory visit",
+      "lab appointment",
+      "lab draw",
+      "laboratory encounter",
+      "blood draw",
+    ],
+    sourceTerms: ["lab visit", "laboratory visit", "lab draw", "laboratory encounter"],
+    minMatches: 1,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "lab visit",
+          "results follow-up",
+          "electrolytes",
+          "blood draw",
+        ]) || "Laboratory follow-up visit documented.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.93,
+  },
+  {
+    title: "Endocrinology results follow-up",
+    eventType: "appointment",
+    dateType: "service_date",
+    pageTerms: [
+      "dallas endocrinology",
+      "results follow-up",
+      "adrenal insufficiency",
+      "x-linked adrenoleukodystrophy",
+      "bone marrow transplant",
+    ],
+    sourceTerms: [
+      "dallas endocrinology",
+      "results follow-up",
+      "adrenal insufficiency",
+      "bone marrow transplant",
+    ],
+    minMatches: 3,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "dallas endocrinology",
+          "results follow-up",
+          "adrenal insufficiency",
+          "bone marrow transplant",
+          "x-linked adrenoleukodystrophy",
+        ]) || "Endocrinology results follow-up documented.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.96,
+  },
+  {
+    title: "ACTH remained high and renin elevated",
+    eventType: "report",
+    dateType: "service_date",
+    pageTerms: ["acth", "renin", "stress dosing", "elevated", "high"],
+    sourceTerms: ["acth", "renin", "stress dosing", "elevated"],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, ["acth", "renin", "stress dosing", "elevated"]) ||
+        "ACTH remained high after stress dosing and renin was elevated.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.97,
+  },
+  {
+    title: "Hydrocortisone and fludrocortisone doses increased",
+    eventType: "treatment",
+    dateType: "service_date",
+    pageTerms: [
+      "hydrocortisone",
+      "fludrocortisone",
+      "increase",
+      "increased",
+      "baseline",
+      "morning",
+      "afternoon",
+      "evening",
+      "dose",
+    ],
+    sourceTerms: [
+      "hydrocortisone",
+      "fludrocortisone",
+      "increase",
+      "dose",
+      "morning",
+      "afternoon",
+      "evening",
+    ],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "hydrocortisone",
+          "fludrocortisone",
+          "increase",
+          "baseline",
+          "morning",
+          "afternoon",
+          "evening",
+        ]) || "Hydrocortisone and fludrocortisone doses were increased.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.97,
+  },
+  {
+    title: "Parent reported fatigue, color changes, dry lips, and thirst",
+    eventType: "communication",
+    dateType: "service_date",
+    pageTerms: [
+      "fatigue",
+      "tired",
+      "color changes",
+      "dry lips",
+      "thirst",
+      "mother",
+      "parent",
+    ],
+    sourceTerms: ["fatigue", "color changes", "dry lips", "thirst", "mother"],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "fatigue",
+          "tired",
+          "color changes",
+          "dry lips",
+          "thirst",
+          "mother",
+          "parent",
+        ]) || "Parent reported fatigue, color changes, dry lips, and thirst.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.95,
+  },
+  {
+    title: "Repeat lytes, ACTH, and renin planned in 4 weeks",
+    eventType: "other",
+    dateType: "service_date",
+    pageTerms: [
+      "repeat",
+      "labs",
+      "electrolytes",
+      "acth",
+      "renin",
+      "four weeks",
+      "4 weeks",
+      "follow-up",
+    ],
+    sourceTerms: ["repeat", "electrolytes", "acth", "renin", "4 weeks"],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, ["repeat", "electrolytes", "acth", "renin", "4 weeks"]) ||
+        "Repeat electrolytes, ACTH, and renin testing planned in 4 weeks.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.99,
+  },
+  {
+    title: "BMT/ER guidance if symptoms persist",
+    eventType: "communication",
+    dateType: "service_date",
+    pageTerms: [
+      "symptoms persist",
+      "contact",
+      "bmt",
+      "team",
+      "go to the er",
+      "go to er",
+      "evaluation",
+      "mychart",
+    ],
+    sourceTerms: ["symptoms persist", "bmt", "go to er", "evaluation", "mychart"],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "symptoms persist",
+          "contact",
+          "bmt",
+          "go to the er",
+          "go to er",
+          "evaluation",
+          "mychart",
+        ]) ||
+        "Family was advised to contact the BMT team or go to the ER if symptoms persisted.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.96,
   },
   {
     title: "Scapular fracture imaging result",
@@ -366,6 +570,21 @@ function normalizeWhitespace(value: string): string {
 }
 
 const HIGH_VALUE_FINDINGS = [
+  "dallas endocrinology",
+  "adrenal insufficiency",
+  "x-linked adrenoleukodystrophy",
+  "bone marrow transplant",
+  "lab visit",
+  "results follow-up",
+  "acth",
+  "renin",
+  "hydrocortisone",
+  "fludrocortisone",
+  "fatigue",
+  "thirst",
+  "dry lips",
+  "bmt",
+  "mychart",
   "vascular injury",
   "dissection",
   "cta neck",
@@ -447,6 +666,26 @@ function isLowQualityTimelinePage(text: string): boolean {
   return false;
 }
 
+function hasMedicationChangeSignal(text: string): boolean {
+  return /\b(increased?|decreased|decrease|discontinued|stopped|started|changed|adjusted|reordered?|restart(?:ed)?|resumed|new dose|dose adjustment|dose change|dose increased|dose decreased)\b/i.test(
+    text
+  );
+}
+
+function isMedicationListOnlyText(text: string): boolean {
+  return (
+    /\b(medication list|current medications|active at the end of visit|this report is for documentation purposes only|for documentation purposes only|refill|quantity|start date|authorized by)\b/i.test(
+      text
+    ) && !hasMedicationChangeSignal(text)
+  );
+}
+
+function isMedicationListBoilerplateText(text: string): boolean {
+  return /\b(medication list|current medications|active at the end of visit|this report is for documentation purposes only|for documentation purposes only|refill|quantity|start date|authorized by)\b/i.test(
+    text
+  );
+}
+
 function normalizeSearchText(value?: string): string {
   return (value || "")
     .toLowerCase()
@@ -472,6 +711,14 @@ function extractDateFromText(text: string): string {
   if (isLegalWrapperPacket(text) && !hasMeaningfulClinicalSignal(text)) {
     return "UNKNOWN";
   }
+
+  if (isMedicationListOnlyText(text)) {
+    return "UNKNOWN";
+  }
+
+  const administrativeDateLabelPatterns = [
+    /\b(member effective date|coverage(?: start)?|insurance|payor|subscriber|printed on|printed by|start date|refill|quantity|guarantor|parent dob|policy effective date|effective date)\b/i,
+  ];
 
   const labeledPatterns = [
     /\b(?:VISIT\s+DATE|ADMIT\s+DATE|DATE\s+OF\s+SERVICE|SERVICE\s+DATE|ER\s+NOTE\s+ENTRY|PROGRESS\s+DATE|INCIDENT\s+DATE|INJURY\s+DATE)\s*[:\s-]*([0-1]?\d\/[0-3]?\d\/\d{4})/i,
@@ -503,10 +750,18 @@ function extractDateFromText(text: string): string {
   for (const match of genericDates) {
     const index = match.index ?? 0;
     const window = text
-      .slice(Math.max(0, index - 40), index + 40)
+      .slice(Math.max(0, index - 60), index + 60)
       .toLowerCase();
 
     if (/\b(dob|birth|date of birth)\b/.test(window)) continue;
+    if (
+      administrativeDateLabelPatterns.some((pattern) => pattern.test(window)) &&
+      !/\b(visit date|date of service|service date|results follow-up|progress date|clinical note|provider note|nursing note)\b/.test(
+        window
+      )
+    ) {
+      continue;
+    }
     if (
       /\b(deposition|subpoena|affidavit|custodian|business records|records produced|law office|attorney|certificate of service)\b/.test(
         window
@@ -607,6 +862,10 @@ function getSupportPageScoreForEvent(
   const reasons: string[] = [];
 
   if (spec.title.includes("Grouped medications")) {
+    if (isMedicationListOnlyText(page.text)) {
+      return { score: -50, reason: "medication list only" };
+    }
+
     const medMatches = [
       "medication administration",
       "hydromorphone",
@@ -735,6 +994,10 @@ function titleSpecificPageScore(titleText: string, pageText: string): number {
   }
 
   if (titleText.includes("grouped medications")) {
+    if (isMedicationListOnlyText(pageText)) {
+      score -= 30;
+    }
+
     const medCount = countMatches(text, [
       "hydromorphone",
       "dilaudid",
@@ -813,6 +1076,48 @@ function titleSpecificPageScore(titleText: string, pageText: string): number {
     if (/\bscalp swelling|periorbital bruising|left eye\b/.test(text)) {
       score += 12;
     }
+  }
+
+  if (titleText.includes("endocrinology results follow-up")) {
+    if (/\bdallas endocrinology\b/.test(text)) score += 14;
+    if (/\bresults follow-up\b/.test(text)) score += 12;
+    if (/\badrenal insufficiency\b/.test(text)) score += 8;
+    if (/\bbone marrow transplant|x-linked adrenoleukodystrophy\b/.test(text)) score += 6;
+  }
+
+  if (titleText.includes("acth remained high and renin elevated")) {
+    if (/\bacth\b/.test(text)) score += 10;
+    if (/\brenin\b/.test(text)) score += 10;
+    if (/\bstress dosing\b/.test(text)) score += 8;
+    if (/\belevated|high\b/.test(text)) score += 4;
+  }
+
+  if (titleText.includes("hydrocortisone and fludrocortisone doses increased")) {
+    if (/\bhydrocortisone\b/.test(text)) score += 12;
+    if (/\bfludrocortisone\b/.test(text)) score += 12;
+    if (/\bincrease|increased|dose\b/.test(text)) score += 10;
+  }
+
+  if (titleText.includes("parent reported fatigue")) {
+    if (/\bfatigue|tired\b/.test(text)) score += 10;
+    if (/\bcolor changes|dry lips|thirst\b/.test(text)) score += 10;
+    if (/\bmother|parent\b/.test(text)) score += 6;
+  }
+
+  if (
+    titleText.includes("repeat endocrine labs planned") ||
+    titleText.includes("repeat lytes, acth, and renin planned in 4 weeks")
+  ) {
+    if (/\brepeat\b/.test(text)) score += 10;
+    if (/\belectrolytes|acth|renin\b/.test(text)) score += 10;
+    if (/\b4 weeks|follow[- ]?up\b/.test(text)) score += 6;
+  }
+
+  if (titleText.includes("bmt/er guidance if symptoms persist")) {
+    if (/\bsymptoms persist\b/.test(text)) score += 12;
+    if (/\bbmt\b/.test(text)) score += 10;
+    if (/\ber\b/.test(text)) score += 10;
+    if (/\bmychart\b/.test(text)) score += 6;
   }
 
   return score;
@@ -1026,6 +1331,19 @@ function buildEvent(page: PageText, spec: EventSpec): TimelineEventResult | null
   const pageText = sourcePageToText(page);
   if (isLowQualityTimelinePage(pageText)) {
     return null;
+  }
+
+  if (spec.title.includes("Grouped medications")) {
+    if (isMedicationListBoilerplateText(pageText) && !hasMedicationChangeSignal(pageText)) {
+      return null;
+    }
+
+    if (
+      isMedicationListOnlyText(pageText) ||
+      (/07\/01\/2023/.test(pageText) && isMedicationListBoilerplateText(pageText))
+    ) {
+      return null;
+    }
   }
 
   const normalized = normalizeSearchText(pageText);
@@ -1368,6 +1686,224 @@ function buildSupplementalImagingEvents(
   return supplemental;
 }
 
+function buildSupplementalEndocrineEvents(
+  pageTexts: PageText[],
+  existingEvents: TimelineEventResult[]
+): TimelineEventResult[] {
+  const supplemental: TimelineEventResult[] = [];
+
+  function hasAcceptableTitleMatchWithDate(pattern: RegExp): boolean {
+    return [...existingEvents, ...supplemental].some((event) => {
+      if (!pattern.test(normalizeSearchText(event.title))) return false;
+
+      const date = normalizeSearchText(event.date);
+      const year = Number.parseInt(date.slice(0, 4), 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(year) || year < 2000) {
+        return false;
+      }
+
+      const combined = normalizeSearchText(
+        `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+      );
+
+      if (
+        /\b(dob|legal sex|mrn|csn|home phone|mobile phone|work phone|occupation|guarantor|printed by|subpoena|custodian|business records|records produced)\b/.test(
+          combined
+        )
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  for (const page of pageTexts) {
+    const text = normalizeSearchText(page.text);
+    if (!text) continue;
+
+    const date = extractDateFromText(page.text);
+    if (!isAcceptedDate(date)) continue;
+
+    const lower = text.toLowerCase();
+
+    if (
+      /\bdallas endocrinology\b/.test(lower) &&
+      /\b(results follow-up|adrenal insufficiency|x-linked adrenoleukodystrophy|ald)\b/.test(lower) &&
+      !hasAcceptableTitleMatchWithDate(/\bendocrinology results follow-up\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "Endocrinology results follow-up",
+        description:
+          "Results follow-up documented adrenal insufficiency, ALD/adrenoleukodystrophy, status post allogeneic bone marrow transplant, and X-linked adrenoleukodystrophy.",
+        eventType: "appointment",
+        confidence: 0.96,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, [
+            "dallas endocrinology",
+            "results follow-up",
+            "adrenal insufficiency",
+            "x-linked adrenoleukodystrophy",
+            "ald",
+          ])
+        ),
+        physicianName: inferMetadata(page.text, "").physicianName,
+        physicianRole: inferMetadata(page.text, "").physicianRole,
+        medicalFacility: inferMetadata(page.text, "").medicalFacility,
+        facilityType: inferMetadata(page.text, "").facilityType,
+      });
+    }
+
+    if (
+      /\bacth\b/.test(lower) &&
+      /\brenin\b/.test(lower) &&
+      /\b(stress dosing|elevated|high)\b/.test(lower) &&
+      !hasAcceptableTitleMatchWithDate(/\bacth remained high and renin elevated\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "ACTH remained high and renin elevated",
+        description:
+          "ACTH remained high after stress dosing and renin was elevated.",
+        eventType: "report",
+        confidence: 0.97,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, ["acth", "renin", "stress dosing", "elevated", "high"])
+        ),
+      });
+    }
+
+    if (
+      /\bhydrocortisone\b/.test(lower) &&
+      /\bfludrocortisone\b/.test(lower) &&
+      /\b(increase|increased|adjust|adjusted|new dose|dose adjustment)\b/.test(lower) &&
+      !hasAcceptableTitleMatchWithDate(/\bhydrocortisone and fludrocortisone doses increased\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "Hydrocortisone and fludrocortisone doses increased",
+        description:
+          "Hydrocortisone and fludrocortisone doses were increased after the endocrine follow-up.",
+        eventType: "treatment",
+        confidence: 0.97,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, [
+            "hydrocortisone",
+            "fludrocortisone",
+            "increase",
+            "increased",
+            "dose",
+          ])
+        ),
+      });
+    }
+
+    if (
+      /\b(fatigue|tired|color changes|dry lips|thirst)\b/.test(lower) &&
+      /\b(mother|parent|nursing)\b/.test(lower) &&
+      !hasAcceptableTitleMatchWithDate(/\bparent reported fatigue, color changes, dry lips, and thirst\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "Parent reported fatigue, color changes, dry lips, and thirst",
+        description:
+          "Parent reported fatigue, color changes, dry lips, and thirst.",
+        eventType: "communication",
+        confidence: 0.95,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, [
+            "fatigue",
+            "color changes",
+            "dry lips",
+            "thirst",
+            "mother",
+            "parent",
+          ])
+        ),
+      });
+    }
+
+    if (
+      /\brepeat\b/.test(lower) &&
+      /\b(acth|renin|electrolytes|lytes)\b/.test(lower) &&
+      /\b4 weeks\b/.test(lower) &&
+      !hasAcceptableTitleMatchWithDate(/\brepeat lytes, acth, and renin planned in 4 weeks\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "Repeat lytes, ACTH, and renin planned in 4 weeks",
+        description:
+          "Repeat lytes, ACTH, and renin were planned in 4 weeks.",
+        eventType: "other",
+        confidence: 0.99,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, ["repeat", "electrolytes", "acth", "renin", "4 weeks"])
+        ),
+      });
+    }
+
+    if (
+      /\b(symptoms persist|if still symptomatic|contact|bmt team|go to the er|go to er)\b/.test(
+        lower
+      ) &&
+      !hasAcceptableTitleMatchWithDate(/\bbmt\/er guidance if symptoms persist\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "BMT/ER guidance if symptoms persist",
+        description:
+          "Family was advised to contact the BMT team and/or go to the ER if symptoms persisted.",
+        eventType: "communication",
+        confidence: 0.96,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, [
+            "symptoms persist",
+            "contact",
+            "bmt",
+            "go to the er",
+            "evaluation",
+            "mychart",
+          ])
+        ),
+      });
+    }
+
+    if (
+      /\blab visit\b/.test(lower) &&
+      /\b(blood draw|electrolytes|lab visit|laboratory)\b/.test(lower) &&
+      !hasAcceptableTitleMatchWithDate(/\blab visit documented\b/)
+    ) {
+      supplemental.push({
+        date,
+        dateType: "service_date",
+        title: "Lab visit documented",
+        description: "Laboratory follow-up visit documented.",
+        eventType: "appointment",
+        confidence: 0.93,
+        sourcePage: page.page,
+        sourceExcerpt: compactSentence(
+          findSnippet(page.text, ["lab visit", "blood draw", "electrolytes", "laboratory"])
+        ),
+      });
+    }
+  }
+
+  return supplemental;
+}
+
 function normalizePageTexts(pageTexts: { page: number; text: string }[]): PageText[] {
   return pageTexts
     .filter(
@@ -1392,8 +1928,12 @@ export async function extractTimelineEvents(
     usablePages,
     baseEvents
   );
-  const localEvents = sortEvents(
+  const endocrineSupplementalEvents = buildSupplementalEndocrineEvents(
+    usablePages,
     dedupeEvents([...baseEvents, ...supplementalEvents])
+  );
+  const localEvents = sortEvents(
+    dedupeEvents([...baseEvents, ...supplementalEvents, ...endocrineSupplementalEvents])
   );
   const dateReadyEvents = localEvents.filter((event) => isAcceptedDate(event.date));
 

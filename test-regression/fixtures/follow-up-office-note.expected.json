@@ -4,11 +4,11 @@
   "maxEvents": 2,
   "expectedTitlesInOrder": [
     "Hydrocortisone dose increased after elevated ACTH and renin",
-    "Repeat endocrine labs planned"
+    "Repeat lytes, ACTH, and renin planned in 4 weeks"
   ],
   "mustIncludeTitles": [
     "Hydrocortisone dose increased after elevated ACTH and renin",
-    "Repeat endocrine labs planned"
+    "Repeat lytes, ACTH, and renin planned in 4 weeks"
   ],
   "mustIncludeEventTypes": [
     "treatment",
@@ -21,7 +21,7 @@
       "maxEvents": 2,
       "mustIncludeTitles": [
         "Hydrocortisone dose increased after elevated ACTH and renin",
-        "Repeat endocrine labs planned"
+        "Repeat lytes, ACTH, and renin planned in 4 weeks"
       ]
     }
   ]

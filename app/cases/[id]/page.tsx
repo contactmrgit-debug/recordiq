@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
+import { generateTimelineSummary } from "@/lib/timeline-summary";
+import { buildCaseExportHtml } from "@/lib/case-export-html";
 
 
 type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -56,6 +58,12 @@ type TimelineEvent = {
   medicalFacility?: string | null;
 };
 export type TimelineEventItem = TimelineEvent;
+
+type TimelineSummary = {
+  caseSummary: string;
+  keyFindings: string[];
+  mode: "short" | "grouped" | "highlights";
+};
 
 type ExtractedCode = {
   code: string;
@@ -277,6 +285,21 @@ function fileIsPdf(documentItem?: DocumentItem | null) {
   );
 }
 
+function isTimelineSummary(value: unknown): value is TimelineSummary {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Partial<TimelineSummary>;
+
+  return (
+    typeof candidate.caseSummary === "string" &&
+    Array.isArray(candidate.keyFindings) &&
+    candidate.keyFindings.every((item) => typeof item === "string") &&
+    (candidate.mode === "short" ||
+      candidate.mode === "grouped" ||
+      candidate.mode === "highlights")
+  );
+}
+
 
 export default function CasePage() {
   const params = useParams();
@@ -285,6 +308,7 @@ export default function CasePage() {
   const [caseData, setCaseData] = useState<CaseData | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [timelineSummary, setTimelineSummary] = useState<TimelineSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadWarning, setLoadWarning] = useState<string | null>(null);
@@ -438,6 +462,7 @@ function getSourcePage(event?: TimelineEvent | null) {
     try {
       setLoading(true);
       setError(null);
+      setTimelineSummary(null);
 
       const fetchJson = async (url: string, label: string) => {
         try {
@@ -505,6 +530,9 @@ function getSourcePage(event?: TimelineEvent | null) {
       const nextEvents = Array.isArray(eventsResult.data?.timelineEvents)
         ? eventsResult.data.timelineEvents
         : [];
+      const nextSummary = isTimelineSummary(eventsResult.data?.summary)
+        ? eventsResult.data.summary
+        : null;
       if (!eventsResult.ok || !eventsResult.data?.success) {
         const message = eventsResult.data?.error || eventsResult.error || "Failed to load timeline events";
         warnings.push(message);
@@ -514,6 +542,7 @@ function getSourcePage(event?: TimelineEvent | null) {
       setCaseData(nextCase);
       setDocuments(nextDocs);
       setEvents(nextEvents);
+      setTimelineSummary(nextSummary);
       setLoadWarning(warnings.length ? warnings.join(" • ") : null);
 
       const currentSelectedEventId = selectedEventIdRef.current;
@@ -760,8 +789,6 @@ const activeDocument = useMemo(() => {
     return { pending, approved, hidden };
   }, [events]);
 
-  console.log("RENDER EVENTS LENGTH", events.length);
-
   function handleExport(format: "pdf" | "word" | "excel" | "zip") {
     setDownloadOpen(false);
 
@@ -828,58 +855,21 @@ Status: ${row.reviewStatus}
       return;
     }
 
-    const html = `
-      <html>
-        <head>
-          <title>${escapeHtml(caseData?.title || "Case Chronology")}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
-            h1 { margin-bottom: 8px; }
-            .meta { color: #555; margin-bottom: 24px; font-size: 14px; }
-            .date { margin-top: 24px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
-            .item { padding: 12px 0; border-bottom: 1px solid #eee; }
-            .title { font-weight: bold; margin-bottom: 4px; }
-            .details { color: #666; font-size: 13px; margin-top: 6px; }
-            .provider { color: #222; font-size: 14px; font-weight: bold; margin-bottom: 6px; }
-          </style>
-        </head>
-        <body>
-          <h1>${escapeHtml(caseData?.title || "Case Chronology")}</h1>
-          <div class="meta">
-            ${escapeHtml(caseData?.caseType || "")}
-            ${caseData?.subjectName ? ` • ${escapeHtml(caseData.subjectName)}` : ""}
-          </div>
-          ${groupedEvents
-            .map(
-              (group) => `
-                <div class="date">${escapeHtml(group.date || "Unknown")}</div>
-                ${group.items
-                  .map(
-                    (event) => `
-                      <div class="item">
-                        ${
-                          getAttributionLine(event)
-                            ? `<div class="provider">${escapeHtml(getAttributionLine(event))}</div>`
-                            : ""
-                        }
-                        <div class="title">${escapeHtml(event.title || "")}</div>
-                        <div>${escapeHtml(event.description || "")}</div>
-                        <div class="details">
-                          ${escapeHtml(event.eventType || "other")} •
-                          Page ${escapeHtml(String(event.sourcePage ?? "-"))} •
-                          ${escapeHtml(getDocumentName(event.documentId))} •
-                          ${escapeHtml(event.reviewStatus || "PENDING")}
-                        </div>
-                      </div>
-                    `
-                  )
-                  .join("")}
-              `
-            )
-            .join("")}
-        </body>
-      </html>
-    `;
+    const exportSummary = timelineSummary ?? generateTimelineSummary(filteredEvents);
+    const summary = exportSummary;
+    const html = buildCaseExportHtml({
+      caseData,
+      groupedEvents,
+      summary: exportSummary,
+      getAttributionLine: (event) => getAttributionLine(event as TimelineEvent),
+      getDocumentName,
+    });
+    console.log("EXPORT SUMMARY CHECK", {
+      hasSummary: Boolean(summary),
+      mode: summary?.mode,
+      keyFindingsCount: summary?.keyFindings?.length,
+    });
+    console.log("EXPORT HTML HAS CASE SUMMARY", html.includes("Case Summary"));
 
     const printWindow = window.open("", "_blank", "width=1100,height=800");
     if (!printWindow) {
@@ -1062,6 +1052,39 @@ Status: ${row.reviewStatus}
     </div>
 
     <div className="h-[calc(100vh-245px)] overflow-y-auto px-4 py-4">
+      {timelineSummary ? (
+        <div className="mb-4 rounded-[24px] border border-amber-200 bg-amber-50/90 px-4 py-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-900">
+              Case Summary
+            </h3>
+            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
+              {timelineSummary.mode}
+            </span>
+          </div>
+
+          <p className="mt-2 text-sm leading-6 text-amber-950">
+            {timelineSummary.caseSummary}
+          </p>
+
+          {timelineSummary.keyFindings.length ? (
+            <div className="mt-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                Key Findings
+              </div>
+              <ul className="mt-2 space-y-1.5 text-sm leading-6 text-amber-950">
+                {timelineSummary.keyFindings.map((finding) => (
+                  <li key={finding} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                    <span>{finding}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {groupedEvents.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
           {searchQuery.trim()

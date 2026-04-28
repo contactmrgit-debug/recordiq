@@ -1,32 +1,44 @@
 {
   "documentName": "dallas-endo-no-trauma-cross-talk",
-  "minEvents": 2,
-  "maxEvents": 2,
+  "minEvents": 4,
+  "maxEvents": 4,
   "expectedTitlesInOrder": [
-    "Grouped labs/urinalysis",
-    "Grouped medications"
+    "Endocrinology results follow-up",
+    "BMT/ER guidance if symptoms persist",
+    "Parent reported fatigue, color changes, dry lips, and thirst",
+    "Repeat lytes, ACTH, and renin planned in 4 weeks"
   ],
   "mustIncludeTitles": [
-    "Grouped labs/urinalysis",
-    "Grouped medications"
+    "Endocrinology results follow-up",
+    "BMT/ER guidance if symptoms persist",
+    "Parent reported fatigue, color changes, dry lips, and thirst",
+    "Repeat lytes, ACTH, and renin planned in 4 weeks"
   ],
-  "mustNotIncludeTitles": [
-    "Workplace head injury after pipe fell from derrick",
-    "ER presentation with head, neck, left shoulder pain",
-    "Left scalp/periorbital injury findings",
-    "CT head result",
-    "C2 fracture imaging result",
-    "Scapular fracture imaging result",
-    "Transferred to Shannon for higher level care"
+  "mustIncludeEventTypes": [
+    "appointment",
+    "communication",
+    "other"
   ],
   "eventAssertions": [
     {
-      "title": "Grouped labs/urinalysis",
-      "sourcePage": 18
+      "title": "Endocrinology results follow-up",
+      "sourcePage": 13,
+      "eventType": "appointment"
     },
     {
-      "title": "Grouped medications",
-      "sourcePage": 14
+      "title": "BMT/ER guidance if symptoms persist",
+      "sourcePage": 18,
+      "eventType": "communication"
+    },
+    {
+      "title": "Parent reported fatigue, color changes, dry lips, and thirst",
+      "sourcePage": 17,
+      "eventType": "communication"
+    },
+    {
+      "title": "Repeat lytes, ACTH, and renin planned in 4 weeks",
+      "sourcePage": 16,
+      "eventType": "other"
     }
   ],
   "expectedNoDuplicateNormalizedKeys": true

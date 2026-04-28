@@ -27,11 +27,22 @@ export default function PortalDashboard() {
       setLoading(true);
 
       const res = await fetch("/api/cases");
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = null;
 
-      if (data?.success) {
-        setCases(data.cases || []);
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        console.error("CASES RAW RESPONSE:", text);
+        throw new Error(`Cases API returned non-JSON response. HTTP ${res.status}`);
       }
+
+      if (!res.ok || !data?.success) {
+        console.error("CASES RAW RESPONSE:", text);
+        throw new Error(data?.error || `Failed to load cases. HTTP ${res.status}`);
+      }
+
+      setCases(data.cases || []);
     } catch (err) {
       console.error("Failed to load cases", err);
     } finally {
@@ -50,7 +61,7 @@ export default function PortalDashboard() {
       const data = await res.json();
 
       if (data?.success && data.case?.id) {
-        router.push(`/portal/cases/${data.case.id}`);
+        router.push(`/cases/${data.case.id}`);
       }
     } catch (err) {
       console.error("Create case failed", err);
@@ -107,7 +118,7 @@ export default function PortalDashboard() {
               <div
                 key={c.id}
                 className="bg-white rounded-xl border p-5 hover:shadow-md transition cursor-pointer"
-                onClick={() => router.push(`/portal/cases/${c.id}`)}
+                onClick={() => router.push(`/cases/${c.id}`)}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs px-2 py-1 bg-gray-100 rounded">

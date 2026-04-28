@@ -125,23 +125,23 @@ export async function POST(
       );
     }
 
-  const queuedJob = await queueDocumentProcessing({
-  caseId,
-  fileName: sanitizeProcessingFileName(fileName),
-  fileUrl: queuedFileUrl,
-  mimeType,
-  recordType: providedRecordType,
-});
+    const queuedJob = await queueDocumentProcessing({
+      caseId,
+      fileName: sanitizeProcessingFileName(fileName),
+      fileUrl: queuedFileUrl,
+      mimeType,
+      recordType: providedRecordType,
+    });
 
-const processingOutcome = await processQueuedDocumentJobById(queuedJob.jobId);
+    const processingOutcome = await processQueuedDocumentJobById(queuedJob.jobId);
 
-return NextResponse.json({
-  success: true,
-  documentId: queuedJob.documentId,
-  jobId: queuedJob.jobId,
-  queuedStatus: queuedJob.status,
-  processing: processingOutcome,
-});
+    return NextResponse.json({
+      success: true,
+      documentId: queuedJob.documentId,
+      jobId: queuedJob.jobId,
+      queuedStatus: queuedJob.status,
+      processing: processingOutcome,
+    });
   } catch (error: unknown) {
     console.error("[documents/process-s3] request failed", error);
 

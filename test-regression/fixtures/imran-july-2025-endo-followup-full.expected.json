@@ -5,7 +5,7 @@
   "mustIncludeTitles": [
     "Hydrocortisone dose increased after elevated ACTH and renin",
     "Fludrocortisone increased to 0.1 mg daily",
-    "Repeat endocrine labs planned",
+    "Repeat lytes, ACTH, and renin planned in 4 weeks",
     "Interpreter phone call completed with mother"
   ],
   "mustIncludeEventTypes": [
@@ -21,7 +21,7 @@
       "mustIncludeTitles": [
         "Hydrocortisone dose increased after elevated ACTH and renin",
         "Fludrocortisone increased to 0.1 mg daily",
-        "Repeat endocrine labs planned",
+        "Repeat lytes, ACTH, and renin planned in 4 weeks",
         "Mother reported fatigue, color changes, dry lips, and thirst"
       ]
     },

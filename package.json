@@ -9,6 +9,7 @@
     "lint": "eslint",
     "process:queued-documents": "tsx scripts/process-queued-documents.ts",
     "test:timeline": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-timeline-regression.ps1",
+    "test:summary": "node --experimental-strip-types test-regression/timeline-summary.test.ts",
     "test:regression": "npm run test:timeline",
     "postinstall": "prisma generate"
   },

@@ -17,6 +17,19 @@ type ExpectedEventAssertion = {
   medicalFacility?: string | null;
   sourcePage?: number | null;
   eventType?: string | null;
+  descriptionIncludes?: string[];
+};
+
+type ForbiddenTitleDatePair = {
+  title: string;
+  date: string;
+};
+
+type ForbiddenEventAssertion = {
+  title: string;
+  date?: string;
+  descriptionIncludes?: string[];
+  sourcePage?: number | null;
 };
 
 type PageTextFixture = {
@@ -35,6 +48,7 @@ type ExpectedSpec = {
   mustNotIncludeTitles?: string[];
   mustIncludeTitlePatterns?: string[];
   mustNotIncludeTitlePatterns?: string[];
+  mustNotIncludeDescriptionPatterns?: string[];
   mustIncludeEventTypes?: string[];
   mustNotIncludeEventTypes?: string[];
   maxEventsOnDate?: Record<string, number>;
@@ -50,6 +64,7 @@ type ExpectedSpec = {
   mustNotIncludeMedicalFacilities?: string[];
   eventAssertions?: ExpectedEventAssertion[];
   expectedTitlesInOrder?: string[];
+  mustHaveDistinctDescriptionsForTitles?: string[];
 
   expectedCleanedCountMin?: number;
   expectedCleanedCountMax?: number;
@@ -57,6 +72,8 @@ type ExpectedSpec = {
   expectedMaxEventsOnSingleDate?: number;
   expectedNoDuplicateNormalizedKeys?: boolean;
   mustKeepTitlePatterns?: string[];
+  mustNotIncludeTitleDatePairs?: ForbiddenTitleDatePair[];
+  mustNotIncludeEvents?: ForbiddenEventAssertion[];
 };
 
 type RegressionResult = {
@@ -131,6 +148,49 @@ function findEventByTitle(
 ): RawTimelineEvent | undefined {
   const target = normalizeText(title);
   return events.find((e) => normalizeText(e.title) === target);
+}
+
+function hasTitleDatePair(
+  events: RawTimelineEvent[],
+  title: string,
+  date: string
+): boolean {
+  const targetTitle = normalizeText(title);
+  const targetDate = normalizeText(date);
+
+  return events.some(
+    (e) =>
+      normalizeText(e.title) === targetTitle &&
+      normalizeText(e.date) === targetDate
+  );
+}
+
+function hasForbiddenEvent(
+  events: RawTimelineEvent[],
+  forbidden: ForbiddenEventAssertion
+): boolean {
+  const targetTitle = normalizeText(forbidden.title);
+  const targetDate = forbidden.date ? normalizeText(forbidden.date) : null;
+
+  return events.some((e) => {
+    if (normalizeText(e.title) !== targetTitle) return false;
+    if (targetDate && normalizeText(e.date) !== targetDate) return false;
+    if (forbidden.sourcePage !== undefined && (e.sourcePage ?? null) !== forbidden.sourcePage) {
+      return false;
+    }
+
+    if (forbidden.descriptionIncludes?.length) {
+      const description = normalizeText(e.description);
+      const sourceExcerpt = normalizeText(e.sourceExcerpt);
+      const combined = `${description} ${sourceExcerpt}`;
+
+      if (!forbidden.descriptionIncludes.every((term) => combined.includes(normalizeText(term)))) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 }
 
 function getEventTitles(events: RawTimelineEvent[]): string[] {
@@ -399,6 +459,16 @@ function validateExpected(
     );
   }
 
+  for (const pattern of spec.mustNotIncludeDescriptionPatterns ?? []) {
+    const regex = new RegExp(pattern, "i");
+
+    assertCondition(
+      !cleanedEvents.some((e) => regex.test(e.description ?? "")),
+      `Found forbidden description pattern in cleaned events: ${pattern}`,
+      errors
+    );
+  }
+
   for (const assertion of spec.eventAssertions ?? []) {
     const event = findEventByTitle(cleanedEvents, assertion.title);
 
@@ -441,6 +511,51 @@ function validateExpected(
         errors
       );
     }
+
+    if (assertion.descriptionIncludes?.length) {
+      const combined = normalizeText(
+        `${event.description || ""} ${event.sourceExcerpt || ""}`
+      );
+
+      assertCondition(
+        assertion.descriptionIncludes.every((term) =>
+          combined.includes(normalizeText(term))
+        ),
+        `Event "${assertion.title}" expected description to include: ${assertion.descriptionIncludes.join(", ")}`,
+        errors
+      );
+    }
+  }
+
+  for (const titleList of [spec.mustHaveDistinctDescriptionsForTitles ?? []]) {
+    if (!titleList.length) continue;
+
+    const descriptions = titleList
+      .map((title) => findEventByTitle(cleanedEvents, title)?.description ?? "")
+      .map((value) => normalizeText(value))
+      .filter(Boolean);
+
+    assertCondition(
+      new Set(descriptions).size === descriptions.length,
+      `Expected distinct descriptions for titles: ${titleList.join(" | ")}`,
+      errors
+    );
+  }
+
+  for (const forbidden of spec.mustNotIncludeTitleDatePairs ?? []) {
+    assertCondition(
+      !hasTitleDatePair(cleanedEvents, forbidden.title, forbidden.date),
+      `Found forbidden title/date pair: "${forbidden.date} - ${forbidden.title}"`,
+      errors
+    );
+  }
+
+  for (const forbidden of spec.mustNotIncludeEvents ?? []) {
+    assertCondition(
+      !hasForbiddenEvent(cleanedEvents, forbidden),
+      `Found forbidden event: "${forbidden.date ?? "*"} - ${forbidden.title}"`,
+      errors
+    );
   }
 
   if (spec.expectedTitlesInOrder?.length) {
@@ -576,6 +691,31 @@ async function main() {
 
       const extractedEvents = rawEvents ?? [];
       const cleanedEvents = cleanTimelineEvents(extractedEvents);
+
+      if (
+        process.env.TIMELINE_REGRESSION_DEBUG === "1" ||
+        process.env.TIMELINE_REGRESSION_DEBUG_FIXTURE === baseName
+      ) {
+        console.log(`DEBUG ${spec.documentName ?? baseName} raw titles:`);
+        console.log(
+          extractedEvents
+            .map(
+              (event) =>
+                `${event.date || "UNKNOWN"} - ${event.title || ""} [p${event.sourcePage ?? "?"}]`
+            )
+            .join(" | ")
+        );
+        console.log(`DEBUG ${spec.documentName ?? baseName} cleaned titles:`);
+        console.log(
+          cleanedEvents
+            .map(
+              (event) =>
+                `${event.date || "UNKNOWN"} - ${event.title || ""} [p${event.sourcePage ?? "?"}]`
+            )
+            .join(" | ")
+        );
+      }
+
       const result = validateExpected(
         spec,
         extractedEvents,

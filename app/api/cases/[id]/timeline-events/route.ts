@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { generateTimelineSummary } from "@/lib/timeline-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -44,9 +45,7 @@ export async function GET(
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      timelineEvents: timelineEvents.map((event) => ({
+    const timelineEventsResponse = timelineEvents.map((event) => ({
         id: event.id,
         date:
           event.eventDate instanceof Date
@@ -61,7 +60,14 @@ export async function GET(
         documentId: event.documentId || null,
         physicianName: event.physicianName || null,
         medicalFacility: event.medicalFacility || null,
-      })),
+      }));
+
+    const summary = generateTimelineSummary(timelineEventsResponse);
+
+    return NextResponse.json({
+      success: true,
+      timelineEvents: timelineEventsResponse,
+      summary,
     });
   } catch (error) {
     console.error("GET /api/cases/[id]/timeline-events error:", error);

@@ -1,0 +1,145 @@
+{
+  "documentName": "dallas-endo-results-followup-med-list-noise",
+  "minEvents": 7,
+  "maxEvents": 9,
+  "mustIncludeTitles": [
+    "Lab visit documented",
+    "Endocrinology results follow-up",
+    "ACTH remained high and renin elevated",
+    "Hydrocortisone and fludrocortisone doses increased",
+    "Parent reported fatigue, color changes, dry lips, and thirst",
+    "Repeat lytes, ACTH, and renin planned in 4 weeks",
+    "BMT/ER guidance if symptoms persist"
+  ],
+  "mustIncludeEventTypes": [
+    "appointment",
+    "report",
+    "treatment",
+    "communication",
+    "other"
+  ],
+  "mustNotIncludeTitleDatePairs": [
+    {
+      "title": "Grouped medications",
+      "date": "2023-07-01"
+    },
+    {
+      "title": "Parent reported fatigue, color changes, dry lips, and thirst",
+      "date": "2023-10-01"
+    }
+  ],
+  "mustNotIncludeDescriptionPatterns": [
+    "\\b(dob|legal sex|mrn|csn|home phone|mobile phone|work phone|occupation|guarantor|printed by|subpoena|custodian|business records|records produced)\\b"
+  ],
+  "mustNotIncludeEvents": [
+    {
+      "title": "Grouped medications",
+      "date": "2023-07-01",
+      "descriptionIncludes": [
+        "hydromorphone",
+        "ondansetron",
+        "tdap"
+      ]
+    }
+  ],
+  "mustHaveDistinctDescriptionsForTitles": [
+    "Hydrocortisone and fludrocortisone doses increased",
+    "Repeat lytes, ACTH, and renin planned in 4 weeks"
+  ],
+  "maxEventsOnDate": {
+    "2023-10-01": 0,
+    "2019-02-02": 0
+  },
+  "dateRules": [
+    {
+      "date": "2025-07-18",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Lab visit documented"
+      ]
+    },
+    {
+      "date": "2025-07-21",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Endocrinology results follow-up"
+      ]
+    },
+    {
+      "date": "2025-07-22",
+      "minEvents": 4,
+      "maxEvents": 4,
+      "mustIncludeTitles": [
+        "ACTH remained high and renin elevated",
+        "Hydrocortisone and fludrocortisone doses increased",
+        "Parent reported fatigue, color changes, dry lips, and thirst",
+        "Repeat lytes, ACTH, and renin planned in 4 weeks"
+      ]
+    },
+    {
+      "date": "2025-07-25",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "BMT/ER guidance if symptoms persist"
+      ]
+    }
+  ],
+  "eventAssertions": [
+    {
+      "title": "Lab visit documented",
+      "sourcePage": 23,
+      "eventType": "appointment"
+    },
+    {
+      "title": "Endocrinology results follow-up",
+      "sourcePage": 15,
+      "eventType": "appointment"
+    },
+    {
+      "title": "ACTH remained high and renin elevated",
+      "sourcePage": 16,
+      "eventType": "report"
+    },
+    {
+      "title": "Hydrocortisone and fludrocortisone doses increased",
+      "sourcePage": 16,
+      "eventType": "treatment"
+    },
+    {
+      "title": "Parent reported fatigue, color changes, dry lips, and thirst",
+      "sourcePage": 17,
+      "eventType": "communication",
+      "date": "2025-07-22"
+    },
+    {
+      "title": "Repeat lytes, ACTH, and renin planned in 4 weeks",
+      "sourcePage": 19,
+      "eventType": "other",
+      "descriptionIncludes": [
+        "repeat lytes",
+        "acth",
+        "renin",
+        "4 weeks"
+      ]
+    },
+    {
+      "title": "Hydrocortisone and fludrocortisone doses increased",
+      "sourcePage": 16,
+      "eventType": "treatment",
+      "descriptionIncludes": [
+        "dose increases",
+        "10 mg",
+        "7.5 mg",
+        "0.1 mg"
+      ]
+    },
+    {
+      "title": "BMT/ER guidance if symptoms persist",
+      "sourcePage": 20,
+      "eventType": "communication"
+    }
+  ]
+}

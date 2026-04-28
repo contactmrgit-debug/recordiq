@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { generateTimelineSummary } from "@/lib/timeline-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -39,9 +40,20 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       },
     });
 
+    const summary = generateTimelineSummary(
+      timelineEvents.map((event) => ({
+        date: event.eventDate instanceof Date ? event.eventDate.toISOString().split("T")[0] : "UNKNOWN",
+        title: event.title || "",
+        description: event.description || "",
+        eventType: event.eventType || "other",
+        sourcePage: event.sourcePage ?? null,
+      }))
+    );
+
     return NextResponse.json({
       success: true,
       timelineEvents,
+      summary,
     });
   } catch (error) {
     console.error("GET TIMELINE ERROR:", error);
