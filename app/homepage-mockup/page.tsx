@@ -269,13 +269,64 @@ export default function HomepageMockupPage() {
     }
 
     .riq-security-grid {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr 1fr 1fr 1.4fr;
-      align-items: center;
-      gap: 28px;
-      font-weight: 800;
-    }
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1.5fr;
+  align-items: center;
+  gap: 28px;
+}
 
+.riq-security-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #20314b;
+}
+
+.riq-security-item strong {
+  display: block;
+  color: #071831;
+  font-size: 15px;
+  line-height: 1.15;
+  font-weight: 900;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.riq-security-item span {
+  display: block;
+  color: #20314b;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.riq-security-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #ffffff;
+  display: grid !important;
+  place-items: center;
+  color: var(--riq-blue);
+  box-shadow: 0 10px 24px rgba(17, 44, 81, 0.08);
+  flex: 0 0 auto;
+}
+
+.riq-security-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  display: block;
+}
+
+.riq-security-note {
+  color: #56657b;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 650;
+}
     .riq-section {
       padding: 56px 0;
     }
@@ -573,6 +624,65 @@ export default function HomepageMockupPage() {
         grid-template-columns: 1fr;
       }
     }
+      .riq-security-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1.5fr;
+  align-items: center;
+  gap: 28px;
+}
+
+.riq-security-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #20314b;
+}
+
+.riq-security-item strong {
+  display: block;
+  color: #071831;
+  font-size: 15px;
+  line-height: 1.15;
+  font-weight: 900;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.riq-security-item span {
+  display: block;
+  color: #20314b;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.riq-security-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #ffffff;
+  display: grid !important;
+  place-items: center;
+  color: var(--riq-blue);
+  box-shadow: 0 10px 24px rgba(17, 44, 81, 0.08);
+  flex: 0 0 auto;
+}
+
+.riq-security-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  display: block;
+}
+
+.riq-security-note {
+  color: #56657b;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 650;
+}
   </style>
 
   <header class="riq-navbar">
