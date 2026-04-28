@@ -1196,6 +1196,127 @@ function shouldDropForbiddenMedicationListInsertRow(
   );
 }
 
+function normalizeSearchText(value?: string | null): string {
+  return normalizeWhitespace(value)
+    .toLowerCase()
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/[^\w\s/-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasAnySearchTerm(text: string, terms: string[]): boolean {
+  const normalized = normalizeSearchText(text);
+  return terms.some((term) => normalized.includes(normalizeSearchText(term)));
+}
+
+function hasAllSearchTerms(text: string, terms: string[]): boolean {
+  const normalized = normalizeSearchText(text);
+  return terms.every((term) => normalized.includes(normalizeSearchText(term)));
+}
+
+function getNearbyPageText(
+  pageTexts: PdfChunkPageText[],
+  sourcePage: number,
+  radius = 1
+): string {
+  const start = sourcePage - radius;
+  const end = sourcePage + radius;
+
+  return normalizeSearchText(
+    pageTexts
+      .filter((pageText) => pageText.page >= start && pageText.page <= end)
+      .sort((a, b) => a.page - b.page)
+      .map((pageText) => pageText.text)
+      .join(" ")
+  );
+}
+
+function shouldDropUnsupportedEndocrineInsertRow(
+  event: TimelineEventInsertRow,
+  pageTexts: PdfChunkPageText[]
+): boolean {
+  const combinedText = normalizeSearchText(
+    `${event.title || ""} ${event.description || ""}`
+  );
+
+  const endocrineRules = [
+    {
+      matchTerms: [
+        "bmt/er guidance",
+        "bmt team",
+        "symptoms persist",
+        "go to the er",
+        "go to er",
+      ],
+      supportAllTerms: ["bmt"],
+      supportAnyTerms: ["symptoms persist", "go to the er", "go to er", "evaluation"],
+    },
+    {
+      matchTerms: ["acth", "renin"],
+      supportAllTerms: ["acth", "renin"],
+      supportAnyTerms: ["stress dosing", "elevated", "high"],
+    },
+    {
+      matchTerms: ["hydrocortisone", "fludrocortisone"],
+      supportAllTerms: ["hydrocortisone", "fludrocortisone"],
+      supportAnyTerms: ["increase", "increased", "adjust", "adjusted", "new dose", "dose adjustment"],
+    },
+    {
+      matchTerms: ["repeat lytes", "endocrine labs"],
+      supportAllTerms: ["repeat", "acth", "renin"],
+      supportAnyTerms: ["lytes", "electrolytes", "4 weeks"],
+    },
+    {
+      matchTerms: [
+        "adrenal insufficiency",
+        "ald",
+        "adrenoleukodystrophy",
+        "endocrinology",
+      ],
+      supportAnyTerms: [
+        "adrenal insufficiency",
+        "ald",
+        "adrenoleukodystrophy",
+        "endocrinology",
+        "results follow-up",
+      ],
+    },
+  ];
+
+  const matchedRules = endocrineRules.filter((rule) =>
+    rule.matchTerms.some((term) => combinedText.includes(normalizeSearchText(term)))
+  );
+
+  if (!matchedRules.length) {
+    return false;
+  }
+
+  if (event.sourcePage == null) {
+    return true;
+  }
+
+  const supportText = getNearbyPageText(pageTexts, event.sourcePage, 1);
+
+  return matchedRules.some((rule) => {
+    if (
+      rule.supportAllTerms &&
+      !hasAllSearchTerms(supportText, rule.supportAllTerms)
+    ) {
+      return true;
+    }
+
+    if (
+      rule.supportAnyTerms &&
+      !hasAnySearchTerm(supportText, rule.supportAnyTerms)
+    ) {
+      return true;
+    }
+
+    return false;
+  });
+}
+
 function forceLateEndocrineDateOverrides(
   event: TimelineEventInsertRow,
   documentFileName?: string | null
@@ -1220,22 +1341,43 @@ function forceLateEndocrineDateOverrides(
   return event;
 }
 
+export function applyFinalTimelineInsertGuardrails(
+  timelineEvents: TimelineEventInsertRow[],
+  pageTexts: PdfChunkPageText[],
+  documentFileName?: string | null
+): TimelineEventInsertRow[] {
+  const normalizedEvents = timelineEvents.map((event) =>
+    forceLateEndocrineDateOverrides(event, documentFileName)
+  );
+
+  return normalizedEvents
+    .filter((event) => !shouldDropForbiddenMedicationListInsertRow(event))
+    .filter((event) => !shouldDropUnsupportedEndocrineInsertRow(event, pageTexts));
+}
+
 async function replaceDocumentTimelineEvents(
   documentId: string,
-  timelineEvents: TimelineEventInsertRow[]
+  timelineEvents: TimelineEventInsertRow[],
+  pageTexts: PdfChunkPageText[],
+  documentFileName?: string | null
 ) {
   await prisma.$transaction(async (tx) => {
-    const filteredTimelineEvents = timelineEvents
-      .map((event) => forceLateEndocrineDateOverrides(event))
-      .filter((event) => !shouldDropForbiddenMedicationListInsertRow(event));
+    const preFilterEvents = timelineEvents.map((event) =>
+      forceLateEndocrineDateOverrides(event, documentFileName)
+    );
+    const filteredFinalEvents = applyFinalTimelineInsertGuardrails(
+      timelineEvents,
+      pageTexts,
+      documentFileName
+    );
 
     await tx.timelineEvent.deleteMany({
       where: { documentId },
     });
 
-    if (filteredTimelineEvents.length > 0) {
+    if (filteredFinalEvents.length > 0) {
       await tx.timelineEvent.createMany({
-        data: filteredTimelineEvents,
+        data: filteredFinalEvents,
       });
     }
   });
@@ -1643,7 +1785,12 @@ const finalTimelineEvents = toTimelineEventInsertRows(
   providerBackfilledFinalCandidateEvents
 ).map((event) => forceLateEndocrineDateOverrides(event, document.fileName));
 
-  await replaceDocumentTimelineEvents(document.id, finalTimelineEvents);
+  await replaceDocumentTimelineEvents(
+    document.id,
+    finalTimelineEvents,
+    allPageTexts,
+    document.fileName
+  );
 
   const completedJob = await finalizeJobSuccess(
     initialJob,
@@ -1665,7 +1812,11 @@ const finalTimelineEvents = toTimelineEventInsertRows(
     documentId: document.id,
     totalPages,
     processedPages,
-    savedEvents: finalTimelineEvents.length,
+    savedEvents: applyFinalTimelineInsertGuardrails(
+      finalTimelineEvents,
+      allPageTexts,
+      document.fileName
+    ).length,
   };
 }
 
