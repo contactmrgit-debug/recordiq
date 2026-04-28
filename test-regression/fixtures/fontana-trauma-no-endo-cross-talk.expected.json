@@ -1,0 +1,71 @@
+{
+  "documentName": "fontana-trauma-no-endo-cross-talk",
+  "minEvents": 6,
+  "maxEvents": 6,
+  "mustIncludeTitles": [
+    "Workplace head injury after pipe fell from derrick",
+    "CTA neck showed vascular injury concern",
+    "Grouped labs/urinalysis",
+    "Grouped medications",
+    "Head trauma with scalp laceration and left periorbital swelling",
+    "Imaging showed nondisplaced left scapular fracture"
+  ],
+  "mustIncludeEventTypes": [
+    "incident",
+    "observation",
+    "report",
+    "treatment"
+  ],
+  "mustNotIncludeTitlePatterns": [
+    "bmt/er guidance|acth|renin|hydrocortisone|fludrocortisone|adrenal insufficiency|adrenoleukodystrophy|endocrinology|repeat lytes"
+  ],
+  "mustNotIncludeDescriptionPatterns": [
+    "\\b(bmt/er guidance|acth|renin|hydrocortisone|fludrocortisone|adrenal insufficiency|ald|adrenoleukodystrophy|endocrinology|repeat lytes)\\b"
+  ],
+  "mustNotIncludeTitleDatePairs": [
+    {
+      "title": "BMT/ER guidance if symptoms persist",
+      "date": "2009-08-25"
+    }
+  ],
+  "mustNotIncludeEvents": [
+    {
+      "title": "BMT/ER guidance if symptoms persist",
+      "date": "2009-08-25",
+      "descriptionIncludes": [
+        "symptoms persist"
+      ]
+    },
+    {
+      "title": "Hydrocortisone and fludrocortisone doses increased",
+      "descriptionIncludes": [
+        "hydrocortisone",
+        "fludrocortisone"
+      ]
+    },
+    {
+      "title": "Repeat lytes, ACTH, and renin planned in 4 weeks",
+      "descriptionIncludes": [
+        "acth",
+        "renin",
+        "4 weeks"
+      ]
+    }
+  ],
+  "expectedNoDuplicateNormalizedKeys": true,
+  "dateRules": [
+    {
+      "date": "2019-07-18",
+      "minEvents": 6,
+      "maxEvents": 6,
+      "mustIncludeTitles": [
+        "Workplace head injury after pipe fell from derrick",
+        "CTA neck showed vascular injury concern",
+        "Grouped labs/urinalysis",
+        "Grouped medications",
+        "Head trauma with scalp laceration and left periorbital swelling",
+        "Imaging showed nondisplaced left scapular fracture"
+      ]
+    }
+  ]
+}

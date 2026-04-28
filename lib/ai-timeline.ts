@@ -695,6 +695,27 @@ function normalizeSearchText(value?: string): string {
     .trim();
 }
 
+function hasAnySearchTerm(text: string, terms: string[]): boolean {
+  const normalized = normalizeSearchText(text);
+  return terms.some((term) => normalized.includes(normalizeSearchText(term)));
+}
+
+function hasAllSearchTerms(text: string, terms: string[]): boolean {
+  const normalized = normalizeSearchText(text);
+  return terms.every((term) => normalized.includes(normalizeSearchText(term)));
+}
+
+function getNearbyPageText(pageTexts: PageText[], index: number, radius = 1): string {
+  const start = Math.max(0, index - radius);
+  const end = Math.min(pageTexts.length - 1, index + radius);
+  return normalizeSearchText(
+    pageTexts
+      .slice(start, end + 1)
+      .map((page) => page.text)
+      .join(" ")
+  );
+}
+
 function compactSentence(value: string): string {
   return normalizeWhitespace(value).replace(/^[\-\u2022]+\s*/, "").trim();
 }
@@ -1718,7 +1739,8 @@ function buildSupplementalEndocrineEvents(
     });
   }
 
-  for (const page of pageTexts) {
+  for (let index = 0; index < pageTexts.length; index++) {
+    const page = pageTexts[index];
     const text = normalizeSearchText(page.text);
     if (!text) continue;
 
@@ -1726,10 +1748,18 @@ function buildSupplementalEndocrineEvents(
     if (!isAcceptedDate(date)) continue;
 
     const lower = text.toLowerCase();
+    const supportText = getNearbyPageText(pageTexts, index, 1);
 
     if (
       /\bdallas endocrinology\b/.test(lower) &&
       /\b(results follow-up|adrenal insufficiency|x-linked adrenoleukodystrophy|ald)\b/.test(lower) &&
+      hasAnySearchTerm(supportText, [
+        "dallas endocrinology",
+        "results follow-up",
+        "adrenal insufficiency",
+        "x-linked adrenoleukodystrophy",
+        "ald",
+      ]) &&
       !hasAcceptableTitleMatchWithDate(/\bendocrinology results follow-up\b/)
     ) {
       supplemental.push({
@@ -1761,6 +1791,8 @@ function buildSupplementalEndocrineEvents(
       /\bacth\b/.test(lower) &&
       /\brenin\b/.test(lower) &&
       /\b(stress dosing|elevated|high)\b/.test(lower) &&
+      hasAllSearchTerms(supportText, ["acth", "renin"]) &&
+      hasAnySearchTerm(supportText, ["stress dosing", "elevated", "high"]) &&
       !hasAcceptableTitleMatchWithDate(/\bacth remained high and renin elevated\b/)
     ) {
       supplemental.push({
@@ -1782,6 +1814,8 @@ function buildSupplementalEndocrineEvents(
       /\bhydrocortisone\b/.test(lower) &&
       /\bfludrocortisone\b/.test(lower) &&
       /\b(increase|increased|adjust|adjusted|new dose|dose adjustment)\b/.test(lower) &&
+      hasAllSearchTerms(supportText, ["hydrocortisone", "fludrocortisone"]) &&
+      hasAnySearchTerm(supportText, ["increase", "increased", "adjust", "adjusted", "new dose", "dose adjustment"]) &&
       !hasAcceptableTitleMatchWithDate(/\bhydrocortisone and fludrocortisone doses increased\b/)
     ) {
       supplemental.push({
@@ -1808,6 +1842,8 @@ function buildSupplementalEndocrineEvents(
     if (
       /\b(fatigue|tired|color changes|dry lips|thirst)\b/.test(lower) &&
       /\b(mother|parent|nursing)\b/.test(lower) &&
+      hasAnySearchTerm(supportText, ["fatigue", "tired", "color changes", "dry lips", "thirst"]) &&
+      hasAnySearchTerm(supportText, ["mother", "parent", "nursing"]) &&
       !hasAcceptableTitleMatchWithDate(/\bparent reported fatigue, color changes, dry lips, and thirst\b/)
     ) {
       supplemental.push({
@@ -1836,6 +1872,7 @@ function buildSupplementalEndocrineEvents(
       /\brepeat\b/.test(lower) &&
       /\b(acth|renin|electrolytes|lytes)\b/.test(lower) &&
       /\b4 weeks\b/.test(lower) &&
+      hasAnySearchTerm(supportText, ["repeat", "acth", "renin", "electrolytes", "lytes", "4 weeks"]) &&
       !hasAcceptableTitleMatchWithDate(/\brepeat lytes, acth, and renin planned in 4 weeks\b/)
     ) {
       supplemental.push({
@@ -1857,6 +1894,7 @@ function buildSupplementalEndocrineEvents(
       /\b(symptoms persist|if still symptomatic|contact|bmt team|go to the er|go to er)\b/.test(
         lower
       ) &&
+      hasAnySearchTerm(supportText, ["symptoms persist", "bmt", "go to the er", "contact"]) &&
       !hasAcceptableTitleMatchWithDate(/\bbmt\/er guidance if symptoms persist\b/)
     ) {
       supplemental.push({
