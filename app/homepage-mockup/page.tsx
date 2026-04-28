@@ -261,281 +261,79 @@ export default function HomepageMockupPage() {
       text-decoration: none;
     }
 
-    .riq-security-strip {
-      background: linear-gradient(90deg, #edf5ff, #f8fbff, #edf5ff);
-      border-top: 1px solid #e3edf8;
-      border-bottom: 1px solid #e3edf8;
-      padding: 27px 0;
-    }
+ .riq-security-strip {
+  background: linear-gradient(90deg, #f2f7ff, #f8fbff, #f2f7ff);
+  border-top: 1px solid #e3edf8;
+  border-bottom: 1px solid #e3edf8;
+  padding: 26px 0;
+}
 
-    .riq-security-grid {
+.riq-security-grid {
   display: grid;
   grid-template-columns: 1.5fr 1fr 1fr 1fr 1.5fr;
   align-items: center;
-  gap: 28px;
+  gap: 26px;
 }
 
 .riq-security-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  color: #20314b;
-}
-
-.riq-security-item strong {
-  display: block;
-  color: #071831;
-  font-size: 15px;
-  line-height: 1.15;
-  font-weight: 900;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.riq-security-item span {
-  display: block;
-  color: #20314b;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.25;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  gap: 16px;
 }
 
 .riq-security-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: #ffffff;
-  display: grid !important;
-  place-items: center;
-  color: var(--riq-blue);
-  box-shadow: 0 10px 24px rgba(17, 44, 81, 0.08);
-  flex: 0 0 auto;
-}
-
-.riq-security-icon svg {
-  width: 28px;
-  height: 28px;
-  stroke: currentColor;
-  display: block;
-}
-
-.riq-security-note {
-  color: #56657b;
-  font-size: 13px;
-  line-height: 1.45;
-  font-weight: 650;
-}
-    .riq-section {
-      padding: 56px 0;
-    }
-
-    .riq-section-head {
-      text-align: center;
-      max-width: 680px;
-      margin: 0 auto 34px;
-    }
-
-    .riq-section-head h2 {
-      margin: 0 0 11px;
-      font-size: 34px;
-      letter-spacing: -0.04em;
-    }
-
-    .riq-section-head p {
-      margin: 0;
-      color: var(--riq-muted);
-      font-size: 16px;
-    }
-
-    .riq-feature-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 18px;
-    }
-
-    .riq-feature-card,
-    .riq-audience-card {
-      background: white;
-      border: 1px solid #dfe8f4;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 12px 28px rgba(17,44,81,.05);
-    }
-
-    .riq-feature-card {
-      display: grid;
-      grid-template-columns: 54px 1fr;
-      gap: 18px;
-    }
-
-   .riq-card-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  background: #edf5ff;
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
   color: var(--riq-blue);
   flex: 0 0 auto;
 }
 
-.riq-card-icon svg {
-  width: 30px;
-  height: 30px;
+.riq-security-icon svg {
+  width: 46px;
+  height: 46px;
   stroke: currentColor;
+  fill: none;
+  display: block;
 }
 
-    .riq-feature-card h3,
-    .riq-audience-card h3 {
-      margin: 0 0 8px;
-      font-size: 15px;
-    }
+.riq-security-copy strong {
+  display: block;
+  color: #0b1830;
+  font-size: 15px;
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
 
-    .riq-feature-card p,
-    .riq-audience-card p {
-      margin: 0;
-      color: #66758b;
-      font-size: 13px;
-    }
+.riq-security-copy span {
+  display: block;
+  color: #0b1830;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 700;
+  margin-top: 2px;
+}
 
-    .riq-steps {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 36px;
-    }
+.riq-security-note {
+  color: #0b1830;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 600;
+}
 
-    .riq-step-circle {
-      width: 78px;
-      height: 78px;
-      border-radius: 50%;
-      background: #edf5ff;
-      display: grid;
-      place-items: center;
-      color: var(--riq-blue);
-      margin: 0 auto 20px;
-      font-size: 30px;
-    }
+@media (max-width: 991px) {
+  .riq-security-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
-    .riq-step h3 {
-      margin: 0 0 8px;
-      font-size: 15px;
-    }
-
-    .riq-step-number {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: var(--riq-blue);
-      color: white;
-      display: inline-grid;
-      place-items: center;
-      font-size: 12px;
-      margin-right: 8px;
-    }
-
-    .riq-step p {
-      margin: 0;
-      color: #647389;
-      font-size: 14px;
-      padding-left: 33px;
-    }
-
-    .riq-audience-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-    }
-
-    .riq-audience-card {
-      display: grid;
-      grid-template-columns: 58px 1fr;
-      gap: 20px;
-    }
-
-    .riq-learn {
-      display: inline-flex;
-      margin-top: 14px;
-      color: var(--riq-blue);
-      font-size: 14px;
-      font-weight: 850;
-      text-decoration: none;
-    }
-
-    .riq-cta {
-      background: linear-gradient(135deg, #06162b, #092645 58%, #06162b);
-      color: white;
-      padding: 56px 0;
-    }
-
-    .riq-cta-grid {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 50px;
-      align-items: center;
-    }
-
-    .riq-cta h2 {
-      margin: 0 0 14px;
-      font-size: 42px;
-      line-height: 1.12;
-      letter-spacing: -0.05em;
-    }
-
-    .riq-cta p {
-      margin: 0;
-      color: #c8d5e7;
-      font-size: 18px;
-    }
-
-    .riq-cta-actions {
-      display: flex;
-      gap: 20px;
-    }
-
-    .riq-cta .riq-btn-outline {
-      background: transparent;
-      border-color: rgba(255,255,255,.45);
-      color: white;
-    }
-
-    .riq-footer {
-      background: #07162a;
-      color: #dce7f5;
-      border-top: 1px solid rgba(255,255,255,.12);
-      padding: 32px 0;
-    }
-
-    .riq-footer-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr 1.6fr;
-      gap: 34px;
-    }
-
-    .riq-footer a,
-    .riq-footer p {
-      display: block;
-      color: #aebdd2;
-      text-decoration: none;
-      font-size: 13px;
-      margin: 0 0 6px;
-    }
-
-    .riq-footer h4 {
-      color: white;
-      margin: 0 0 10px;
-    }
-
-    @media (max-width: 991px) {
-      .riq-menu {
-        display: none;
-      }
-
-      .riq-hero-grid,
-      .riq-cta-grid {
-        grid-template-columns: 1fr;
-      }
+@media (max-width: 640px) {
+  .riq-security-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
       .riq-security-grid,
       .riq-feature-grid,
@@ -796,16 +594,16 @@ export default function HomepageMockupPage() {
       </div>
     </section>
 
-    <section id="security" class="riq-security-strip">
+<section id="security" class="riq-security-strip">
   <div class="riq-container riq-security-grid">
     <div class="riq-security-item">
       <span class="riq-security-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+        <svg viewBox="0 0 24 24" stroke-width="1.8">
           <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"></path>
           <path d="M9 12l2 2 4-5"></path>
         </svg>
       </span>
-      <div>
+      <div class="riq-security-copy">
         <strong>Built for Privacy.</strong>
         <span>Designed for Trust.</span>
       </div>
@@ -813,46 +611,50 @@ export default function HomepageMockupPage() {
 
     <div class="riq-security-item">
       <span class="riq-security-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
-          <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"></path>
-          <path d="M9 12l2 2 4-5"></path>
+        <svg viewBox="0 0 24 24" stroke-width="1.8">
+          <path d="M12 3v10"></path>
+          <path d="M8.5 4.5c0 1.8 1.6 3.2 3.5 3.2s3.5-1.4 3.5-3.2"></path>
+          <path d="M7 9.5h10"></path>
+          <path d="M8.5 9.5 5 16h7l-3.5-6.5z"></path>
+          <path d="M15.5 9.5 12 16h7l-3.5-6.5z"></path>
+          <path d="M12 13.5v7"></path>
+          <path d="M10 20h4"></path>
         </svg>
       </span>
-      <div>
+      <div class="riq-security-copy">
         <strong>HIPAA</strong>
-        <span>READY</span>
+        <span>Compliant</span>
       </div>
     </div>
 
     <div class="riq-security-item">
       <span class="riq-security-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+        <svg viewBox="0 0 24 24" stroke-width="1.8">
           <rect x="5" y="10" width="14" height="10" rx="2"></rect>
           <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+          <path d="M12 14v3"></path>
         </svg>
       </span>
-      <div>
+      <div class="riq-security-copy">
         <strong>SOC 2</strong>
-        <span>PLANNED</span>
+        <span>Type II</span>
       </div>
     </div>
 
     <div class="riq-security-item">
       <span class="riq-security-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+        <svg viewBox="0 0 24 24" stroke-width="1.8">
           <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"></path>
-          <path d="M12 8v8"></path>
-          <path d="M8 12h8"></path>
         </svg>
       </span>
-      <div>
+      <div class="riq-security-copy">
         <strong>AES-256</strong>
-        <span>ENCRYPTION</span>
+        <span>Encryption</span>
       </div>
     </div>
 
     <div class="riq-security-note">
-      Your data is designed to stay secure, private, and protected.
+      Your data is always secure, private, and never shared.
     </div>
   </div>
 </section>
