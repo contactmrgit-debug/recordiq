@@ -385,7 +385,7 @@ export default function HomepageMockupPage() {
           grid-template-columns: repeat(5, minmax(0, 1fr));
           gap: 18px;
           align-items: center;
-          padding: 20px 0;
+          padding: 16px 0;
         }
 
         .riq-security-item {
@@ -395,10 +395,14 @@ export default function HomepageMockupPage() {
         }
 
         .riq-security-icon {
-          width: 46px;
-          height: 46px;
-          color: var(--riq-blue);
+          width: 54px;
+          height: 54px;
+          color: #071831;
           flex: 0 0 auto;
+        }
+
+        .riq-security-item:first-child .riq-security-icon {
+          color: var(--riq-blue);
         }
 
         .riq-security-icon svg {
@@ -489,9 +493,19 @@ export default function HomepageMockupPage() {
         }
 
         .riq-card-icon svg {
-          width: 34px;
-          height: 34px;
+          width: 42px;
+          height: 42px;
           display: block;
+        }
+
+        .riq-audience-card .riq-card-icon {
+          width: 66px;
+          height: 66px;
+        }
+
+        .riq-audience-card .riq-card-icon svg {
+          width: 44px;
+          height: 44px;
         }
 
         .riq-feature-card h3 {
@@ -537,8 +551,8 @@ export default function HomepageMockupPage() {
         }
 
         .riq-step-icon {
-          width: 84px;
-          height: 84px;
+          width: 88px;
+          height: 88px;
           border-radius: 50%;
           background: #edf5ff;
           color: var(--riq-blue);
@@ -548,8 +562,8 @@ export default function HomepageMockupPage() {
         }
 
         .riq-step-icon svg {
-          width: 42px;
-          height: 42px;
+          width: 48px;
+          height: 48px;
           display: block;
         }
 
@@ -645,20 +659,20 @@ export default function HomepageMockupPage() {
 
         .riq-footer-dots {
           position: absolute;
-          right: 22px;
-          bottom: 18px;
-          width: 180px;
-          height: 140px;
+          right: 14px;
+          bottom: 8px;
+          width: 200px;
+          height: 138px;
           background-image: radial-gradient(rgba(74, 145, 255, 0.5) 1.5px, transparent 1.5px);
           background-size: 14px 14px;
-          opacity: 0.4;
+          opacity: 0.5;
           pointer-events: none;
         }
 
         .riq-dark-inner {
           position: relative;
           z-index: 1;
-          padding: 42px 0 26px;
+          padding: 16px 0 10px;
         }
 
         .riq-cta-grid {
@@ -666,7 +680,7 @@ export default function HomepageMockupPage() {
           grid-template-columns: 1fr auto;
           gap: 26px;
           align-items: center;
-          padding-bottom: 26px;
+          padding-bottom: 4px;
         }
 
         .riq-cta-copy h2 {
@@ -692,7 +706,7 @@ export default function HomepageMockupPage() {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
-          gap: 16px;
+          gap: 8px;
         }
 
         .riq-cta-buttons {
@@ -704,11 +718,11 @@ export default function HomepageMockupPage() {
 
         .riq-cta-points {
           display: flex;
-          gap: 26px;
+          gap: 14px;
           flex-wrap: wrap;
           justify-content: flex-end;
           color: rgba(255,255,255,0.9);
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 600;
         }
 
@@ -720,13 +734,13 @@ export default function HomepageMockupPage() {
 
         .riq-divider {
           border-top: 1px solid rgba(255,255,255,0.14);
-          margin-bottom: 22px;
+          margin-bottom: 8px;
         }
 
         .riq-footer-grid {
           display: grid;
           grid-template-columns: 1.4fr 0.9fr 0.9fr 0.9fr 1.1fr;
-          gap: 28px;
+          gap: 16px;
           align-items: start;
         }
 
@@ -1464,13 +1478,17 @@ function LockIcon() {
 function CaduceusIcon() {
   return (
     <IconBase>
-      <path d="M12 3v18" />
-      <path d="M9 6.5c0 1.3 1.2 2.2 3 2.2s3-.9 3-2.2" />
-      <path d="M9 17.5c0-1.3 1.2-2.2 3-2.2s3 .9 3 2.2" />
-      <path d="M9.6 8.4 6.6 11l3 2.6" />
-      <path d="M14.4 8.4 17.4 11l-3 2.6" />
-      <path d="M9.6 15.6 6.6 13" />
-      <path d="M14.4 15.6 17.4 13" />
+      <path d="M12 4v16" />
+      <path d="M12 6c-2.2 0-4 1.4-5 3.4" />
+      <path d="M12 6c2.2 0 4 1.4 5 3.4" />
+      <path d="M12 18c2.2 0 4-1.4 5-3.4" />
+      <path d="M12 18c-2.2 0-4-1.4-5-3.4" />
+      <path d="M8 9.2c1 .7 2.1 1.1 4 1.1s3-.4 4-1.1" />
+      <path d="M8 14.8c1-.7 2.1-1.1 4-1.1s3 .4 4 1.1" />
+      <path d="M8.2 11.2 6.4 12.8" />
+      <path d="M15.8 11.2l1.8 1.6" />
+      <path d="M8.2 12.8 6.4 11.2" />
+      <path d="M15.8 12.8l1.8-1.6" />
     </IconBase>
   );
 }
@@ -1480,11 +1498,11 @@ function DocumentUploadIcon() {
     <IconBase>
       <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
       <path d="M14 3.5V8h4" />
-      <path d="M12 16v-5" />
-      <path d="m9.5 13.5 2.5-2.5 2.5 2.5" />
+      <path d="M12 15v-4" />
+      <path d="m10 11.5 2-2 2 2" />
       <circle cx="17.2" cy="17.2" r="2.3" />
-      <path d="M17.2 15.9v2.6" />
-      <path d="M15.9 17.2h2.6" />
+      <path d="M17.2 16v2.4" />
+      <path d="M16 17.2h2.4" />
     </IconBase>
   );
 }
@@ -1492,12 +1510,12 @@ function DocumentUploadIcon() {
 function BulletedTimelineIcon() {
   return (
     <IconBase>
-      <circle cx="6" cy="7" r="1.2" />
-      <circle cx="6" cy="12" r="1.2" />
-      <circle cx="6" cy="17" r="1.2" />
-      <path d="M10 7h8" />
-      <path d="M10 12h8" />
-      <path d="M10 17h8" />
+      <circle cx="5.8" cy="7" r="1.2" />
+      <circle cx="5.8" cy="12" r="1.2" />
+      <circle cx="5.8" cy="17" r="1.2" />
+      <path d="M9.2 7h8.8" />
+      <path d="M9.2 12h8.8" />
+      <path d="M9.2 17h8.8" />
     </IconBase>
   );
 }
@@ -1505,10 +1523,10 @@ function BulletedTimelineIcon() {
 function SummaryLinesIcon() {
   return (
     <IconBase>
-      <path d="M6 7h12" />
-      <path d="M6 11h12" />
-      <path d="M6 15h12" />
-      <path d="M6 19h12" />
+      <path d="M5.3 7h13.4" />
+      <path d="M5.3 11h13.4" />
+      <path d="M5.3 15h13.4" />
+      <path d="M5.3 19h13.4" />
     </IconBase>
   );
 }
@@ -1516,9 +1534,9 @@ function SummaryLinesIcon() {
 function ExportIcon() {
   return (
     <IconBase>
-      <path d="M12 4v10" />
-      <path d="m8.5 10.5 3.5 3.5 3.5-3.5" />
-      <path d="M5 19h14" />
+      <path d="M12 3.5v9.5" />
+      <path d="m8.5 9.8 3.5 3.5 3.5-3.5" />
+      <path d="M6 19h12" />
     </IconBase>
   );
 }
@@ -1538,8 +1556,8 @@ function DocumentSearchIcon() {
     <IconBase>
       <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
       <path d="M14 3.5V8h4" />
-      <circle cx="14.3" cy="15.3" r="2.7" />
-      <path d="m16.4 17.4 2.2 2.2" />
+      <circle cx="13.8" cy="14.8" r="2.7" />
+      <path d="m15.9 16.9 2.2 2.2" />
     </IconBase>
   );
 }
