@@ -50,21 +50,21 @@ export default function HomepageMockupPage() {
         }
 
         .riq-logo-img {
-          height: 34px;
+          height: 52px;
           width: auto;
           display: block;
           object-fit: contain;
         }
 
         .riq-sidebar-logo-img {
-          height: 22px;
+          height: 30px;
           width: auto;
           display: block;
           object-fit: contain;
         }
 
         .riq-footer-logo-img {
-          height: 32px;
+          height: 42px;
           width: auto;
           display: block;
           object-fit: contain;
