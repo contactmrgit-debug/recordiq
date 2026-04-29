@@ -1522,29 +1522,33 @@ function CaduceusIcon() {
   );
 }
 
-function DocumentUploadIcon() {
+function UploadRecordIcon() {
   return (
     <IconBase>
       <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
       <path d="M14 3.5V8h4" />
-      <path d="M12 14.8v-5" />
-      <path d="m9.7 12 2.3-2.3 2.3 2.3" />
-      <circle cx="17.2" cy="17.2" r="2.2" />
-      <path d="M17.2 16.1v2.2" />
-      <path d="M16.1 17.2h2.2" />
+      <path d="M12 15V10" />
+      <path d="m9.8 12.2 2.2-2.2 2.2 2.2" />
+      <circle cx="17.2" cy="17.2" r="2.35" />
+      <path d="M17.2 16.05v2.3" />
+      <path d="M16.05 17.2h2.3" />
     </IconBase>
   );
+}
+
+function DocumentUploadIcon() {
+  return <UploadRecordIcon />;
 }
 
 function BulletedTimelineIcon() {
   return (
     <IconBase>
-      <circle cx="5.8" cy="6.9" r="1.2" />
-      <circle cx="5.8" cy="12" r="1.2" />
-      <circle cx="5.8" cy="17.1" r="1.2" />
-      <path d="M9.2 6.9H18" />
-      <path d="M9.2 12H18" />
-      <path d="M9.2 17.1H18" />
+      <circle cx="6" cy="7" r="1.2" />
+      <circle cx="6" cy="12" r="1.2" />
+      <circle cx="6" cy="17" r="1.2" />
+      <path d="M9.8 7h8.2" />
+      <path d="M9.8 12h8.2" />
+      <path d="M9.8 17h8.2" />
     </IconBase>
   );
 }
@@ -1552,10 +1556,10 @@ function BulletedTimelineIcon() {
 function SummaryLinesIcon() {
   return (
     <IconBase>
-      <path d="M5.3 7h13.4" />
-      <path d="M5.3 10.8h13.4" />
-      <path d="M5.3 14.6h13.4" />
-      <path d="M5.3 18.4h13.4" />
+      <path d="M5.2 7h13.6" />
+      <path d="M5.2 11h13.6" />
+      <path d="M5.2 15h13.6" />
+      <path d="M5.2 19h13.6" />
     </IconBase>
   );
 }
@@ -1564,7 +1568,7 @@ function ExportIcon() {
   return (
     <IconBase>
       <path d="M12 3.5v9.5" />
-      <path d="m8.4 9.9 3.6 3.6 3.6-3.6" />
+      <path d="m8.5 9.8 3.5 3.5 3.5-3.5" />
       <path d="M5.8 19h12.4" />
     </IconBase>
   );
