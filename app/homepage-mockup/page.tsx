@@ -261,7 +261,7 @@ export default function HomepageMockupPage() {
       text-decoration: none;
     }
 
- .riq-security-strip {
+.riq-security-strip {
   background: linear-gradient(90deg, #f2f7ff, #f8fbff, #f2f7ff);
   border-top: 1px solid #e3edf8;
   border-bottom: 1px solid #e3edf8;
@@ -281,19 +281,22 @@ export default function HomepageMockupPage() {
   gap: 16px;
 }
 
-.riq-security-icon {
+.riq-security-item .riq-security-icon {
   width: 52px;
   height: 52px;
+  border-radius: 16px;
+  background: #ffffff;
   display: grid;
   place-items: center;
-  color: var(--riq-blue);
+  color: var(--riq-blue) !important;
   flex: 0 0 auto;
+  box-shadow: 0 10px 24px rgba(17, 44, 81, 0.08);
 }
 
-.riq-security-icon svg {
-  width: 46px;
-  height: 46px;
-  stroke: currentColor;
+.riq-security-item .riq-security-icon svg {
+  width: 40px;
+  height: 40px;
+  stroke: var(--riq-blue) !important;
   fill: none;
   display: block;
 }
@@ -312,8 +315,10 @@ export default function HomepageMockupPage() {
   color: #0b1830;
   font-size: 13px;
   line-height: 1.2;
-  font-weight: 700;
+  font-weight: 800;
   margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .riq-security-note {
@@ -323,165 +328,289 @@ export default function HomepageMockupPage() {
   font-weight: 600;
 }
 
+/* Sections */
+
+.riq-section {
+  padding: 56px 0;
+}
+
+.riq-section-head {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 34px;
+}
+
+.riq-section-head h2 {
+  margin: 0 0 11px;
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+  color: #071831;
+  font-weight: 900;
+}
+
+.riq-section-head p {
+  margin: 0;
+  color: var(--riq-muted);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* Feature cards */
+
+.riq-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.riq-feature-card,
+.riq-audience-card {
+  background: #ffffff;
+  border: 1px solid #dfe8f4;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 12px 28px rgba(17, 44, 81, 0.05);
+}
+
+.riq-feature-card {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.riq-card-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: #edf5ff;
+  display: grid;
+  place-items: center;
+  color: var(--riq-blue);
+  flex: 0 0 auto;
+}
+
+.riq-card-icon svg {
+  width: 30px;
+  height: 30px;
+  stroke: currentColor;
+}
+
+.riq-feature-card h3,
+.riq-audience-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #13233b;
+  font-weight: 900;
+}
+
+.riq-feature-card p,
+.riq-audience-card p {
+  margin: 0;
+  color: #66758b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* How it works */
+
+.riq-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 36px;
+}
+
+.riq-step-circle {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: #edf5ff;
+  display: grid;
+  place-items: center;
+  color: var(--riq-blue);
+  margin: 0 auto 20px;
+  font-size: 30px;
+}
+
+.riq-step h3,
+.riq-steps h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #13233b;
+  font-weight: 900;
+}
+
+.riq-step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--riq-blue);
+  color: #ffffff;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  margin-right: 8px;
+}
+
+.riq-steps p {
+  margin: 0;
+  color: #647389;
+  font-size: 14px;
+  line-height: 1.45;
+  padding-left: 33px;
+}
+
+/* Audience cards */
+
+.riq-audience-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.riq-audience-card {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.riq-learn {
+  display: inline-flex;
+  margin-top: 14px;
+  color: var(--riq-blue);
+  font-size: 14px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+/* CTA */
+
+.riq-cta {
+  background: linear-gradient(135deg, #06162b, #092645 58%, #06162b);
+  color: #ffffff;
+  padding: 56px 0;
+}
+
+.riq-cta-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 50px;
+  align-items: center;
+}
+
+.riq-cta h2 {
+  margin: 0 0 14px;
+  font-size: 42px;
+  line-height: 1.12;
+  letter-spacing: -0.05em;
+}
+
+.riq-cta p {
+  margin: 0;
+  color: #c8d5e7;
+  font-size: 18px;
+}
+
+.riq-cta-actions {
+  display: flex;
+  gap: 20px;
+}
+
+.riq-cta .riq-btn-outline {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+}
+
+/* Footer */
+
+.riq-footer {
+  background: #07162a;
+  color: #dce7f5;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 32px 0;
+}
+
+.riq-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.6fr;
+  gap: 34px;
+}
+
+.riq-footer h4 {
+  color: #ffffff;
+  margin: 0 0 10px;
+}
+
+.riq-footer a,
+.riq-footer p {
+  display: block;
+  color: #aebdd2;
+  text-decoration: none;
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+
+/* Responsive */
+
 @media (max-width: 991px) {
-  .riq-security-grid {
+  .riq-menu {
+    display: none;
+  }
+
+  .riq-hero-grid,
+  .riq-cta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .riq-security-grid,
+  .riq-feature-grid,
+  .riq-steps,
+  .riq-audience-grid,
+  .riq-footer-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 640px) {
-  .riq-security-grid {
+  .riq-container {
+    width: min(100% - 28px, 1160px);
+  }
+
+  .riq-hero h1 {
+    font-size: 44px;
+  }
+
+  .riq-hero-actions {
+    flex-direction: column;
+  }
+
+  .riq-btn {
+    width: 100%;
+  }
+
+  .riq-app-card {
     grid-template-columns: 1fr;
   }
+
+  .riq-sidebar {
+    display: none;
+  }
+
+  .riq-security-grid,
+  .riq-feature-grid,
+  .riq-steps,
+  .riq-audience-grid,
+  .riq-footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .riq-cta-actions {
+    flex-direction: column;
+  }
 }
-
-      .riq-security-grid,
-      .riq-feature-grid,
-      .riq-steps,
-      .riq-audience-grid,
-      .riq-footer-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 640px) {
-      .riq-container {
-        width: min(100% - 28px, 1160px);
-      }
-
-      .riq-hero h1 {
-        font-size: 44px;
-      }
-
-      .riq-hero-actions {
-        flex-direction: column;
-      }
-
-      .riq-btn {
-        width: 100%;
-      }
-
-      .riq-app-card {
-        grid-template-columns: 1fr;
-      }
-
-      .riq-sidebar {
-        display: none;
-      }
-.riq-security-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 13px;
-  font-weight: 800;
-  color: #20314b;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.riq-security-item strong {
-  display: block;
-  color: #071831;
-  font-size: 15px;
-  line-height: 1.1;
-}
-
-.riq-security-item span {
-  display: block;
-}
-
-.riq-security-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: #ffffff;
-  display: grid;
-  place-items: center;
-  color: var(--riq-blue);
-  box-shadow: 0 10px 24px rgba(17, 44, 81, 0.08);
-  flex: 0 0 auto;
-}
-
-.riq-security-icon svg {
-  width: 28px;
-  height: 28px;
-  stroke: currentColor;
-}
-
-.riq-security-note {
-  color: #56657b;
-  font-size: 13px;
-  line-height: 1.45;
-  font-weight: 650;
-}
-      .riq-security-grid,
-      .riq-feature-grid,
-      .riq-steps,
-      .riq-audience-grid,
-      .riq-footer-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-      .riq-security-grid {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr 1.5fr;
-  align-items: center;
-  gap: 28px;
-}
-
-.riq-security-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  color: #20314b;
-}
-
-.riq-security-item strong {
-  display: block;
-  color: #071831;
-  font-size: 15px;
-  line-height: 1.15;
-  font-weight: 900;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.riq-security-item span {
-  display: block;
-  color: #20314b;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.25;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.riq-security-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: #ffffff;
-  display: grid !important;
-  place-items: center;
-  color: var(--riq-blue);
-  box-shadow: 0 10px 24px rgba(17, 44, 81, 0.08);
-  flex: 0 0 auto;
-}
-
-.riq-security-icon svg {
-  width: 28px;
-  height: 28px;
-  stroke: currentColor;
-  display: block;
-}
-
-.riq-security-note {
-  color: #56657b;
-  font-size: 13px;
-  line-height: 1.45;
-  font-weight: 650;
-}
-  </style>
 
   <header class="riq-navbar">
     <div class="riq-container riq-nav-inner">
