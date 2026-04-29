@@ -1522,22 +1522,20 @@ function CaduceusIcon() {
   );
 }
 
-function UploadRecordIcon() {
+
+
+function DocumentUploadIcon() {
   return (
     <IconBase>
       <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
       <path d="M14 3.5V8h4" />
-      <path d="M12 15V10" />
-      <path d="m9.8 12.2 2.2-2.2 2.2 2.2" />
+      <path d="M12 15.5v-5.5" />
+      <path d="m9.7 12.3 2.3-2.3 2.3 2.3" />
       <circle cx="17.2" cy="17.2" r="2.35" />
       <path d="M17.2 16.05v2.3" />
       <path d="M16.05 17.2h2.3" />
     </IconBase>
   );
-}
-
-function DocumentUploadIcon() {
-  return <UploadRecordIcon />;
 }
 
 function BulletedTimelineIcon() {
@@ -1546,9 +1544,9 @@ function BulletedTimelineIcon() {
       <circle cx="6" cy="7" r="1.2" />
       <circle cx="6" cy="12" r="1.2" />
       <circle cx="6" cy="17" r="1.2" />
-      <path d="M9.8 7h8.2" />
-      <path d="M9.8 12h8.2" />
-      <path d="M9.8 17h8.2" />
+      <path d="M10 7h8" />
+      <path d="M10 12h8" />
+      <path d="M10 17h8" />
     </IconBase>
   );
 }
@@ -1556,10 +1554,10 @@ function BulletedTimelineIcon() {
 function SummaryLinesIcon() {
   return (
     <IconBase>
-      <path d="M5.2 7h13.6" />
-      <path d="M5.2 11h13.6" />
-      <path d="M5.2 15h13.6" />
-      <path d="M5.2 19h13.6" />
+      <path d="M6 7h12" />
+      <path d="M6 11h12" />
+      <path d="M6 15h12" />
+      <path d="M6 19h12" />
     </IconBase>
   );
 }
@@ -1567,9 +1565,9 @@ function SummaryLinesIcon() {
 function ExportIcon() {
   return (
     <IconBase>
-      <path d="M12 3.5v9.5" />
-      <path d="m8.5 9.8 3.5 3.5 3.5-3.5" />
-      <path d="M5.8 19h12.4" />
+      <path d="M12 4v10" />
+      <path d="m8.5 10.5 3.5 3.5 3.5-3.5" />
+      <path d="M6 19h12" />
     </IconBase>
   );
 }
@@ -1584,21 +1582,17 @@ function CloudUploadIcon() {
   );
 }
 
-function SearchDocumentIcon() {
+function DocumentSearchIcon() {
   return (
     <IconBase>
       <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
       <path d="M14 3.5V8h4" />
-      <path d="M10.8 12h3.1" />
-      <path d="M10.8 14.2h4.2" />
-      <circle cx="13.8" cy="15" r="2.7" />
-      <path d="m15.9 17.1 2.2 2.2" />
+      <path d="M10.5 12h3.4" />
+      <path d="M10.5 14.2h3.1" />
+      <circle cx="14.2" cy="15.4" r="2.4" />
+      <path d="m16 17.2 2.1 2.1" />
     </IconBase>
   );
-}
-
-function DocumentSearchIcon() {
-  return <SearchDocumentIcon />;
 }
 
 function ChecklistIcon() {
@@ -1620,8 +1614,9 @@ function DocumentExportIcon() {
       <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
       <path d="M14 3.5V8h4" />
       <path d="M12 11v5" />
-      <path d="m9.5 13.5 2.5 2.5 2.5-2.5" />
+      <path d="m9.6 13.6 2.4 2.4 2.4-2.4" />
       <circle cx="17" cy="17" r="2.2" />
+      <path d="m16 17 0.8 0.8 1.4-1.6" />
     </IconBase>
   );
 }
