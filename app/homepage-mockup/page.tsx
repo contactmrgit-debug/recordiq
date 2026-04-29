@@ -89,12 +89,12 @@ export default function HomepageMockupPage() {
         .riq-btn-outline {
           background: #fff;
           color: var(--riq-text);
-          border-color: #b9c7da;
+          border-color: #8ea2be;
         }
 
         .riq-hero {
           padding: 56px 0 0;
-          background: linear-gradient(180deg, #fff 0%, #f7fbff 100%);
+          background: #fff;
         }
 
         .riq-hero-grid {
@@ -118,7 +118,7 @@ export default function HomepageMockupPage() {
 
         .riq-hero p {
           max-width: 560px;
-          color: var(--riq-muted);
+          color: #334155;
           font-size: 21px;
           margin: 0 0 32px;
         }
@@ -134,7 +134,7 @@ export default function HomepageMockupPage() {
           display: flex;
           gap: 28px;
           flex-wrap: wrap;
-          color: #425169;
+          color: #1f2f46;
           font-size: 14px;
           font-weight: 700;
         }
@@ -168,7 +168,7 @@ export default function HomepageMockupPage() {
           border-radius: 8px;
           font-size: 13px;
           font-weight: 750;
-          color: #526074;
+          color: #23324a;
           margin-bottom: 8px;
         }
 
@@ -196,7 +196,7 @@ export default function HomepageMockupPage() {
         }
 
         .riq-preview-sub {
-          color: #7b8799;
+          color: #334155;
           font-size: 12px;
           font-weight: 700;
         }
@@ -212,7 +212,7 @@ export default function HomepageMockupPage() {
         }
 
         .riq-timeline-date {
-          color: #56637a;
+          color: #243449;
           font-size: 12px;
           font-weight: 800;
           margin-bottom: 12px;
@@ -266,7 +266,7 @@ export default function HomepageMockupPage() {
 
         .riq-event p {
           margin: 0 0 5px;
-          color: #627188;
+          color: #30445f;
           font-size: 12px;
         }
 
@@ -339,7 +339,7 @@ export default function HomepageMockupPage() {
           color: #0b1830;
           font-size: 13px;
           line-height: 1.45;
-          font-weight: 600;
+          font-weight: 700;
         }
 
         .riq-section {
@@ -361,7 +361,7 @@ export default function HomepageMockupPage() {
         .riq-section-head p {
           margin: 14px auto 0;
           max-width: 740px;
-          color: #607086;
+          color: #334155;
           font-size: 18px;
         }
 
@@ -416,7 +416,7 @@ export default function HomepageMockupPage() {
         .riq-audience-card p,
         .riq-cta p,
         .riq-footer p {
-          color: #607086;
+          color: #334155;
           margin: 0;
         }
 
@@ -469,7 +469,7 @@ export default function HomepageMockupPage() {
 
         .riq-cta {
           padding: 70px 0;
-          background: linear-gradient(180deg, #f8fbff, #ffffff);
+          background: #f8fbff;
         }
 
         .riq-cta-grid {
@@ -517,7 +517,7 @@ export default function HomepageMockupPage() {
 
         .riq-footer-grid a {
           display: block;
-          color: #607086;
+          color: #1f2f46;
           text-decoration: none;
           margin-bottom: 8px;
         }
