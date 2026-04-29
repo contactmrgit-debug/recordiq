@@ -50,7 +50,7 @@ export default function HomepageMockupPage() {
         }
 
         .riq-logo-img {
-          width: 170px;
+          width: 210px;
           height: auto;
           display: block;
           object-fit: contain;
@@ -64,7 +64,7 @@ export default function HomepageMockupPage() {
         }
 
         .riq-footer-logo-img {
-          width: 160px;
+          width: 190px;
           height: auto;
           display: block;
           object-fit: contain;
@@ -337,6 +337,7 @@ export default function HomepageMockupPage() {
           fill: none;
           stroke-linecap: round;
           stroke-linejoin: round;
+          stroke-width: 2;
         }
 
         .riq-security-icon {
@@ -494,7 +495,7 @@ export default function HomepageMockupPage() {
         }
 
         .riq-cta {
-          padding: 72px 0 24px;
+          padding: 42px 0 32px;
           background: linear-gradient(180deg, #173c74 0%, #0f2a54 100%);
           color: #d9e5f8;
         }
@@ -504,7 +505,7 @@ export default function HomepageMockupPage() {
           justify-content: space-between;
           align-items: center;
           gap: 24px;
-          padding: 8px 0 26px;
+          padding: 0;
         }
 
         .riq-cta-copy {
@@ -567,7 +568,7 @@ export default function HomepageMockupPage() {
         }
 
         .riq-footer {
-          padding: 18px 0 60px;
+          padding: 28px 0 34px;
           background: linear-gradient(180deg, #0f2a54 0%, #091c39 100%);
           color: #d9e5f8;
         }
@@ -575,6 +576,7 @@ export default function HomepageMockupPage() {
         .riq-footer-grid {
           grid-template-columns: 1.1fr repeat(3, 0.8fr) 1.2fr;
           align-items: start;
+          gap: 14px;
         }
 
         .riq-footer-grid h4 {
@@ -608,6 +610,7 @@ export default function HomepageMockupPage() {
           .riq-cta-grid {
             flex-direction: column;
             align-items: flex-start;
+            gap: 18px;
           }
         }
 
@@ -662,7 +665,7 @@ export default function HomepageMockupPage() {
           }
 
           .riq-cta-grid {
-            padding: 0 0 22px;
+            padding: 0;
           }
         }
       `}</style>
@@ -815,7 +818,7 @@ export default function HomepageMockupPage() {
           <div className="riq-container riq-security-grid">
             <div className="riq-security-item">
               <span className="riq-security-icon riq-icon-shell" aria-hidden="true">
-                <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z" />
                   <path d="M9 12l2 2 4-4" />
                 </svg>
@@ -828,12 +831,13 @@ export default function HomepageMockupPage() {
 
             <div className="riq-security-item">
               <span className="riq-security-icon riq-icon-shell" aria-hidden="true">
-                <svg viewBox="0 0 24 24" strokeWidth="1.9">
-                  <path d="M12 4a4 4 0 0 1 4 4v2" />
-                  <path d="M8 10V8a4 4 0 0 1 4-4" />
-                  <path d="M7 10h10" />
-                  <path d="M9 10c0 2 1.2 3.4 3 4.4 1.8-1 3-2.4 3-4.4" />
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 4c0 2.2 0 3.7-1 5.2" />
+                  <path d="M12 4c0 2.2 0 3.7 1 5.2" />
+                  <path d="M9 8.5h6" />
+                  <path d="M8 10h8" />
                   <path d="M12 3v18" />
+                  <path d="M9.5 13.5c.8-1 1.5-1.8 2.5-1.8s1.7.8 2.5 1.8" />
                 </svg>
               </span>
               <div className="riq-security-copy">
@@ -844,7 +848,7 @@ export default function HomepageMockupPage() {
 
             <div className="riq-security-item">
               <span className="riq-security-icon riq-icon-shell" aria-hidden="true">
-                <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="5" y="10" width="14" height="10" rx="2" />
                   <path d="M8 10V7a4 4 0 0 1 8 0v3" />
                   <path d="M12 14v3" />
@@ -858,7 +862,7 @@ export default function HomepageMockupPage() {
 
             <div className="riq-security-item">
               <span className="riq-security-icon riq-icon-shell" aria-hidden="true">
-                <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z" />
                 </svg>
               </span>
@@ -887,11 +891,11 @@ export default function HomepageMockupPage() {
             <div className="riq-feature-grid">
               <div className="riq-feature-card">
                 <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <path d="M14 2v6h6" />
-                    <path d="M12 17V11" />
-                    <path d="M9 14l3-3 3 3" />
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" />
+                    <path d="M14 2v5h5" />
+                    <path d="M12 15V9" />
+                    <path d="M9.5 11.5 12 9l2.5 2.5" />
                   </svg>
                 </div>
                 <div>
@@ -905,13 +909,14 @@ export default function HomepageMockupPage() {
 
               <div className="riq-feature-card">
                 <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
-                    <path d="M7 5v14" />
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M7 5h10" />
-                    <path d="M7 9h10" />
-                    <path d="M7 13h7" />
+                    <circle cx="5" cy="7" r="1" />
+                    <circle cx="5" cy="12" r="1" />
+                    <circle cx="5" cy="17" r="1" />
+                    <path d="M7 7h10" />
+                    <path d="M7 12h10" />
                     <path d="M7 17h10" />
-                    <path d="M17 5v14" />
                   </svg>
                 </div>
                 <div>
@@ -922,7 +927,7 @@ export default function HomepageMockupPage() {
 
               <div className="riq-feature-card">
                 <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
                     <path d="M14 3v5h5" />
                     <path d="M8 11h8" />
@@ -941,11 +946,11 @@ export default function HomepageMockupPage() {
 
               <div className="riq-feature-card">
                 <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
-                    <path d="M12 3v10" />
-                    <path d="M8.5 9.5 12 13l3.5-3.5" />
-                    <path d="M5 15h14" />
-                    <path d="M7 18v2h10v-2" />
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3v11" />
+                    <path d="M8.5 11 12 14.5 15.5 11" />
+                    <path d="M5 16h14" />
+                    <path d="M7 16v3h10v-3" />
                   </svg>
                 </div>
                 <div>
@@ -966,11 +971,11 @@ export default function HomepageMockupPage() {
             <div className="riq-steps">
               <div>
                 <div className="riq-step-circle riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
-                    <path d="M12 3v11" />
-                    <path d="M8.5 7.5 12 4l3.5 3.5" />
-                    <path d="M5 15h14" />
-                    <path d="M8 19h8" />
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 15h10" />
+                    <path d="M12 5v10" />
+                    <path d="M9 8l3-3 3 3" />
+                    <path d="M5 19h14" />
                   </svg>
                 </div>
                 <h3>
@@ -981,10 +986,10 @@ export default function HomepageMockupPage() {
 
               <div>
                 <div className="riq-step-circle riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="5" y="3" width="10" height="16" rx="2" />
-                    <path d="M9 12l2 2 4-4" />
-                    <path d="M15 8l4 4-4 4" />
+                    <circle cx="15.5" cy="15.5" r="3.5" />
+                    <path d="M18 18l3 3" />
                   </svg>
                 </div>
                 <h3>
@@ -998,15 +1003,13 @@ export default function HomepageMockupPage() {
 
               <div>
                 <div className="riq-step-circle riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
-                    <path d="M8 5h10" />
-                    <path d="M8 10h10" />
-                    <path d="M8 15h10" />
-                    <path d="M8 20h10" />
-                    <path d="M5 5h.01" />
-                    <path d="M5 10h.01" />
-                    <path d="M5 15h.01" />
-                    <path d="M5 20h.01" />
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 7h10" />
+                    <path d="M7 12h10" />
+                    <path d="M7 17h7" />
+                    <circle cx="5" cy="7" r="1" />
+                    <circle cx="5" cy="12" r="1" />
+                    <circle cx="5" cy="17" r="1" />
                   </svg>
                 </div>
                 <h3>
@@ -1017,11 +1020,11 @@ export default function HomepageMockupPage() {
 
               <div>
                 <div className="riq-step-circle riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8" />
                     <path d="M14 3v5h5" />
-                    <path d="M15 14l4-4" />
-                    <path d="M17 8v6h-6" />
+                    <circle cx="17" cy="16" r="3" />
+                    <path d="M17 13v3h3" />
                   </svg>
                 </div>
                 <h3>
@@ -1042,11 +1045,12 @@ export default function HomepageMockupPage() {
             <div className="riq-audience-grid">
               <div className="riq-audience-card">
                 <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
-                    <path d="M6 19h12" />
-                    <path d="M8 19 12 5l4 14" />
-                    <path d="M9.5 14h5" />
-                    <path d="M12 5v14" />
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 7h14" />
+                    <path d="M7 7l-2 7h4l-2-7z" />
+                    <path d="M17 7l-2 7h4l-2-7z" />
+                    <path d="M12 7v10" />
+                    <path d="M9 17h6" />
                   </svg>
                 </div>
                 <div>
@@ -1060,10 +1064,10 @@ export default function HomepageMockupPage() {
 
               <div className="riq-audience-card">
                 <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="7" r="3.5" />
-                    <path d="M6 21a6 6 0 0 1 12 0" />
-                    <path d="M12 10.5v6.5" />
+                    <path d="M6.5 21a5.5 5.5 0 0 1 11 0" />
+                    <path d="M12 10.5V18" />
                   </svg>
                 </div>
                 <div>
@@ -1077,7 +1081,7 @@ export default function HomepageMockupPage() {
 
               <div className="riq-audience-card">
                 <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 4c0 3 6 3 6 0" />
                     <path d="M8 7h8" />
                     <path d="M8 7v3a4 4 0 0 0 8 0V7" />
@@ -1099,7 +1103,7 @@ export default function HomepageMockupPage() {
 
               <div className="riq-audience-card">
                 <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z" />
                     <path d="M9 12l2 2 4-4" />
                   </svg>
