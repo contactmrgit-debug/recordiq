@@ -1577,22 +1577,28 @@ function ExportIcon() {
 function CloudUploadIcon() {
   return (
     <IconBase>
-      <path d="M7 18h9a4 4 0 0 0 .6-7.95A5.2 5.2 0 0 0 6.6 9.2 3.6 3.6 0 0 0 7 18Z" />
+      <path d="M7 18h10a4 4 0 0 0 .6-7.9A5.2 5.2 0 0 0 6.6 9.2 3.6 3.6 0 0 0 7 18Z" />
       <path d="M12 16V9.5" />
-      <path d="m9 12.5 3-3 3 3" />
+      <path d="m9.2 12.2 2.8-2.8 2.8 2.8" />
+    </IconBase>
+  );
+}
+
+function SearchDocumentIcon() {
+  return (
+    <IconBase>
+      <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
+      <path d="M14 3.5V8h4" />
+      <path d="M10.8 12h3.1" />
+      <path d="M10.8 14.2h4.2" />
+      <circle cx="13.8" cy="15" r="2.7" />
+      <path d="m15.9 17.1 2.2 2.2" />
     </IconBase>
   );
 }
 
 function DocumentSearchIcon() {
-  return (
-    <IconBase>
-      <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
-      <path d="M14 3.5V8h4" />
-      <circle cx="13.8" cy="14.8" r="2.7" />
-      <path d="m15.9 16.9 2.2 2.2" />
-    </IconBase>
-  );
+  return <SearchDocumentIcon />;
 }
 
 function ChecklistIcon() {
