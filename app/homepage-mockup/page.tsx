@@ -1,3 +1,115 @@
+const navLinks = [
+  { label: "Product", href: "#" },
+  { label: "Solutions", href: "#" , caret: true },
+  { label: "Security", href: "#" },
+  { label: "Pricing", href: "#" },
+  { label: "Resources", href: "#", caret: true },
+  { label: "About", href: "#" },
+];
+
+const securityItems = [
+  {
+    title: "Built for Privacy.",
+    subtitle: "Designed for Trust.",
+    icon: ShieldCheckIcon,
+    blue: true,
+  },
+  {
+    title: "HIPAA",
+    subtitle: "COMPLIANT",
+    icon: CaduceusIcon,
+  },
+  {
+    title: "SOC 2",
+    subtitle: "TYPE II",
+    icon: LockIcon,
+  },
+  {
+    title: "AES-256",
+    subtitle: "ENCRYPTION",
+    icon: ShieldIcon,
+  },
+  {
+    title: "Your data is always secure,",
+    subtitle: "private, and never shared.",
+    icon: null,
+    note: true,
+  },
+] as const;
+
+const featureCards = [
+  {
+    title: "Upload & Extract",
+    text: "Securely upload PDFs. We extract and organize every record.",
+    icon: DocumentUploadIcon,
+  },
+  {
+    title: "Chronological Timeline",
+    text: "All events are arranged in order with source page references.",
+    icon: BulletedTimelineIcon,
+  },
+  {
+    title: "Case Summary",
+    text: "AI-generated summaries highlight key events, diagnoses, and treatments.",
+    icon: SummaryLinesIcon,
+  },
+  {
+    title: "Export & Share",
+    text: "Export timelines and summaries for your case in seconds.",
+    icon: ExportIcon,
+  },
+] as const;
+
+const steps = [
+  {
+    num: "1",
+    title: "Upload Your Records",
+    text: "Drag & drop your medical records. We support PDF files of any size.",
+    icon: CloudUploadIcon,
+  },
+  {
+    num: "2",
+    title: "We Extract & Organize",
+    text: "Our AI extracts the important information and organizes it chronologically.",
+    icon: DocumentSearchIcon,
+  },
+  {
+    num: "3",
+    title: "Review Your Timeline",
+    text: "See your records in a clear timeline with source page references.",
+    icon: ChecklistIcon,
+  },
+  {
+    num: "4",
+    title: "Export & Build Your Case",
+    text: "Download summaries or share with your team securely.",
+    icon: DocumentExportIcon,
+  },
+] as const;
+
+const audienceCards = [
+  {
+    title: "Personal Injury Attorneys",
+    text: "Save hours. Understand records faster. Build stronger cases.",
+    icon: ScalesIcon,
+  },
+  {
+    title: "Medical Professionals",
+    text: "Quickly review patient histories and treatment timelines.",
+    icon: DoctorIcon,
+  },
+  {
+    title: "Medical Experts",
+    text: "Review complex records, clarify medical findings, and support case strategy with organized source-backed timelines.",
+    icon: StethoscopeIcon,
+  },
+  {
+    title: "Insurance & Claims",
+    text: "Streamline review. Reduce back-and-forth. Speed decisions.",
+    icon: ShieldCheckIcon,
+  },
+] as const;
+
 export default function HomepageMockupPage() {
   return (
     <div className="riq-page">
@@ -5,11 +117,11 @@ export default function HomepageMockupPage() {
         :root {
           --riq-text: #0b1b3f;
           --riq-text-soft: #4f607d;
-          --riq-blue: #2468f2;
+          --riq-blue: #1664e8;
           --riq-blue-2: #1d5be7;
           --riq-border: #dbe6f6;
-          --riq-soft: #f4f8ff;
-          --riq-soft-2: #eef5ff;
+          --riq-soft: #f5f8fe;
+          --riq-soft-2: #edf5ff;
           --riq-white: #ffffff;
           --riq-navy: #071b3b;
           --riq-navy-2: #0b2d66;
@@ -34,6 +146,10 @@ export default function HomepageMockupPage() {
           text-decoration: none;
         }
 
+        button {
+          font: inherit;
+        }
+
         .riq-page {
           background: #ffffff;
           color: var(--riq-text);
@@ -45,92 +161,97 @@ export default function HomepageMockupPage() {
         }
 
         .riq-topbar {
-          border-bottom: 1px solid var(--riq-border);
+          border-bottom: 1px solid #e6edf8;
           background: #ffffff;
-          position: sticky;
-          top: 0;
-          z-index: 20;
         }
 
         .riq-nav {
-          min-height: 88px;
+          min-height: 66px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 24px;
         }
 
-        .riq-logo-wrap {
-          display: flex;
-          align-items: center;
-          gap: 14px;
+        .riq-logo {
+          display: block;
+          width: 188px;
+          height: auto;
+          object-fit: contain;
           flex: 0 0 auto;
         }
 
-        .riq-logo {
+        .riq-logo-sidebar {
           display: block;
-          height: 44px;
-          width: auto;
+          width: 118px;
+          height: auto;
           object-fit: contain;
         }
 
-        .riq-logo-small {
+        .riq-logo-footer {
           display: block;
-          height: 30px;
-          width: auto;
+          width: 176px;
+          height: auto;
           object-fit: contain;
         }
 
         .riq-nav-links {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 30px;
           flex-wrap: wrap;
-          justify-content: center;
         }
 
         .riq-nav-links a {
-          font-size: 16px;
-          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
           color: var(--riq-text);
+          font-size: 15px;
+          font-weight: 600;
+          line-height: 1;
+        }
+
+        .riq-caret {
+          display: inline-block;
+          width: 10px;
+          height: 10px;
+          color: #1a315a;
+          transform: translateY(1px);
         }
 
         .riq-nav-actions {
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 18px;
           flex: 0 0 auto;
         }
 
         .riq-login {
+          color: var(--riq-text);
           font-size: 15px;
           font-weight: 600;
-          color: var(--riq-text);
         }
 
         .riq-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 10px;
-          min-height: 54px;
-          border-radius: 12px;
-          padding: 0 26px;
-          font-size: 16px;
+          min-height: 42px;
+          padding: 0 22px;
+          border-radius: 8px;
+          font-size: 15px;
           font-weight: 700;
           border: 1px solid transparent;
-          transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
           cursor: pointer;
-        }
-
-        .riq-btn:hover {
-          transform: translateY(-1px);
+          white-space: nowrap;
         }
 
         .riq-btn-primary {
-          background: linear-gradient(180deg, #2c74ff 0%, #2468f2 100%);
+          background: linear-gradient(180deg, #2d78ff 0%, #1664e8 100%);
           color: #ffffff;
-          box-shadow: 0 10px 24px rgba(36, 104, 242, 0.18);
+          box-shadow: 0 10px 24px rgba(22, 100, 232, 0.18);
         }
 
         .riq-btn-secondary {
@@ -139,14 +260,14 @@ export default function HomepageMockupPage() {
           border-color: #b8cae8;
         }
 
-        .riq-btn-outline-dark {
+        .riq-btn-dark {
           background: transparent;
           color: #ffffff;
-          border-color: rgba(255,255,255,0.45);
+          border-color: rgba(255, 255, 255, 0.48);
         }
 
         .riq-hero {
-          padding: 46px 0 26px;
+          padding: 38px 0 22px;
           background: #ffffff;
         }
 
@@ -158,12 +279,12 @@ export default function HomepageMockupPage() {
         }
 
         .riq-hero-copy h1 {
-          margin: 0 0 24px;
-          font-size: clamp(50px, 5.7vw, 78px);
-          line-height: 0.98;
-          letter-spacing: -0.05em;
-          font-weight: 700;
+          margin: 0 0 22px;
           color: var(--riq-text);
+          font-size: clamp(50px, 5.7vw, 74px);
+          line-height: 0.98;
+          letter-spacing: -0.055em;
+          font-weight: 700;
         }
 
         .riq-hero-copy .accent {
@@ -188,9 +309,9 @@ export default function HomepageMockupPage() {
 
         .riq-mini-trust {
           display: flex;
+          align-items: center;
           flex-wrap: wrap;
           gap: 24px;
-          align-items: center;
           color: var(--riq-text-soft);
           font-size: 14px;
           font-weight: 600;
@@ -205,25 +326,25 @@ export default function HomepageMockupPage() {
         .riq-mini-trust-item svg {
           width: 18px;
           height: 18px;
-          color: #627799;
+          color: #63789a;
           flex: 0 0 auto;
         }
 
         .riq-mock {
+          display: grid;
+          grid-template-columns: 175px 1fr;
+          min-height: 530px;
+          overflow: hidden;
           background: #ffffff;
           border: 1px solid var(--riq-border);
           border-radius: 24px;
           box-shadow: var(--riq-shadow);
-          overflow: hidden;
-          min-height: 540px;
-          display: grid;
-          grid-template-columns: 175px 1fr;
         }
 
         .riq-mock-sidebar {
+          padding: 22px 18px;
           background: linear-gradient(180deg, #f7fbff 0%, #f5f8fe 100%);
           border-right: 1px solid var(--riq-border);
-          padding: 22px 18px;
         }
 
         .riq-mock-logo {
@@ -242,9 +363,9 @@ export default function HomepageMockupPage() {
           min-height: 44px;
           padding: 0 10px;
           border-radius: 12px;
+          color: #4a5a78;
           font-size: 14px;
           font-weight: 600;
-          color: #4a5a78;
         }
 
         .riq-mock-nav-item.active {
@@ -255,13 +376,11 @@ export default function HomepageMockupPage() {
         .riq-mock-nav-item svg {
           width: 18px;
           height: 18px;
-          color: currentColor;
           flex: 0 0 auto;
         }
 
         .riq-mock-main {
           padding: 24px 26px;
-          background: #ffffff;
         }
 
         .riq-mock-head {
@@ -269,16 +388,16 @@ export default function HomepageMockupPage() {
           justify-content: space-between;
           gap: 20px;
           padding-bottom: 18px;
-          border-bottom: 1px solid var(--riq-border);
           margin-bottom: 18px;
+          border-bottom: 1px solid var(--riq-border);
         }
 
         .riq-mock-head h3 {
           margin: 0 0 6px;
+          color: var(--riq-text);
           font-size: 24px;
           line-height: 1.1;
           font-weight: 700;
-          color: var(--riq-text);
         }
 
         .riq-mock-head p {
@@ -290,8 +409,8 @@ export default function HomepageMockupPage() {
 
         .riq-mock-head-actions {
           display: flex;
-          gap: 10px;
           align-items: flex-start;
+          gap: 10px;
           flex-wrap: wrap;
         }
 
@@ -301,18 +420,17 @@ export default function HomepageMockupPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          background: #ffffff;
           border: 1px solid #cbd8ee;
           border-radius: 12px;
+          color: var(--riq-text);
           font-size: 14px;
           font-weight: 700;
-          color: var(--riq-text);
-          background: #ffffff;
         }
 
         .riq-timeline {
-          position: relative;
           display: grid;
-          gap: 22px;
+          gap: 20px;
           padding-left: 8px;
         }
 
@@ -326,7 +444,7 @@ export default function HomepageMockupPage() {
           position: absolute;
           left: 10px;
           top: 26px;
-          bottom: -28px;
+          bottom: -26px;
           width: 2px;
           background: #c9daf8;
         }
@@ -348,30 +466,30 @@ export default function HomepageMockupPage() {
         }
 
         .riq-timeline-date {
+          margin-bottom: 8px;
+          color: #3e4f6d;
           font-size: 14px;
           font-weight: 700;
-          color: #3e4f6d;
-          margin-bottom: 8px;
         }
 
         .riq-timeline-title {
+          margin: 0 0 6px;
+          color: var(--riq-text);
           font-size: 16px;
           font-weight: 700;
-          color: var(--riq-text);
-          margin: 0 0 6px;
         }
 
         .riq-timeline-body {
           margin: 0 0 6px;
+          color: #586983;
           font-size: 13px;
           line-height: 1.45;
-          color: #586983;
         }
 
         .riq-timeline-source {
+          color: var(--riq-blue);
           font-size: 13px;
           font-weight: 700;
-          color: var(--riq-blue);
         }
 
         .riq-security-strip {
@@ -382,10 +500,10 @@ export default function HomepageMockupPage() {
 
         .riq-security-grid {
           display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
+          grid-template-columns: 1.05fr 0.88fr 0.88fr 0.88fr 1.35fr;
           gap: 18px;
           align-items: center;
-          padding: 16px 0;
+          padding: 14px 0;
         }
 
         .riq-security-item {
@@ -413,22 +531,31 @@ export default function HomepageMockupPage() {
 
         .riq-security-item strong {
           display: block;
-          font-size: 15px;
-          line-height: 1.28;
-          font-weight: 700;
           color: var(--riq-text);
+          font-size: 15px;
+          line-height: 1.18;
+          font-weight: 700;
         }
 
         .riq-security-item span {
           display: block;
-          font-size: 15px;
-          line-height: 1.35;
           color: #4d5f7b;
+          font-size: 15px;
+          line-height: 1.32;
+          font-weight: 600;
+        }
+
+        .riq-security-note strong,
+        .riq-security-note span {
+          display: block;
+          color: #3c4f6e;
+          font-size: 15px;
+          line-height: 1.32;
           font-weight: 600;
         }
 
         .riq-section {
-          padding: 56px 0;
+          padding: 54px 0;
           background: #ffffff;
         }
 
@@ -437,17 +564,17 @@ export default function HomepageMockupPage() {
         }
 
         .riq-section-head {
-          text-align: center;
           max-width: 860px;
           margin: 0 auto 34px;
+          text-align: center;
         }
 
         .riq-section-head h2 {
           margin: 0 0 12px;
+          color: var(--riq-text);
           font-size: clamp(34px, 4vw, 54px);
           line-height: 1.05;
           letter-spacing: -0.045em;
-          color: var(--riq-text);
           font-weight: 700;
         }
 
@@ -474,22 +601,23 @@ export default function HomepageMockupPage() {
         }
 
         .riq-feature-card {
-          padding: 22px;
           display: grid;
           grid-template-columns: 66px 1fr;
           gap: 18px;
           align-items: start;
           min-height: 168px;
+          padding: 22px;
         }
 
         .riq-card-icon {
+          display: grid;
+          place-items: center;
           width: 62px;
           height: 62px;
           border-radius: 18px;
-          display: grid;
-          place-items: center;
           background: #edf5ff;
           color: var(--riq-blue);
+          flex: 0 0 auto;
         }
 
         .riq-card-icon svg {
@@ -510,10 +638,10 @@ export default function HomepageMockupPage() {
 
         .riq-feature-card h3 {
           margin: 2px 0 8px;
+          color: var(--riq-text);
           font-size: 16px;
           line-height: 1.3;
           font-weight: 700;
-          color: var(--riq-text);
         }
 
         .riq-feature-card p {
@@ -532,9 +660,9 @@ export default function HomepageMockupPage() {
         }
 
         .riq-step-card {
-          text-align: left;
-          padding: 16px 12px 0;
           position: relative;
+          padding: 16px 12px 0;
+          text-align: left;
         }
 
         .riq-step-card::after {
@@ -551,14 +679,14 @@ export default function HomepageMockupPage() {
         }
 
         .riq-step-icon {
+          display: grid;
+          place-items: center;
           width: 88px;
           height: 88px;
+          margin: 0 auto 16px;
           border-radius: 50%;
           background: #edf5ff;
           color: var(--riq-blue);
-          display: grid;
-          place-items: center;
-          margin: 0 auto 16px;
         }
 
         .riq-step-icon svg {
@@ -574,26 +702,26 @@ export default function HomepageMockupPage() {
         }
 
         .riq-step-num {
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          background: var(--riq-blue);
-          color: #ffffff;
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          width: 26px;
+          height: 26px;
+          margin-top: 1px;
+          border-radius: 50%;
+          background: var(--riq-blue);
+          color: #ffffff;
           font-size: 14px;
           font-weight: 700;
           flex: 0 0 auto;
-          margin-top: 1px;
         }
 
         .riq-step-copy h3 {
           margin: 0 0 6px;
+          color: var(--riq-text);
           font-size: 16px;
           line-height: 1.35;
           font-weight: 700;
-          color: var(--riq-text);
         }
 
         .riq-step-copy p {
@@ -605,20 +733,20 @@ export default function HomepageMockupPage() {
         }
 
         .riq-audience-card {
-          padding: 24px;
           display: grid;
           grid-template-columns: 58px 1fr;
           gap: 18px;
           align-items: start;
           min-height: 188px;
+          padding: 24px;
         }
 
         .riq-audience-card h3 {
           margin: 2px 0 8px;
+          color: var(--riq-text);
           font-size: 16px;
           line-height: 1.35;
           font-weight: 700;
-          color: var(--riq-text);
         }
 
         .riq-audience-card p {
@@ -638,55 +766,55 @@ export default function HomepageMockupPage() {
           font-weight: 700;
         }
 
-        .riq-dark-band {
+        .riq-bottom {
           position: relative;
           overflow: hidden;
-          background: linear-gradient(180deg, #123b7d 0%, #0b2d66 42%, #08244f 100%);
+          background: linear-gradient(180deg, #123b7d 0%, #0b2d66 46%, #08244f 100%);
           color: #ffffff;
-          margin-top: 10px;
+          margin-top: 8px;
         }
 
-        .riq-dark-band::before {
+        .riq-bottom::before {
           content: "";
           position: absolute;
           inset: 0;
           background:
             radial-gradient(circle at 22% 10%, rgba(73, 138, 255, 0.13), transparent 38%),
             radial-gradient(circle at 82% 20%, rgba(64, 132, 255, 0.08), transparent 30%),
-            linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0));
+            linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
           pointer-events: none;
         }
 
-        .riq-footer-dots {
+        .riq-bottom-dots {
           position: absolute;
-          right: 14px;
-          bottom: 8px;
-          width: 200px;
-          height: 138px;
-          background-image: radial-gradient(rgba(74, 145, 255, 0.5) 1.5px, transparent 1.5px);
-          background-size: 14px 14px;
-          opacity: 0.5;
+          right: 12px;
+          bottom: 10px;
+          width: 190px;
+          height: 124px;
+          opacity: 0.56;
           pointer-events: none;
+          background-image: radial-gradient(rgba(74, 145, 255, 0.65) 1.35px, transparent 1.35px);
+          background-size: 14px 14px;
         }
 
-        .riq-dark-inner {
+        .riq-bottom-inner {
           position: relative;
           z-index: 1;
-          padding: 16px 0 10px;
+          padding: 28px 0 18px;
         }
 
         .riq-cta-grid {
           display: grid;
           grid-template-columns: 1fr auto;
-          gap: 26px;
           align-items: center;
+          gap: 24px;
           padding-bottom: 4px;
         }
 
         .riq-cta-copy h2 {
           margin: 0 0 10px;
           color: #ffffff;
-          font-size: clamp(36px, 4vw, 56px);
+          font-size: clamp(32px, 3.8vw, 52px);
           line-height: 1.04;
           letter-spacing: -0.05em;
           font-weight: 700;
@@ -695,7 +823,7 @@ export default function HomepageMockupPage() {
 
         .riq-cta-copy p {
           margin: 0;
-          color: rgba(255,255,255,0.85);
+          color: rgba(255, 255, 255, 0.85);
           font-size: 17px;
           line-height: 1.5;
           font-weight: 500;
@@ -711,17 +839,17 @@ export default function HomepageMockupPage() {
 
         .riq-cta-buttons {
           display: flex;
+          justify-content: flex-end;
           gap: 14px;
           flex-wrap: wrap;
-          justify-content: flex-end;
         }
 
         .riq-cta-points {
           display: flex;
-          gap: 14px;
-          flex-wrap: wrap;
           justify-content: flex-end;
-          color: rgba(255,255,255,0.9);
+          gap: 16px;
+          flex-wrap: wrap;
+          color: rgba(255, 255, 255, 0.92);
           font-size: 12px;
           font-weight: 600;
         }
@@ -732,52 +860,53 @@ export default function HomepageMockupPage() {
           gap: 8px;
         }
 
+        .riq-cta-points svg {
+          width: 16px;
+          height: 16px;
+          color: #2d8dff;
+          flex: 0 0 auto;
+        }
+
         .riq-divider {
-          border-top: 1px solid rgba(255,255,255,0.14);
-          margin-bottom: 8px;
+          margin: 12px 0 8px;
+          border-top: 1px solid rgba(255, 255, 255, 0.14);
         }
 
         .riq-footer-grid {
           display: grid;
-          grid-template-columns: 1.4fr 0.9fr 0.9fr 0.9fr 1.1fr;
+          grid-template-columns: 1.28fr 0.82fr 0.82fr 0.82fr 1.16fr;
           gap: 16px;
           align-items: start;
         }
 
         .riq-footer-brand {
-          padding-top: 6px;
-        }
-
-        .riq-footer-brand .riq-logo {
-          height: 38px;
+          padding-top: 4px;
         }
 
         .riq-footer-col h4,
         .riq-footer-legal h4 {
-          margin: 0 0 14px;
+          margin: 0 0 12px;
+          color: #ffffff;
           font-size: 15px;
           line-height: 1.2;
           font-weight: 700;
-          color: #ffffff;
         }
 
         .riq-footer-col {
           display: grid;
-          gap: 12px;
+          gap: 10px;
         }
 
-        .riq-footer-col a {
-          color: rgba(255,255,255,0.88);
+        .riq-footer-col a,
+        .riq-footer-legal p {
+          color: rgba(255, 255, 255, 0.88);
           font-size: 15px;
+          line-height: 1.5;
           font-weight: 500;
         }
 
         .riq-footer-legal p {
           margin: 0;
-          color: rgba(255,255,255,0.88);
-          font-size: 15px;
-          line-height: 1.55;
-          font-weight: 500;
         }
 
         .riq-hide-mobile {
@@ -806,8 +935,8 @@ export default function HomepageMockupPage() {
             justify-content: flex-start;
           }
 
-          .riq-footer-dots {
-            width: 130px;
+          .riq-bottom-dots {
+            width: 132px;
             height: 100px;
           }
         }
@@ -854,10 +983,6 @@ export default function HomepageMockupPage() {
             display: none;
           }
 
-          .riq-security-item {
-            min-height: auto;
-          }
-
           .riq-hide-mobile {
             display: none;
           }
@@ -870,13 +995,17 @@ export default function HomepageMockupPage() {
             <img className="riq-logo" src="/logo/recordiq-logo.png" alt="RecordIQ" />
           </a>
 
-          <nav className="riq-nav-links">
-            <a href="#">Product</a>
-            <a href="#">Solutions</a>
-            <a href="#">Security</a>
-            <a href="#">Pricing</a>
-            <a href="#">Resources</a>
-            <a href="#">About</a>
+          <nav className="riq-nav-links" aria-label="Primary">
+            {navLinks.map((item) => (
+              <a key={item.label} href={item.href}>
+                <span>{item.label}</span>
+                {item.caret ? (
+                  <svg className="riq-caret" viewBox="0 0 10 10" aria-hidden="true">
+                    <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : null}
+              </a>
+            ))}
           </nav>
 
           <div className="riq-nav-actions">
@@ -935,11 +1064,7 @@ export default function HomepageMockupPage() {
             <div className="riq-mock">
               <aside className="riq-mock-sidebar">
                 <div className="riq-mock-logo">
-                  <img
-                    className="riq-logo-small"
-                    src="/logo/recordiq-logo.png"
-                    alt="RecordIQ"
-                  />
+                  <img className="riq-logo-sidebar" src="/logo/recordiq-logo.png" alt="RecordIQ" />
                 </div>
 
                 <div className="riq-mock-nav">
@@ -1033,55 +1158,55 @@ export default function HomepageMockupPage() {
         </section>
 
         <section className="riq-security-strip">
-  <div className="riq-container riq-security-grid">
-    <div className="riq-security-item">
-      <div className="riq-security-icon">
-        <ShieldCheckIcon />
-      </div>
-      <div>
-        <strong>Built for Privacy.</strong>
-        <span>Designed for Trust.</span>
-      </div>
-    </div>
+          <div className="riq-container riq-security-grid">
+            <div className="riq-security-item">
+              <div className="riq-security-icon">
+                <ShieldCheckIcon />
+              </div>
+              <div>
+                <strong>Built for Privacy.</strong>
+                <span>Designed for Trust.</span>
+              </div>
+            </div>
 
-    <div className="riq-security-item">
-      <div className="riq-security-icon">
-        <CaduceusIcon />
-      </div>
-      <div>
-        <strong>HIPAA</strong>
-        <span>COMPLIANT</span>
-      </div>
-    </div>
+            <div className="riq-security-item">
+              <div className="riq-security-icon">
+                <CaduceusIcon />
+              </div>
+              <div>
+                <strong>HIPAA</strong>
+                <span>COMPLIANT</span>
+              </div>
+            </div>
 
-    <div className="riq-security-item">
-      <div className="riq-security-icon">
-        <LockIcon />
-      </div>
-      <div>
-        <strong>SOC 2</strong>
-        <span>TYPE II</span>
-      </div>
-    </div>
+            <div className="riq-security-item">
+              <div className="riq-security-icon">
+                <LockIcon />
+              </div>
+              <div>
+                <strong>SOC 2</strong>
+                <span>TYPE II</span>
+              </div>
+            </div>
 
-    <div className="riq-security-item">
-      <div className="riq-security-icon">
-        <ShieldIcon />
-      </div>
-      <div>
-        <strong>AES-256</strong>
-        <span>ENCRYPTION</span>
-      </div>
-    </div>
+            <div className="riq-security-item">
+              <div className="riq-security-icon">
+                <ShieldIcon />
+              </div>
+              <div>
+                <strong>AES-256</strong>
+                <span>ENCRYPTION</span>
+              </div>
+            </div>
 
-    <div className="riq-security-item">
-      <div>
-        <strong>Your data is always secure,</strong>
-        <span>private, and never shared.</span>
-      </div>
-    </div>
-  </div>
-</section>
+            <div className="riq-security-item riq-security-note">
+              <div>
+                <strong>Your data is always secure,</strong>
+                <span>private, and never shared.</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="riq-section">
           <div className="riq-container">
@@ -1094,46 +1219,21 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-grid-4">
-  <div className="riq-card riq-feature-card">
-    <div className="riq-card-icon">
-      <DocumentUploadIcon />
-    </div>
-    <div>
-      <h3>Upload &amp; Extract</h3>
-      <p>Securely upload PDFs. We extract and organize every record.</p>
-    </div>
-  </div>
-
-  <div className="riq-card riq-feature-card">
-    <div className="riq-card-icon">
-      <BulletedTimelineIcon />
-    </div>
-    <div>
-      <h3>Chronological Timeline</h3>
-      <p>All events are arranged in order with source page references.</p>
-    </div>
-  </div>
-
-  <div className="riq-card riq-feature-card">
-    <div className="riq-card-icon">
-      <SummaryLinesIcon />
-    </div>
-    <div>
-      <h3>Case Summary</h3>
-      <p>AI-generated summaries highlight key events, diagnoses, and treatments.</p>
-    </div>
-  </div>
-
-  <div className="riq-card riq-feature-card">
-    <div className="riq-card-icon">
-      <ExportIcon />
-    </div>
-    <div>
-      <h3>Export &amp; Share</h3>
-      <p>Export timelines and summaries for your case in seconds.</p>
-    </div>
-  </div>
-</div>
+              {featureCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div className="riq-card riq-feature-card" key={card.title}>
+                    <div className="riq-card-icon" aria-hidden="true">
+                      <Icon />
+                    </div>
+                    <div>
+                      <h3>{card.title}</h3>
+                      <p>{card.text}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -1144,58 +1244,24 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-works-grid">
-  <div className="riq-step-card">
-    <div className="riq-step-icon">
-      <CloudUploadIcon />
-    </div>
-    <div className="riq-step-meta">
-      <span className="riq-step-num">1</span>
-      <div className="riq-step-copy">
-        <h3>Upload Your Records</h3>
-        <p>Drag &amp; drop your medical records. We support PDF files of any size.</p>
-      </div>
-    </div>
-  </div>
-
-  <div className="riq-step-card">
-    <div className="riq-step-icon">
-      <DocumentSearchIcon />
-    </div>
-    <div className="riq-step-meta">
-      <span className="riq-step-num">2</span>
-      <div className="riq-step-copy">
-        <h3>We Extract &amp; Organize</h3>
-        <p>Our AI extracts the important information and organizes it chronologically.</p>
-      </div>
-    </div>
-  </div>
-
-  <div className="riq-step-card">
-    <div className="riq-step-icon">
-      <ChecklistIcon />
-    </div>
-    <div className="riq-step-meta">
-      <span className="riq-step-num">3</span>
-      <div className="riq-step-copy">
-        <h3>Review Your Timeline</h3>
-        <p>See your records in a clear timeline with source page references.</p>
-      </div>
-    </div>
-  </div>
-
-  <div className="riq-step-card">
-    <div className="riq-step-icon">
-      <DocumentExportIcon />
-    </div>
-    <div className="riq-step-meta">
-      <span className="riq-step-num">4</span>
-      <div className="riq-step-copy">
-        <h3>Export &amp; Build Your Case</h3>
-        <p>Download summaries or share with your team securely.</p>
-      </div>
-    </div>
-  </div>
-</div>
+              {steps.map((step) => {
+                const Icon = step.icon;
+                return (
+                  <div className="riq-step-card" key={step.title}>
+                    <div className="riq-step-icon" aria-hidden="true">
+                      <Icon />
+                    </div>
+                    <div className="riq-step-meta">
+                      <span className="riq-step-num">{step.num}</span>
+                      <div className="riq-step-copy">
+                        <h3>{step.title}</h3>
+                        <p>{step.text}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -1206,141 +1272,102 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-grid-4">
-  <div className="riq-card riq-audience-card">
-    <div className="riq-card-icon">
-      <ScalesIcon />
-    </div>
-    <div>
-      <h3>Personal Injury Attorneys</h3>
-      <p>Save hours. Understand records faster. Build stronger cases.</p>
-      <a className="riq-learn" href="#">
-        Learn more →
-      </a>
-    </div>
-  </div>
+              {audienceCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <div className="riq-card riq-audience-card" key={card.title}>
+                    <div className="riq-card-icon" aria-hidden="true">
+                      <Icon />
+                    </div>
+                    <div>
+                      <h3>{card.title}</h3>
+                      <p>{card.text}</p>
+                      <a className="riq-learn" href="#">
+                        Learn more <span aria-hidden="true">→</span>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
-  <div className="riq-card riq-audience-card">
-    <div className="riq-card-icon">
-      <DoctorIcon />
-    </div>
-    <div>
-      <h3>Medical Professionals</h3>
-      <p>Quickly review patient histories and treatment timelines.</p>
-      <a className="riq-learn" href="#">
-        Learn more →
-      </a>
-    </div>
-  </div>
+        <section className="riq-bottom">
+          <div className="riq-bottom-dots" aria-hidden="true" />
+          <div className="riq-container riq-bottom-inner">
+            <div className="riq-cta-grid">
+              <div className="riq-cta-copy">
+                <h2>Ready to Save Time and Build Stronger Cases?</h2>
+                <p>
+                  Join professionals who trust RecordIQ to turn medical records into clarity.
+                </p>
+              </div>
 
-  <div className="riq-card riq-audience-card">
-    <div className="riq-card-icon">
-      <StethoscopeIcon />
-    </div>
-    <div>
-      <h3>Medical Experts</h3>
-      <p>
-        Review complex records, clarify medical findings, and support case
-        strategy with organized source-backed timelines.
-      </p>
-      <a className="riq-learn" href="#">
-        Learn more →
-      </a>
-    </div>
-  </div>
+              <div className="riq-cta-actions">
+                <div className="riq-cta-buttons">
+                  <a className="riq-btn riq-btn-primary" href="#">
+                    Upload Records Free
+                  </a>
+                  <a className="riq-btn riq-btn-dark" href="#">
+                    Book a Demo
+                  </a>
+                </div>
 
-  <div className="riq-card riq-audience-card">
-    <div className="riq-card-icon">
-      <ShieldCheckIcon />
-    </div>
-    <div>
-      <h3>Insurance &amp; Claims</h3>
-      <p>Streamline review. Reduce back-and-forth. Speed decisions.</p>
-      <a className="riq-learn" href="#">
-        Learn more →
-      </a>
-    </div>
-  </div>
-</div>
+                <div className="riq-cta-points">
+                  <span>
+                    <CheckMini />
+                    No credit card required
+                  </span>
+                  <span>
+                    <CheckMini />
+                    Free to get started
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="riq-divider" />
+
+            <div className="riq-footer-grid">
+              <div className="riq-footer-brand">
+                <img className="riq-logo-footer" src="/logo/recordiq-logo.png" alt="RecordIQ" />
+              </div>
+
+              <div className="riq-footer-col">
+                <h4>Product</h4>
+                <a href="#">Features</a>
+                <a href="#">Pricing</a>
+                <a href="#">Updates</a>
+              </div>
+
+              <div className="riq-footer-col">
+                <h4>Company</h4>
+                <a href="#">About</a>
+                <a href="#">Security</a>
+                <a href="#">Careers</a>
+              </div>
+
+              <div className="riq-footer-col">
+                <h4>Resources</h4>
+                <a href="#">Help Center</a>
+                <a href="#">Blog</a>
+                <a href="#">Contact</a>
+              </div>
+
+              <div className="riq-footer-legal">
+                <h4>Secure. Private. Compliant.</h4>
+                <p>© 2024 RecordIQ. All rights reserved.</p>
+              </div>
+            </div>
           </div>
         </section>
       </main>
-
-      <section className="riq-dark-band">
-        <div className="riq-footer-dots" />
-
-        <div className="riq-container riq-dark-inner">
-          <div className="riq-cta-grid">
-            <div className="riq-cta-copy">
-              <h2>Ready to Save Time and Build Stronger Cases?</h2>
-              <p>
-                Join professionals who trust RecordIQ to turn medical records
-                into clarity.
-              </p>
-            </div>
-
-            <div className="riq-cta-actions">
-              <div className="riq-cta-buttons">
-                <a className="riq-btn riq-btn-primary" href="#">
-                  Upload Records Free
-                </a>
-                <a className="riq-btn riq-btn-outline-dark" href="#">
-                  Book a Demo
-                </a>
-              </div>
-
-              <div className="riq-cta-points">
-                <span>
-                  <CheckMini />
-                  No credit card required
-                </span>
-                <span>
-                  <CheckMini />
-                  Free to get started
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="riq-divider" />
-
-          <div className="riq-footer-grid">
-            <div className="riq-footer-brand">
-              <img className="riq-logo" src="/logo/recordiq-logo.png" alt="RecordIQ" />
-            </div>
-
-            <div className="riq-footer-col">
-              <h4>Product</h4>
-              <a href="#">Features</a>
-              <a href="#">Pricing</a>
-              <a href="#">Updates</a>
-            </div>
-
-            <div className="riq-footer-col">
-              <h4>Company</h4>
-              <a href="#">About</a>
-              <a href="#">Security</a>
-              <a href="#">Careers</a>
-            </div>
-
-            <div className="riq-footer-col">
-              <h4>Resources</h4>
-              <a href="#">Help Center</a>
-              <a href="#">Blog</a>
-              <a href="#">Contact</a>
-            </div>
-
-            <div className="riq-footer-legal">
-              <h4>Secure. Private. Compliant.</h4>
-              <p>© 2024 RecordIQ. All rights reserved.</p>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
 
-function IconBase({ children }: { children: any }) {
+function IconBase({ children }: { children: React.ReactNode }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -1355,6 +1382,7 @@ function IconBase({ children }: { children: any }) {
     </svg>
   );
 }
+
 function ShieldCheckMini() {
   return (
     <IconBase>
@@ -1448,6 +1476,7 @@ function GearLineIcon() {
     </IconBase>
   );
 }
+
 function ShieldCheckIcon() {
   return (
     <IconBase>
@@ -1478,17 +1507,17 @@ function LockIcon() {
 function CaduceusIcon() {
   return (
     <IconBase>
-      <path d="M12 4v16" />
-      <path d="M12 6c-2.2 0-4 1.4-5 3.4" />
-      <path d="M12 6c2.2 0 4 1.4 5 3.4" />
-      <path d="M12 18c2.2 0 4-1.4 5-3.4" />
-      <path d="M12 18c-2.2 0-4-1.4-5-3.4" />
-      <path d="M8 9.2c1 .7 2.1 1.1 4 1.1s3-.4 4-1.1" />
-      <path d="M8 14.8c1-.7 2.1-1.1 4-1.1s3 .4 4 1.1" />
-      <path d="M8.2 11.2 6.4 12.8" />
-      <path d="M15.8 11.2l1.8 1.6" />
-      <path d="M8.2 12.8 6.4 11.2" />
-      <path d="M15.8 12.8l1.8-1.6" />
+      <path d="M12 3.8v16.4" />
+      <path d="M12 6.2c-2.1 0-3.8 1.1-5.1 3" />
+      <path d="M12 6.2c2.1 0 3.8 1.1 5.1 3" />
+      <path d="M7.2 10.4c1 .9 2.4 1.4 4.8 1.4s3.8-.5 4.8-1.4" />
+      <path d="M7.2 13.6c1-.9 2.4-1.4 4.8-1.4s3.8.5 4.8 1.4" />
+      <path d="M12 18.8c-2.1 0-3.8-1.1-5.1-3" />
+      <path d="M12 18.8c2.1 0 3.8-1.1 5.1-3" />
+      <path d="M8.5 8.8 6.4 7.2" />
+      <path d="M15.5 8.8l2.1-1.6" />
+      <path d="M8.5 15.2 6.4 16.8" />
+      <path d="M15.5 15.2l2.1 1.6" />
     </IconBase>
   );
 }
@@ -1498,11 +1527,11 @@ function DocumentUploadIcon() {
     <IconBase>
       <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
       <path d="M14 3.5V8h4" />
-      <path d="M12 15v-4" />
-      <path d="m10 11.5 2-2 2 2" />
-      <circle cx="17.2" cy="17.2" r="2.3" />
-      <path d="M17.2 16v2.4" />
-      <path d="M16 17.2h2.4" />
+      <path d="M12 14.8v-5" />
+      <path d="m9.7 12 2.3-2.3 2.3 2.3" />
+      <circle cx="17.2" cy="17.2" r="2.2" />
+      <path d="M17.2 16.1v2.2" />
+      <path d="M16.1 17.2h2.2" />
     </IconBase>
   );
 }
@@ -1510,12 +1539,12 @@ function DocumentUploadIcon() {
 function BulletedTimelineIcon() {
   return (
     <IconBase>
-      <circle cx="5.8" cy="7" r="1.2" />
+      <circle cx="5.8" cy="6.9" r="1.2" />
       <circle cx="5.8" cy="12" r="1.2" />
-      <circle cx="5.8" cy="17" r="1.2" />
-      <path d="M9.2 7h8.8" />
-      <path d="M9.2 12h8.8" />
-      <path d="M9.2 17h8.8" />
+      <circle cx="5.8" cy="17.1" r="1.2" />
+      <path d="M9.2 6.9H18" />
+      <path d="M9.2 12H18" />
+      <path d="M9.2 17.1H18" />
     </IconBase>
   );
 }
@@ -1524,9 +1553,9 @@ function SummaryLinesIcon() {
   return (
     <IconBase>
       <path d="M5.3 7h13.4" />
-      <path d="M5.3 11h13.4" />
-      <path d="M5.3 15h13.4" />
-      <path d="M5.3 19h13.4" />
+      <path d="M5.3 10.8h13.4" />
+      <path d="M5.3 14.6h13.4" />
+      <path d="M5.3 18.4h13.4" />
     </IconBase>
   );
 }
@@ -1535,8 +1564,8 @@ function ExportIcon() {
   return (
     <IconBase>
       <path d="M12 3.5v9.5" />
-      <path d="m8.5 9.8 3.5 3.5 3.5-3.5" />
-      <path d="M6 19h12" />
+      <path d="m8.4 9.9 3.6 3.6 3.6-3.6" />
+      <path d="M5.8 19h12.4" />
     </IconBase>
   );
 }
@@ -1608,6 +1637,8 @@ function DoctorIcon() {
       <path d="M7 19.5v-1.7c0-2.5 2.2-4.3 5-4.3s5 1.8 5 4.3v1.7" />
       <path d="M12 10.8v3.2" />
       <path d="M10.4 12.4h3.2" />
+      <path d="M16.1 12.3v3.3" />
+      <path d="M16.1 15.6c0 1.7 1.2 2.9 2.9 2.9" />
     </IconBase>
   );
 }
