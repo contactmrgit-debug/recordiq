@@ -158,13 +158,13 @@ export default function HomepageMockupPage() {
         }
 
         .riq-hero h1 {
-          font-size: clamp(46px, 5vw, 66px);
-          line-height: 1.03;
-          letter-spacing: -0.065em;
-          margin: 0 0 26px;
-          color: var(--riq-text);
-          font-weight: 850;
-        }
+  font-size: clamp(46px, 5vw, 66px);
+  line-height: 1.03;
+  letter-spacing: -0.06em;
+  margin: 0 0 26px;
+  color: var(--riq-text);
+  font-weight: 700;
+}
 
         .riq-hero h1 span {
           color: var(--riq-blue);
@@ -172,13 +172,13 @@ export default function HomepageMockupPage() {
         }
 
         .riq-hero p {
-          max-width: 560px;
-          color: var(--riq-muted);
-          font-size: 20px;
-          line-height: 1.55;
-          margin: 0 0 32px;
-          font-weight: 500;
-        }
+  max-width: 560px;
+  color: var(--riq-muted);
+  font-size: 20px;
+  line-height: 1.55;
+  margin: 0 0 32px;
+  font-weight: 450;
+}
 
         .riq-hero-actions {
           display: flex;
