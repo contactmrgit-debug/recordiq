@@ -2,7 +2,8 @@ export default function HomepageMockupPage() {
   return (
     <div className="riq-page">
       <style>{`
-        :global(:root) {
+        :root,
+        .riq-page {
           --riq-blue: #1664e8;
           --riq-text: #0b1830;
           --riq-muted: #65758b;
