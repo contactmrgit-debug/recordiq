@@ -1019,55 +1019,55 @@ export default function HomepageMockupPage() {
         </section>
 
         <section className="riq-security-strip">
-          <div className="riq-container riq-security-grid">
-            <div className="riq-security-item">
-              <div className="riq-security-icon">
-                <ShieldCheckIcon />
-              </div>
-              <div>
-                <strong>Built for Privacy.</strong>
-                <span>Designed for Trust.</span>
-              </div>
-            </div>
+  <div className="riq-container riq-security-grid">
+    <div className="riq-security-item">
+      <div className="riq-security-icon">
+        <ShieldCheckIcon />
+      </div>
+      <div>
+        <strong>Built for Privacy.</strong>
+        <span>Designed for Trust.</span>
+      </div>
+    </div>
 
-            <div className="riq-security-item">
-              <div className="riq-security-icon">
-                <HipaaIcon />
-              </div>
-              <div>
-                <strong>HIPAA</strong>
-                <span>COMPLIANT</span>
-              </div>
-            </div>
+    <div className="riq-security-item">
+      <div className="riq-security-icon">
+        <CaduceusIcon />
+      </div>
+      <div>
+        <strong>HIPAA</strong>
+        <span>COMPLIANT</span>
+      </div>
+    </div>
 
-            <div className="riq-security-item">
-              <div className="riq-security-icon">
-                <LockIcon />
-              </div>
-              <div>
-                <strong>SOC 2</strong>
-                <span>TYPE II</span>
-              </div>
-            </div>
+    <div className="riq-security-item">
+      <div className="riq-security-icon">
+        <LockIcon />
+      </div>
+      <div>
+        <strong>SOC 2</strong>
+        <span>TYPE II</span>
+      </div>
+    </div>
 
-            <div className="riq-security-item">
-              <div className="riq-security-icon">
-                <ShieldOutlineIcon />
-              </div>
-              <div>
-                <strong>AES-256</strong>
-                <span>ENCRYPTION</span>
-              </div>
-            </div>
+    <div className="riq-security-item">
+      <div className="riq-security-icon">
+        <ShieldIcon />
+      </div>
+      <div>
+        <strong>AES-256</strong>
+        <span>ENCRYPTION</span>
+      </div>
+    </div>
 
-            <div className="riq-security-item">
-              <div>
-                <strong>Your data is always secure,</strong>
-                <span>private, and never shared.</span>
-              </div>
-            </div>
-          </div>
-        </section>
+    <div className="riq-security-item">
+      <div>
+        <strong>Your data is always secure,</strong>
+        <span>private, and never shared.</span>
+      </div>
+    </div>
+  </div>
+</section>
 
         <section className="riq-section">
           <div className="riq-container">
@@ -1080,57 +1080,46 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-grid-4">
-              <div className="riq-card riq-feature-card">
-                <div className="riq-card-icon">
-                  <DocumentUploadIcon />
-                </div>
-                <div>
-                  <h3>Precise, Secure Extraction</h3>
-                  <p>
-                    AI extracts key medical facts from records with structure,
-                    speed, and security.
-                  </p>
-                </div>
-              </div>
+  <div className="riq-card riq-feature-card">
+    <div className="riq-card-icon">
+      <DocumentUploadIcon />
+    </div>
+    <div>
+      <h3>Upload &amp; Extract</h3>
+      <p>Securely upload PDFs. We extract and organize every record.</p>
+    </div>
+  </div>
 
-              <div className="riq-card riq-feature-card">
-                <div className="riq-card-icon">
-                  <BulletedTimelineIcon />
-                </div>
-                <div>
-                  <h3>Chronological Timeline</h3>
-                  <p>
-                    All events are arranged in order with source page
-                    references.
-                  </p>
-                </div>
-              </div>
+  <div className="riq-card riq-feature-card">
+    <div className="riq-card-icon">
+      <BulletedTimelineIcon />
+    </div>
+    <div>
+      <h3>Chronological Timeline</h3>
+      <p>All events are arranged in order with source page references.</p>
+    </div>
+  </div>
 
-              <div className="riq-card riq-feature-card">
-                <div className="riq-card-icon">
-                  <SummaryLinesIcon />
-                </div>
-                <div>
-                  <h3>Case Summary</h3>
-                  <p>
-                    AI-generated summaries highlight key events, diagnoses, and
-                    treatments.
-                  </p>
-                </div>
-              </div>
+  <div className="riq-card riq-feature-card">
+    <div className="riq-card-icon">
+      <SummaryLinesIcon />
+    </div>
+    <div>
+      <h3>Case Summary</h3>
+      <p>AI-generated summaries highlight key events, diagnoses, and treatments.</p>
+    </div>
+  </div>
 
-              <div className="riq-card riq-feature-card">
-                <div className="riq-card-icon">
-                  <ExportIcon />
-                </div>
-                <div>
-                  <h3>Export &amp; Share</h3>
-                  <p>
-                    Export timelines and summaries for your case in seconds.
-                  </p>
-                </div>
-              </div>
-            </div>
+  <div className="riq-card riq-feature-card">
+    <div className="riq-card-icon">
+      <ExportIcon />
+    </div>
+    <div>
+      <h3>Export &amp; Share</h3>
+      <p>Export timelines and summaries for your case in seconds.</p>
+    </div>
+  </div>
+</div>
           </div>
         </section>
 
@@ -1141,69 +1130,58 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-works-grid">
-              <div className="riq-step-card">
-                <div className="riq-step-icon">
-                  <CloudUploadIcon />
-                </div>
-                <div className="riq-step-meta">
-                  <span className="riq-step-num">1</span>
-                  <div className="riq-step-copy">
-                    <h3>Upload Your Records</h3>
-                    <p>
-                      Drag &amp; drop your medical records. We support PDF files
-                      of any size.
-                    </p>
-                  </div>
-                </div>
-              </div>
+  <div className="riq-step-card">
+    <div className="riq-step-icon">
+      <CloudUploadIcon />
+    </div>
+    <div className="riq-step-meta">
+      <span className="riq-step-num">1</span>
+      <div className="riq-step-copy">
+        <h3>Upload Your Records</h3>
+        <p>Drag &amp; drop your medical records. We support PDF files of any size.</p>
+      </div>
+    </div>
+  </div>
 
-              <div className="riq-step-card">
-                <div className="riq-step-icon">
-                  <DocumentSearchIcon />
-                </div>
-                <div className="riq-step-meta">
-                  <span className="riq-step-num">2</span>
-                  <div className="riq-step-copy">
-                    <h3>AI Identifies Key Facts</h3>
-                    <p>
-                      Our AI pulls out the important medical events, diagnoses,
-                      treatments, and dates.
-                    </p>
-                  </div>
-                </div>
-              </div>
+  <div className="riq-step-card">
+    <div className="riq-step-icon">
+      <DocumentSearchIcon />
+    </div>
+    <div className="riq-step-meta">
+      <span className="riq-step-num">2</span>
+      <div className="riq-step-copy">
+        <h3>We Extract &amp; Organize</h3>
+        <p>Our AI extracts the important information and organizes it chronologically.</p>
+      </div>
+    </div>
+  </div>
 
-              <div className="riq-step-card">
-                <div className="riq-step-icon">
-                  <ChecklistIcon />
-                </div>
-                <div className="riq-step-meta">
-                  <span className="riq-step-num">3</span>
-                  <div className="riq-step-copy">
-                    <h3>Review Your Timeline</h3>
-                    <p>
-                      See your records in a clear timeline with source page
-                      references.
-                    </p>
-                  </div>
-                </div>
-              </div>
+  <div className="riq-step-card">
+    <div className="riq-step-icon">
+      <ChecklistIcon />
+    </div>
+    <div className="riq-step-meta">
+      <span className="riq-step-num">3</span>
+      <div className="riq-step-copy">
+        <h3>Review Your Timeline</h3>
+        <p>See your records in a clear timeline with source page references.</p>
+      </div>
+    </div>
+  </div>
 
-              <div className="riq-step-card">
-                <div className="riq-step-icon">
-                  <DocumentExportIcon />
-                </div>
-                <div className="riq-step-meta">
-                  <span className="riq-step-num">4</span>
-                  <div className="riq-step-copy">
-                    <h3>Export &amp; Build Your Case</h3>
-                    <p>
-                      Download summaries or share with your team securely.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+  <div className="riq-step-card">
+    <div className="riq-step-icon">
+      <DocumentExportIcon />
+    </div>
+    <div className="riq-step-meta">
+      <span className="riq-step-num">4</span>
+      <div className="riq-step-copy">
+        <h3>Export &amp; Build Your Case</h3>
+        <p>Download summaries or share with your team securely.</p>
+      </div>
+    </div>
+  </div>
+</div>
           </div>
         </section>
 
@@ -1214,67 +1192,61 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-grid-4">
-              <div className="riq-card riq-audience-card">
-                <div className="riq-card-icon">
-                  <ScalesIcon />
-                </div>
-                <div>
-                  <h3>Personal Injury Attorneys</h3>
-                  <p>
-                    Save hours. Understand records faster. Build stronger cases.
-                  </p>
-                  <a className="riq-learn" href="#">
-                    Learn more →
-                  </a>
-                </div>
-              </div>
+  <div className="riq-card riq-audience-card">
+    <div className="riq-card-icon">
+      <ScalesIcon />
+    </div>
+    <div>
+      <h3>Personal Injury Attorneys</h3>
+      <p>Save hours. Understand records faster. Build stronger cases.</p>
+      <a className="riq-learn" href="#">
+        Learn more →
+      </a>
+    </div>
+  </div>
 
-              <div className="riq-card riq-audience-card">
-                <div className="riq-card-icon">
-                  <DoctorIcon />
-                </div>
-                <div>
-                  <h3>Medical Professionals</h3>
-                  <p>
-                    Quickly review patient histories and treatment timelines.
-                  </p>
-                  <a className="riq-learn" href="#">
-                    Learn more →
-                  </a>
-                </div>
-              </div>
+  <div className="riq-card riq-audience-card">
+    <div className="riq-card-icon">
+      <DoctorIcon />
+    </div>
+    <div>
+      <h3>Medical Professionals</h3>
+      <p>Quickly review patient histories and treatment timelines.</p>
+      <a className="riq-learn" href="#">
+        Learn more →
+      </a>
+    </div>
+  </div>
 
-              <div className="riq-card riq-audience-card">
-                <div className="riq-card-icon">
-                  <StethoscopeIcon />
-                </div>
-                <div>
-                  <h3>Medical Experts</h3>
-                  <p>
-                    Review complex records, clarify medical findings, and support
-                    case strategy with organized source-backed timelines.
-                  </p>
-                  <a className="riq-learn" href="#">
-                    Learn more →
-                  </a>
-                </div>
-              </div>
+  <div className="riq-card riq-audience-card">
+    <div className="riq-card-icon">
+      <StethoscopeIcon />
+    </div>
+    <div>
+      <h3>Medical Experts</h3>
+      <p>
+        Review complex records, clarify medical findings, and support case
+        strategy with organized source-backed timelines.
+      </p>
+      <a className="riq-learn" href="#">
+        Learn more →
+      </a>
+    </div>
+  </div>
 
-              <div className="riq-card riq-audience-card">
-                <div className="riq-card-icon">
-                  <ShieldCheckIcon />
-                </div>
-                <div>
-                  <h3>Insurance &amp; Claims</h3>
-                  <p>
-                    Streamline review. Reduce back-and-forth. Speed decisions.
-                  </p>
-                  <a className="riq-learn" href="#">
-                    Learn more →
-                  </a>
-                </div>
-              </div>
-            </div>
+  <div className="riq-card riq-audience-card">
+    <div className="riq-card-icon">
+      <ShieldCheckIcon />
+    </div>
+    <div>
+      <h3>Insurance &amp; Claims</h3>
+      <p>Streamline review. Reduce back-and-forth. Speed decisions.</p>
+      <a className="riq-learn" href="#">
+        Learn more →
+      </a>
+    </div>
+  </div>
+</div>
           </div>
         </section>
       </main>
@@ -1354,7 +1326,7 @@ export default function HomepageMockupPage() {
   );
 }
 
-function IconBase({ children }: { children: React.ReactNode }) {
+function IconBase({ children }: { children: any }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -1369,7 +1341,6 @@ function IconBase({ children }: { children: React.ReactNode }) {
     </svg>
   );
 }
-
 function ShieldCheckMini() {
   return (
     <IconBase>
@@ -1463,7 +1434,6 @@ function GearLineIcon() {
     </IconBase>
   );
 }
-
 function ShieldCheckIcon() {
   return (
     <IconBase>
@@ -1473,16 +1443,10 @@ function ShieldCheckIcon() {
   );
 }
 
-function HipaaIcon() {
+function ShieldIcon() {
   return (
     <IconBase>
-      <path d="M12 3v18" />
-      <path d="M9 6.5c0 1.3 1.2 2.2 3 2.2s3-.9 3-2.2" />
-      <path d="M9 17.5c0-1.3 1.2-2.2 3-2.2s3 .9 3 2.2" />
-      <path d="M9.6 8.4 6.6 11l3 2.6" />
-      <path d="M14.4 8.4 17.4 11l-3 2.6" />
-      <path d="M9.6 15.6 6.6 13" />
-      <path d="M14.4 15.6 17.4 13" />
+      <path d="M12 3.5 18.5 6v5.7c0 4.6-2.8 7.8-6.5 9-3.7-1.2-6.5-4.4-6.5-9V6L12 3.5Z" />
     </IconBase>
   );
 }
@@ -1497,10 +1461,16 @@ function LockIcon() {
   );
 }
 
-function ShieldOutlineIcon() {
+function CaduceusIcon() {
   return (
     <IconBase>
-      <path d="M12 3.5 18.5 6v5.7c0 4.6-2.8 7.8-6.5 9-3.7-1.2-6.5-4.4-6.5-9V6L12 3.5Z" />
+      <path d="M12 3v18" />
+      <path d="M9 6.5c0 1.3 1.2 2.2 3 2.2s3-.9 3-2.2" />
+      <path d="M9 17.5c0-1.3 1.2-2.2 3-2.2s3 .9 3 2.2" />
+      <path d="M9.6 8.4 6.6 11l3 2.6" />
+      <path d="M14.4 8.4 17.4 11l-3 2.6" />
+      <path d="M9.6 15.6 6.6 13" />
+      <path d="M14.4 15.6 17.4 13" />
     </IconBase>
   );
 }
