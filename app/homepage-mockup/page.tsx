@@ -49,6 +49,27 @@ export default function HomepageMockupPage() {
           white-space: nowrap;
         }
 
+        .riq-logo-img {
+          height: 34px;
+          width: auto;
+          display: block;
+          object-fit: contain;
+        }
+
+        .riq-sidebar-logo-img {
+          height: 24px;
+          width: auto;
+          display: block;
+          object-fit: contain;
+        }
+
+        .riq-footer-logo-img {
+          height: 30px;
+          width: auto;
+          display: block;
+          object-fit: contain;
+        }
+
         .riq-logo span {
           color: var(--riq-blue);
         }
@@ -601,8 +622,12 @@ export default function HomepageMockupPage() {
 
       <header className="riq-navbar">
         <div className="riq-container riq-nav-inner">
-          <a href="#" className="riq-logo">
-            Record<span>IQ</span>
+          <a href="#" className="riq-logo" aria-label="RecordIQ">
+            <img
+              src="/logo/recordiq-logo.png"
+              alt="RecordIQ"
+              className="riq-logo-img"
+            />
           </a>
 
           <nav className="riq-menu" aria-label="Primary">
@@ -656,7 +681,11 @@ export default function HomepageMockupPage() {
             <div className="riq-app-card">
               <aside className="riq-sidebar">
                 <div className="riq-sidebar-logo">
-                  Record<span style={{ color: "#1664e8" }}>IQ</span>
+                  <img
+                    src="/logo/recordiq-logo.png"
+                    alt="RecordIQ"
+                    className="riq-sidebar-logo-img"
+                  />
                 </div>
                 <div className="riq-side-link active">Dashboard</div>
                 <div className="riq-side-link">Uploads</div>
@@ -1039,8 +1068,12 @@ export default function HomepageMockupPage() {
       <footer className="riq-footer">
         <div className="riq-container riq-footer-grid">
           <div>
-            <a href="#" className="riq-logo">
-              Record<span>IQ</span>
+            <a href="#" className="riq-logo" aria-label="RecordIQ">
+              <img
+                src="/logo/recordiq-logo.png"
+                alt="RecordIQ"
+                className="riq-footer-logo-img"
+              />
             </a>
           </div>
 
