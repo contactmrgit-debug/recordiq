@@ -50,22 +50,22 @@ export default function HomepageMockupPage() {
         }
 
         .riq-logo-img {
-          height: 52px;
-          width: auto;
+          width: 170px;
+          height: auto;
           display: block;
           object-fit: contain;
         }
 
         .riq-sidebar-logo-img {
-          height: 30px;
-          width: auto;
+          width: 100px;
+          height: auto;
           display: block;
           object-fit: contain;
         }
 
         .riq-footer-logo-img {
-          height: 42px;
-          width: auto;
+          width: 160px;
+          height: auto;
           display: block;
           object-fit: contain;
         }
@@ -112,6 +112,12 @@ export default function HomepageMockupPage() {
           background: #fff;
           color: var(--riq-text);
           border-color: #8ea2be;
+        }
+
+        .riq-btn-dark-outline {
+          background: transparent;
+          color: #eef4fd;
+          border-color: rgba(255, 255, 255, 0.48);
         }
 
         .riq-hero {
@@ -179,8 +185,6 @@ export default function HomepageMockupPage() {
         }
 
         .riq-sidebar-logo {
-          font-weight: 800;
-          font-size: 20px;
           margin-bottom: 28px;
         }
 
@@ -319,24 +323,28 @@ export default function HomepageMockupPage() {
           color: #0b1830;
         }
 
+        .riq-icon-shell {
+          display: grid;
+          place-items: center;
+          color: var(--riq-blue);
+          flex: 0 0 auto;
+        }
+
+        .riq-icon-shell svg {
+          width: 100%;
+          height: 100%;
+          stroke: currentColor;
+          fill: none;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
         .riq-security-icon {
           width: 46px;
           height: 46px;
           border-radius: 14px;
           background: #fff;
-          display: grid;
-          place-items: center;
-          color: var(--riq-blue);
           box-shadow: 0 10px 24px rgba(17, 44, 81, 0.08);
-          flex: 0 0 auto;
-        }
-
-        .riq-security-icon svg {
-          width: 28px;
-          height: 28px;
-          stroke: currentColor;
-          fill: none;
-          display: block;
         }
 
         .riq-security-copy strong {
@@ -415,17 +423,12 @@ export default function HomepageMockupPage() {
           height: 52px;
           border-radius: 16px;
           background: var(--riq-soft-blue);
-          display: grid;
-          place-items: center;
-          color: var(--riq-blue);
-          flex: 0 0 auto;
+          box-shadow: 0 10px 30px rgba(17, 44, 81, 0.06);
         }
 
         .riq-card-icon svg {
           width: 26px;
           height: 26px;
-          stroke: currentColor;
-          fill: none;
         }
 
         .riq-feature-card h3,
@@ -436,7 +439,6 @@ export default function HomepageMockupPage() {
 
         .riq-feature-card p,
         .riq-audience-card p,
-        .riq-cta p,
         .riq-footer p {
           color: #334155;
           margin: 0;
@@ -458,12 +460,14 @@ export default function HomepageMockupPage() {
           width: 52px;
           height: 52px;
           border-radius: 50%;
-          display: grid;
-          place-items: center;
           background: var(--riq-soft-blue);
-          color: var(--riq-blue);
-          font-size: 22px;
+          box-shadow: 0 10px 30px rgba(17, 44, 81, 0.06);
           margin-bottom: 14px;
+        }
+
+        .riq-step-circle svg {
+          width: 26px;
+          height: 26px;
         }
 
         .riq-step-number {
@@ -490,8 +494,9 @@ export default function HomepageMockupPage() {
         }
 
         .riq-cta {
-          padding: 70px 0;
-          background: #f8fbff;
+          padding: 72px 0 24px;
+          background: linear-gradient(180deg, #173c74 0%, #0f2a54 100%);
+          color: #d9e5f8;
         }
 
         .riq-cta-grid {
@@ -499,11 +504,11 @@ export default function HomepageMockupPage() {
           justify-content: space-between;
           align-items: center;
           gap: 24px;
-          padding: 32px;
-          border: 1px solid var(--riq-border);
-          border-radius: 24px;
-          background: #fff;
-          box-shadow: var(--riq-shadow);
+          padding: 8px 0 26px;
+        }
+
+        .riq-cta-copy {
+          max-width: 600px;
         }
 
         .riq-cta h2 {
@@ -512,19 +517,59 @@ export default function HomepageMockupPage() {
           letter-spacing: -0.05em;
           max-width: 600px;
           margin-bottom: 10px;
+          color: #fff;
+        }
+
+        .riq-cta p {
+          color: #cfe0f7;
+          margin: 0;
         }
 
         .riq-cta-actions {
           display: flex;
           gap: 14px;
           flex-wrap: wrap;
+          flex-direction: column;
+          align-items: flex-end;
+        }
+
+        .riq-cta-button-row {
+          display: flex;
+          gap: 14px;
+          flex-wrap: wrap;
           justify-content: flex-end;
         }
 
+        .riq-cta-note-row {
+          display: flex;
+          gap: 18px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          color: #d9e5f8;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .riq-cta-note {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .riq-cta-note svg {
+          width: 15px;
+          height: 15px;
+          stroke: #7fb4ff;
+          fill: none;
+          stroke-width: 2.2;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
         .riq-footer {
-          padding: 44px 0 60px;
-          border-top: 1px solid #e7edf6;
-          background: #fff;
+          padding: 18px 0 60px;
+          background: linear-gradient(180deg, #0f2a54 0%, #091c39 100%);
+          color: #d9e5f8;
         }
 
         .riq-footer-grid {
@@ -535,17 +580,19 @@ export default function HomepageMockupPage() {
         .riq-footer-grid h4 {
           font-size: 14px;
           margin-bottom: 12px;
+          color: #fff;
         }
 
         .riq-footer-grid a {
           display: block;
-          color: #1f2f46;
+          color: #d9e5f8;
           text-decoration: none;
           margin-bottom: 8px;
         }
 
         .riq-footer-grid p {
           font-size: 14px;
+          color: #d9e5f8;
         }
 
         @media (max-width: 991px) {
@@ -615,7 +662,7 @@ export default function HomepageMockupPage() {
           }
 
           .riq-cta-grid {
-            padding: 24px;
+            padding: 0 0 22px;
           }
         }
       `}</style>
@@ -767,10 +814,10 @@ export default function HomepageMockupPage() {
         <section id="security" className="riq-security-strip">
           <div className="riq-container riq-security-grid">
             <div className="riq-security-item">
-              <span className="riq-security-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" strokeWidth="1.8">
+              <span className="riq-security-icon riq-icon-shell" aria-hidden="true">
+                <svg viewBox="0 0 24 24" strokeWidth="1.9">
                   <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z" />
-                  <path d="M9 12l2 2 4-5" />
+                  <path d="M9 12l2 2 4-4" />
                 </svg>
               </span>
               <div className="riq-security-copy">
@@ -780,15 +827,13 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-security-item">
-              <span className="riq-security-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" strokeWidth="1.8">
-                  <path d="M12 3v10" />
-                  <path d="M8.5 4.5c0 1.8 1.6 3.2 3.5 3.2s3.5-1.4 3.5-3.2" />
-                  <path d="M7 9.5h10" />
-                  <path d="M8.5 9.5 5 16h7l-3.5-6.5z" />
-                  <path d="M15.5 9.5 12 16h7l-3.5-6.5z" />
-                  <path d="M12 13.5v7" />
-                  <path d="M10 20h4" />
+              <span className="riq-security-icon riq-icon-shell" aria-hidden="true">
+                <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                  <path d="M12 4a4 4 0 0 1 4 4v2" />
+                  <path d="M8 10V8a4 4 0 0 1 4-4" />
+                  <path d="M7 10h10" />
+                  <path d="M9 10c0 2 1.2 3.4 3 4.4 1.8-1 3-2.4 3-4.4" />
+                  <path d="M12 3v18" />
                 </svg>
               </span>
               <div className="riq-security-copy">
@@ -798,8 +843,8 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-security-item">
-              <span className="riq-security-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" strokeWidth="1.8">
+              <span className="riq-security-icon riq-icon-shell" aria-hidden="true">
+                <svg viewBox="0 0 24 24" strokeWidth="1.9">
                   <rect x="5" y="10" width="14" height="10" rx="2" />
                   <path d="M8 10V7a4 4 0 0 1 8 0v3" />
                   <path d="M12 14v3" />
@@ -812,8 +857,8 @@ export default function HomepageMockupPage() {
             </div>
 
             <div className="riq-security-item">
-              <span className="riq-security-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" strokeWidth="1.8">
+              <span className="riq-security-icon riq-icon-shell" aria-hidden="true">
+                <svg viewBox="0 0 24 24" strokeWidth="1.9">
                   <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z" />
                 </svg>
               </span>
@@ -841,8 +886,8 @@ export default function HomepageMockupPage() {
 
             <div className="riq-feature-grid">
               <div className="riq-feature-card">
-                <div className="riq-card-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="2">
+                <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <path d="M14 2v6h6" />
                     <path d="M12 17V11" />
@@ -859,14 +904,14 @@ export default function HomepageMockupPage() {
               </div>
 
               <div className="riq-feature-card">
-                <div className="riq-card-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="2">
-                    <path d="M8 6h13" />
-                    <path d="M8 12h13" />
-                    <path d="M8 18h13" />
-                    <circle cx="3.5" cy="6" r="1.5" />
-                    <circle cx="3.5" cy="12" r="1.5" />
-                    <circle cx="3.5" cy="18" r="1.5" />
+                <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <path d="M7 5v14" />
+                    <path d="M7 5h10" />
+                    <path d="M7 9h10" />
+                    <path d="M7 13h7" />
+                    <path d="M7 17h10" />
+                    <path d="M17 5v14" />
                   </svg>
                 </div>
                 <div>
@@ -876,11 +921,13 @@ export default function HomepageMockupPage() {
               </div>
 
               <div className="riq-feature-card">
-                <div className="riq-card-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="2">
-                    <path d="M4 6h16" />
-                    <path d="M4 12h16" />
-                    <path d="M4 18h10" />
+                <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 3v5h5" />
+                    <path d="M8 11h8" />
+                    <path d="M8 15h8" />
+                    <path d="M8 19h5" />
                   </svg>
                 </div>
                 <div>
@@ -893,11 +940,12 @@ export default function HomepageMockupPage() {
               </div>
 
               <div className="riq-feature-card">
-                <div className="riq-card-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="2">
-                    <path d="M12 3v12" />
-                    <path d="M7 10l5 5 5-5" />
-                    <path d="M5 21h14" />
+                <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <path d="M12 3v10" />
+                    <path d="M8.5 9.5 12 13l3.5-3.5" />
+                    <path d="M5 15h14" />
+                    <path d="M7 18v2h10v-2" />
                   </svg>
                 </div>
                 <div>
@@ -917,8 +965,13 @@ export default function HomepageMockupPage() {
 
             <div className="riq-steps">
               <div>
-                <div className="riq-step-circle" aria-hidden="true">
-                  ⇧
+                <div className="riq-step-circle riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <path d="M12 3v11" />
+                    <path d="M8.5 7.5 12 4l3.5 3.5" />
+                    <path d="M5 15h14" />
+                    <path d="M8 19h8" />
+                  </svg>
                 </div>
                 <h3>
                   <span className="riq-step-number">1</span>Upload Your Records
@@ -927,8 +980,12 @@ export default function HomepageMockupPage() {
               </div>
 
               <div>
-                <div className="riq-step-circle" aria-hidden="true">
-                  ▧
+                <div className="riq-step-circle riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <rect x="5" y="3" width="10" height="16" rx="2" />
+                    <path d="M9 12l2 2 4-4" />
+                    <path d="M15 8l4 4-4 4" />
+                  </svg>
                 </div>
                 <h3>
                   <span className="riq-step-number">2</span>AI Identifies Key Facts
@@ -940,8 +997,17 @@ export default function HomepageMockupPage() {
               </div>
 
               <div>
-                <div className="riq-step-circle" aria-hidden="true">
-                  ◷
+                <div className="riq-step-circle riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <path d="M8 5h10" />
+                    <path d="M8 10h10" />
+                    <path d="M8 15h10" />
+                    <path d="M8 20h10" />
+                    <path d="M5 5h.01" />
+                    <path d="M5 10h.01" />
+                    <path d="M5 15h.01" />
+                    <path d="M5 20h.01" />
+                  </svg>
                 </div>
                 <h3>
                   <span className="riq-step-number">3</span>Review Your Timeline
@@ -950,8 +1016,13 @@ export default function HomepageMockupPage() {
               </div>
 
               <div>
-                <div className="riq-step-circle" aria-hidden="true">
-                  ▧
+                <div className="riq-step-circle riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8" />
+                    <path d="M14 3v5h5" />
+                    <path d="M15 14l4-4" />
+                    <path d="M17 8v6h-6" />
+                  </svg>
                 </div>
                 <h3>
                   <span className="riq-step-number">4</span>Export &amp; Build Your Case
@@ -970,12 +1041,12 @@ export default function HomepageMockupPage() {
 
             <div className="riq-audience-grid">
               <div className="riq-audience-card">
-                <div className="riq-card-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="2">
-                    <path d="M12 3v18" />
-                    <path d="M5 7h14" />
-                    <path d="M6 7l-3 7h6l-3-7z" />
-                    <path d="M18 7l-3 7h6l-3-7z" />
+                <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <path d="M6 19h12" />
+                    <path d="M8 19 12 5l4 14" />
+                    <path d="M9.5 14h5" />
+                    <path d="M12 5v14" />
                   </svg>
                 </div>
                 <div>
@@ -988,12 +1059,11 @@ export default function HomepageMockupPage() {
               </div>
 
               <div className="riq-audience-card">
-                <div className="riq-card-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="2">
-                    <circle cx="12" cy="7" r="4" />
-                    <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
-                    <path d="M12 14v7" />
-                    <path d="M9 18h6" />
+                <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <circle cx="12" cy="7" r="3.5" />
+                    <path d="M6 21a6 6 0 0 1 12 0" />
+                    <path d="M12 10.5v6.5" />
                   </svg>
                 </div>
                 <div>
@@ -1006,13 +1076,13 @@ export default function HomepageMockupPage() {
               </div>
 
               <div className="riq-audience-card">
-                <div className="riq-card-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="2">
-                    <path d="M6 3v6a4 4 0 0 0 8 0V3" />
-                    <path d="M6 3H4" />
-                    <path d="M14 3h2" />
-                    <path d="M10 13v2a5 5 0 0 0 10 0v-2" />
-                    <circle cx="20" cy="11" r="2" />
+                <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
+                    <path d="M9 4c0 3 6 3 6 0" />
+                    <path d="M8 7h8" />
+                    <path d="M8 7v3a4 4 0 0 0 8 0V7" />
+                    <path d="M10 14c0 3-2 3-2 5" />
+                    <path d="M14 14c0 3 2 3 2 5" />
                   </svg>
                 </div>
                 <div>
@@ -1028,10 +1098,10 @@ export default function HomepageMockupPage() {
               </div>
 
               <div className="riq-audience-card">
-                <div className="riq-card-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" strokeWidth="2">
+                <div className="riq-card-icon riq-icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" strokeWidth="1.9">
                     <path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z" />
-                    <path d="M9 12l2 2 4-5" />
+                    <path d="M9 12l2 2 4-4" />
                   </svg>
                 </div>
                 <div>
@@ -1048,18 +1118,38 @@ export default function HomepageMockupPage() {
 
         <section className="riq-cta">
           <div className="riq-container riq-cta-grid">
-            <div>
+            <div className="riq-cta-copy">
               <h2>Ready to Save Time and Build Stronger Cases?</h2>
-              <p>Join professionals who trust RecordIQ to turn medical records into clarity.</p>
+              <p>
+                Join professionals who trust RecordIQ to turn medical records
+                into clarity.
+              </p>
             </div>
 
             <div className="riq-cta-actions">
-              <a className="riq-btn riq-btn-primary" href="#upload">
-                Upload Records Free
-              </a>
-              <a className="riq-btn riq-btn-outline" href="#demo">
-                Book a Demo
-              </a>
+              <div className="riq-cta-button-row">
+                <a className="riq-btn riq-btn-primary" href="#upload">
+                  Upload Records Free
+                </a>
+                <a className="riq-btn riq-btn-dark-outline" href="#demo">
+                  Book a Demo
+                </a>
+              </div>
+
+              <div className="riq-cta-note-row" aria-label="Getting started notes">
+                <span className="riq-cta-note">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  No credit card required
+                </span>
+                <span className="riq-cta-note">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  Free to get started
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -1099,8 +1189,8 @@ export default function HomepageMockupPage() {
           </div>
 
           <div>
-            <h4>Secure. Private. Designed for Compliance.</h4>
-            <p>Copyright 2024 RecordIQ. All rights reserved.</p>
+            <h4>Secure. Private. Compliant.</h4>
+            <p>© 2024 RecordIQ. All rights reserved.</p>
           </div>
         </div>
       </footer>
