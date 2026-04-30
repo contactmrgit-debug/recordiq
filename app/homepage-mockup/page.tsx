@@ -8,27 +8,28 @@ const navLinks = [
 ];
 
 const securityItems = [
-  {
-    title: "Built for Privacy.",
-    subtitle: "Designed for Trust.",
-    icon: ShieldCheckIcon,
-    blue: true,
-  },
-  {
-    title: "HIPAA",
-    subtitle: "COMPLIANT",
-    icon: CaduceusIcon,
-  },
-  {
-    title: "SOC 2",
-    subtitle: "TYPE II",
-    icon: LockIcon,
-  },
-  {
-    title: "AES-256",
-    subtitle: "ENCRYPTION",
-    icon: ShieldIcon,
-  },
+{
+  title: "Built for Privacy.",
+  subtitle: "Designed for Trust.",
+  icon: ShieldCheckIcon,
+  blue: true,
+},
+{
+  title: "HIPAA",
+  subtitle: "COMPLIANT",
+  icon: CaduceusIcon,
+},
+{
+  title: "SOC 2",
+  subtitle: "TYPE II",
+  icon: LockIcon,
+  blue: true,
+},
+{
+  title: "AES-256",
+  subtitle: "ENCRYPTION",
+  icon: ShieldIcon,
+},
   {
     title: "Your data is always secure,",
     subtitle: "private, and never shared.",
@@ -106,7 +107,7 @@ const audienceCards = [
   {
     title: "Insurance & Claims",
     text: "Streamline review. Reduce back-and-forth. Speed decisions.",
-    icon: ShieldCheckIcon,
+    icon: InsuranceIcon,
   },
 ] as const;
 
@@ -1254,7 +1255,7 @@ export default function HomepageMockupPage() {
                     <div className="riq-step-meta">
                       <span className="riq-step-num">{step.num}</span>
                       <div className="riq-step-copy">
-                        <h3>{step.title}</h3>
+                        <h3 className="riq-step-title">{step.title}</h3>
                         <p>{step.text}</p>
                       </div>
                     </div>
@@ -1382,6 +1383,25 @@ function IconBase({ children }: { children: React.ReactNode }) {
     </svg>
   );
 }
+function LightIconBase({ children }: { children: React.ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+/* =========================================================
+   HERO MINI ICONS
+   ========================================================= */
 
 function ShieldCheckMini() {
   return (
@@ -1404,7 +1424,7 @@ function LockMini() {
 function CloudMini() {
   return (
     <IconBase>
-      <path d="M7 18h9a4 4 0 0 0 .6-7.95A5.2 5.2 0 0 0 6.6 9.2 3.6 3.6 0 0 0 7 18Z" />
+      <path d="M7 18h10a4 4 0 0 0 .6-7.9A5.2 5.2 0 0 0 6.6 9.2 3.6 3.6 0 0 0 7 18Z" />
     </IconBase>
   );
 }
@@ -1416,6 +1436,10 @@ function CheckMini() {
     </IconBase>
   );
 }
+
+/* =========================================================
+   APP MOCKUP SIDEBAR ICONS
+   ========================================================= */
 
 function HomeLineIcon() {
   return (
@@ -1477,52 +1501,53 @@ function GearLineIcon() {
   );
 }
 
+/* =========================================================
+   TRUST / SECURITY STRIP ICONS
+   ========================================================= */
+
 function ShieldCheckIcon() {
   return (
-    <IconBase>
+    <LightIconBase>
       <path d="M12 3.5 18.5 6v5.7c0 4.6-2.8 7.8-6.5 9-3.7-1.2-6.5-4.4-6.5-9V6L12 3.5Z" />
       <path d="m9.2 12.1 1.9 1.9 3.8-4.2" />
-    </IconBase>
-  );
-}
-
-function ShieldIcon() {
-  return (
-    <IconBase>
-      <path d="M12 3.5 18.5 6v5.7c0 4.6-2.8 7.8-6.5 9-3.7-1.2-6.5-4.4-6.5-9V6L12 3.5Z" />
-    </IconBase>
-  );
-}
-
-function LockIcon() {
-  return (
-    <IconBase>
-      <rect x="5.5" y="10" width="13" height="10" rx="2.2" />
-      <path d="M8.5 10V7.8a3.5 3.5 0 0 1 7 0V10" />
-      <path d="M12 14.2v2.3" />
-    </IconBase>
+    </LightIconBase>
   );
 }
 
 function CaduceusIcon() {
   return (
-    <IconBase>
-      <path d="M12 3.8v16.4" />
-      <path d="M12 6.2c-2.1 0-3.8 1.1-5.1 3" />
-      <path d="M12 6.2c2.1 0 3.8 1.1 5.1 3" />
-      <path d="M7.2 10.4c1 .9 2.4 1.4 4.8 1.4s3.8-.5 4.8-1.4" />
-      <path d="M7.2 13.6c1-.9 2.4-1.4 4.8-1.4s3.8.5 4.8 1.4" />
-      <path d="M12 18.8c-2.1 0-3.8-1.1-5.1-3" />
-      <path d="M12 18.8c2.1 0 3.8-1.1 5.1-3" />
-      <path d="M8.5 8.8 6.4 7.2" />
-      <path d="M15.5 8.8l2.1-1.6" />
-      <path d="M8.5 15.2 6.4 16.8" />
-      <path d="M15.5 15.2l2.1 1.6" />
-    </IconBase>
+    <img
+      src="/icons/caduceus-winged.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-strip-img-icon"
+    />
+  );
+}
+function LockIcon() {
+  return (
+    <LightIconBase>
+      <rect x="5.5" y="10" width="13" height="10" rx="2.2" stroke="#0b6bff" />
+      <path d="M8.5 10V7.8a3.5 3.5 0 0 1 7 0V10" stroke="#0b6bff" />
+      <path d="M12 14.2v2.3" stroke="#0b6bff" />
+    </LightIconBase>
   );
 }
 
+function ShieldIcon() {
+  return (
+    <img
+      src="/icons/shield-key.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-strip-shield-img-icon"
+    />
+  );
+}
 
+/* =========================================================
+   ROW 1: EVERYTHING YOU NEED FOR STRONGER CASES
+   ========================================================= */
 
 function DocumentUploadIcon() {
   return (
@@ -1572,90 +1597,99 @@ function ExportIcon() {
   );
 }
 
+/* =========================================================
+   ROW 2: HOW RECORDIQ WORKS
+   ========================================================= */
+
 function CloudUploadIcon() {
   return (
     <IconBase>
-      <path d="M7 18h10a4 4 0 0 0 .6-7.9A5.2 5.2 0 0 0 6.6 9.2 3.6 3.6 0 0 0 7 18Z" />
-      <path d="M12 16V9.5" />
-      <path d="m9.2 12.2 2.8-2.8 2.8 2.8" />
+      <path d="M4 7.5h6l1.5 2H20v8.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7.5Z" />
+      <path d="M4 7.5V6a2 2 0 0 1 2-2h3.5l1.5 2H18a2 2 0 0 1 2 2v1.5" />
+      <path d="M8 13h8" />
+      <path d="M8 16h5" />
     </IconBase>
   );
 }
 
 function DocumentSearchIcon() {
   return (
-    <IconBase>
-      <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
-      <path d="M14 3.5V8h4" />
-      <path d="M10.5 12h3.4" />
-      <path d="M10.5 14.2h3.1" />
-      <circle cx="14.2" cy="15.4" r="2.4" />
-      <path d="m16 17.2 2.1 2.1" />
-    </IconBase>
+    <img
+      src="/icons/docu-search.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-process-img-icon"
+    />
   );
 }
 
 function ChecklistIcon() {
   return (
     <IconBase>
-      <rect x="5" y="6" width="2.6" height="2.6" rx=".4" />
-      <rect x="5" y="10.7" width="2.6" height="2.6" rx=".4" />
-      <rect x="5" y="15.4" width="2.6" height="2.6" rx=".4" />
-      <path d="M10.2 7.3H18" />
-      <path d="M10.2 12H18" />
-      <path d="M10.2 16.7H18" />
+      <circle cx="6" cy="7" r="1.1" />
+      <circle cx="6" cy="12" r="1.1" />
+      <circle cx="6" cy="17" r="1.1" />
+      <path d="M10 7h8" />
+      <path d="M10 12h8" />
+      <path d="M10 17h8" />
     </IconBase>
   );
 }
 
 function DocumentExportIcon() {
   return (
-    <IconBase>
-      <path d="M8 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 20V5A1.5 1.5 0 0 1 8.5 3.5Z" />
-      <path d="M14 3.5V8h4" />
-      <path d="M12 11v5" />
-      <path d="m9.6 13.6 2.4 2.4 2.4-2.4" />
-      <circle cx="17" cy="17" r="2.2" />
-      <path d="m16 17 0.8 0.8 1.4-1.6" />
-    </IconBase>
+    <img
+      src="/icons/docu-ex.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-process-img-icon"
+    />
   );
 }
+
+/* =========================================================
+   ROW 3: BUILT FOR PROFESSIONALS
+   ========================================================= */
 
 function ScalesIcon() {
   return (
-    <IconBase>
-      <path d="M12 4v14" />
-      <path d="M7 7h10" />
-      <path d="M7 7 4.2 12h5.6L7 7Z" />
-      <path d="M17 7 14.2 12h5.6L17 7Z" />
-      <path d="M4.7 12c.5 1.4 1.8 2.3 3.3 2.3s2.8-.9 3.3-2.3" />
-      <path d="M12 20H8" />
-      <path d="M16 20h-4" />
-    </IconBase>
+    <img
+      src="/icons/scales-law.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-professional-img-icon"
+    />
   );
 }
-
 function DoctorIcon() {
   return (
-    <IconBase>
-      <circle cx="12" cy="7.2" r="3.2" />
-      <path d="M7 19.5v-1.7c0-2.5 2.2-4.3 5-4.3s5 1.8 5 4.3v1.7" />
-      <path d="M12 10.8v3.2" />
-      <path d="M10.4 12.4h3.2" />
-      <path d="M16.1 12.3v3.3" />
-      <path d="M16.1 15.6c0 1.7 1.2 2.9 2.9 2.9" />
-    </IconBase>
+    <img
+      src="/icons/doctor-pro.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-professional-img-icon"
+    />
   );
 }
 
 function StethoscopeIcon() {
   return (
-    <IconBase>
-      <path d="M7 4v5a3.8 3.8 0 0 0 7.6 0V4" />
-      <path d="M7 4H5.5" />
-      <path d="M14.6 4H16" />
-      <path d="M10.8 12.8v2.1a4.7 4.7 0 0 0 9.4 0v-1.5" />
-      <circle cx="20.2" cy="11.2" r="1.8" />
-    </IconBase>
+    <img
+      src="/icons/stethoscope-ex.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-professional-img-icon"
+    />
+  );
+}
+
+function InsuranceIcon() {
+  return (
+    <img
+      src="/icons/insurance-shield.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-professional-img-icon"
+    />
   );
 }

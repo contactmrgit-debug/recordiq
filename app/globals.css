@@ -28,3 +28,61 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans-system);
 }
+.riq-strip-img-icon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+.riq-strip-shield-img-icon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+  margin-top: 0;
+}
+.riq-professional-img-icon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+.riq-professional-img-icon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+.riq-professional-img-icon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+.riq-professional-img-icon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+.riq-process-img-icon {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  display: block;
+}
+.riq-process-img-icon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+.riq-step-title {
+  font-weight: 500;
+}
+.riq-works-grid .riq-step-card .riq-step-copy .riq-step-title {
+  font-weight: 500 !important;
+}
+.riq-works-grid .riq-step-card .riq-step-copy p {
+  font-weight: 400 !important;
+}
