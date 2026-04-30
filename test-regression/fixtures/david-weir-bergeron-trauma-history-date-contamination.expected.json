@@ -1,0 +1,87 @@
+{
+  "documentName": "david-weir-bergeron-trauma-history-date-contamination",
+  "minEvents": 7,
+  "maxEvents": 7,
+  "mustIncludeTitles": [
+    "Workplace head injury after pipe fell from derrick",
+    "C2 fracture imaging result",
+    "CTA neck showed vascular injury concern",
+    "Imaging showed nondisplaced left scapular fracture",
+    "CT head showed no acute intracranial injury",
+    "Neurology follow-up for postconcussive syndrome",
+    "Telephone follow-up for persistent migraines"
+  ],
+  "mustIncludeEventTypes": [
+    "incident",
+    "report",
+    "appointment"
+  ],
+  "expectedNoDuplicateNormalizedKeys": true,
+  "dateRules": [
+    {
+      "date": "2019-02-02",
+      "minEvents": 5,
+      "maxEvents": 5,
+      "mustIncludeTitles": [
+        "Workplace head injury after pipe fell from derrick",
+        "C2 fracture imaging result",
+        "CTA neck showed vascular injury concern",
+        "Imaging showed nondisplaced left scapular fracture",
+        "CT head showed no acute intracranial injury"
+      ]
+    },
+    {
+      "date": "2022-01-31",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Neurology follow-up for postconcussive syndrome"
+      ]
+    },
+    {
+      "date": "2022-03-08",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Telephone follow-up for persistent migraines"
+      ]
+    }
+  ],
+  "eventAssertions": [
+    {
+      "title": "Workplace head injury after pipe fell from derrick",
+      "sourcePage": 2,
+      "eventType": "incident"
+    },
+    {
+      "title": "C2 fracture imaging result",
+      "sourcePage": 3,
+      "eventType": "report"
+    },
+    {
+      "title": "CTA neck showed vascular injury concern",
+      "sourcePage": 4,
+      "eventType": "report"
+    },
+    {
+      "title": "Imaging showed nondisplaced left scapular fracture",
+      "sourcePage": 5,
+      "eventType": "report"
+    },
+    {
+      "title": "CT head showed no acute intracranial injury",
+      "sourcePage": 6,
+      "eventType": "report"
+    },
+    {
+      "title": "Neurology follow-up for postconcussive syndrome",
+      "sourcePage": 7,
+      "eventType": "appointment"
+    },
+    {
+      "title": "Telephone follow-up for persistent migraines",
+      "sourcePage": 8,
+      "eventType": "appointment"
+    }
+  ]
+}

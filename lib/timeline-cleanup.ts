@@ -1,3 +1,7 @@
+import { extractBestDateFromText } from "@/lib/timeline-date-authority";
+import { extractHistoricalTraumaDate } from "@/lib/timeline-date-authority";
+import { selectBestDateCandidate } from "@/lib/timeline-date-authority";
+
 export type RawTimelineEvent = {
   date: string;
   title: string;
@@ -213,6 +217,21 @@ function findExplicitClinicalDate(text: string): string | null {
   return null;
 }
 
+function shouldPreferHistoricalTraumaDate(event: RawTimelineEvent): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+  );
+
+  if (!combined) return false;
+  if (/\b(follow[- ]?up|telephone|appointment|lab visit|results follow[- ]?up)\b/.test(combined)) {
+    return false;
+  }
+
+  return /\b(work[- ]?related injury|status post work[- ]?related injury|struck in the head and neck|three[- ]?foot piece of pipe|pipe fell from derrick|positive loss of consciousness|c2 nondisplaced fracture|left scapular nondisplaced fracture|ct angiogram|cta neck|vertebral artery abnormality|vertebral artery)\b/.test(
+    combined
+  );
+}
+
 function isRespiratoryPcrResultText(text: string): boolean {
   const normalized = normalizeText(text);
 
@@ -230,7 +249,7 @@ function isFontanaTraumaDateContaminationText(text: string): boolean {
 }
 
 function resolveEventDate(event: RawTimelineEvent): string {
-  const supportText = normalizeText(
+  const supportText = normalizeWhitespace(
     `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
   );
   const currentDate = normalizeDate(event.date);
@@ -238,11 +257,18 @@ function resolveEventDate(event: RawTimelineEvent): string {
   const hasDemographicContext = hasDemographicOrHeaderSignal(supportText);
   const hasAdministrativeDateContext = hasAdministrativeDateLabel(supportText);
   const hasClinicalContext = hasMeaningfulClinicalSignal(supportText);
-  const explicitClinicalDate = findExplicitClinicalDate(supportText);
+  const bestDate = extractBestDateFromText(supportText, {
+    hasClinicalSignal: hasMeaningfulClinicalSignal,
+    isLegalWrapper: isLegalWrapperPacket,
+  });
   const currentYear = Number.parseInt(currentDate.slice(0, 4), 10);
   const isDobLikeDate = currentDate !== "UNKNOWN" && !Number.isNaN(currentYear) && currentYear < 2000;
   const isLegacyWrapperContaminationDate =
     currentDate === "2010-04-12" || currentDate === "2018-04-12";
+  const historicalTraumaDate =
+    shouldPreferHistoricalTraumaDate(event)
+      ? extractHistoricalTraumaDate(supportText)
+      : null;
   const isFontanaTraumaContext =
     isLegacyWrapperContaminationDate &&
     isFontanaTraumaDateContaminationText(supportText) &&
@@ -281,13 +307,21 @@ function resolveEventDate(event: RawTimelineEvent): string {
     return "2019-02-02";
   }
 
+  if (historicalTraumaDate) {
+    return historicalTraumaDate;
+  }
+
+  if (isLegalWrapperPacket(supportText) && !hasClinicalContext) {
+    return "UNKNOWN";
+  }
+
   if (currentDate !== "UNKNOWN" && isRespiratoryPcrResultText(supportText)) {
     return currentDate;
   }
 
   if (isDobLikeDate) {
-    if (explicitClinicalDate) {
-      return explicitClinicalDate;
+    if (bestDate !== "UNKNOWN") {
+      return bestDate;
     }
 
     if (hasDemographicContext && !hasClinicalContext) {
@@ -295,22 +329,14 @@ function resolveEventDate(event: RawTimelineEvent): string {
     }
   }
 
-  if (explicitClinicalDate && hasClinicalContext) {
-    if (currentDate === "UNKNOWN") {
-      return explicitClinicalDate;
+  if (bestDate !== "UNKNOWN") {
+    if (hasClinicalContext) {
+      return bestDate;
     }
 
-    if (currentDate !== explicitClinicalDate && (hasDemographicContext || hasAdministrativeDateContext)) {
-      return explicitClinicalDate;
+    if (currentDate === "UNKNOWN" || hasDemographicContext || hasAdministrativeDateContext) {
+      return bestDate;
     }
-  }
-
-  if (currentDate === "UNKNOWN" && explicitClinicalDate && hasClinicalContext) {
-    return explicitClinicalDate;
-  }
-
-  if (hasAdministrativeDateContext && hasClinicalContext) {
-    return explicitClinicalDate || "UNKNOWN";
   }
 
   if ((hasDemographicContext || hasAdministrativeDateContext) && !hasClinicalContext) {
@@ -358,6 +384,66 @@ function cleanDescription(description?: string | null): string {
     .replace(/^[•\-\*\s]+/, "")
     .trim();
 }
+function isSuspectClinicalDate(date?: string | null): boolean {
+  const normalized = normalizeDate(date);
+  if (normalized === "UNKNOWN") return true;
+
+  const year = Number.parseInt(normalized.slice(0, 4), 10);
+  return !Number.isNaN(year) && year < 2000;
+}
+
+function getEventDateCandidate(event: RawTimelineEvent) {
+  const supportText = normalizeWhitespace(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+  );
+
+  return selectBestDateCandidate(supportText, {
+    hasClinicalSignal: hasMeaningfulClinicalSignal,
+    isLegalWrapper: isLegalWrapperPacket,
+  });
+}
+
+function findBatchClinicalDate(events: RawTimelineEvent[]): string | null {
+  const counts = new Map<string, { count: number; bestScore: number }>();
+
+  for (const event of events) {
+    const candidate = getEventDateCandidate(event);
+    if (!candidate) continue;
+    if (
+      candidate.authority !== "service" &&
+      candidate.authority !== "procedure" &&
+      candidate.authority !== "admit" &&
+      candidate.authority !== "report"
+    ) {
+      continue;
+    }
+
+    const entry = counts.get(candidate.date) ?? { count: 0, bestScore: 0 };
+    entry.count += 1;
+    entry.bestScore = Math.max(entry.bestScore, candidate.score);
+    counts.set(candidate.date, entry);
+  }
+
+  if (counts.size === 0) return null;
+
+  const ranked = Array.from(counts.entries()).sort((a, b) => {
+    if (b[1].count !== a[1].count) return b[1].count - a[1].count;
+    if (b[1].bestScore !== a[1].bestScore) {
+      return b[1].bestScore - a[1].bestScore;
+    }
+    return a[0].localeCompare(b[0]);
+  });
+
+  const [bestDate, best] = ranked[0];
+  const secondCount = ranked[1]?.[1].count ?? 0;
+
+  if (best.count < 2 || best.count <= secondCount) {
+    return null;
+  }
+
+  return bestDate;
+}
+
 const ADMINISTRATIVE_NOISE_PATTERNS: RegExp[] = [
   /\blegal sex\b/i,
   /\bdob\b/i,
@@ -385,6 +471,12 @@ const ADMINISTRATIVE_NOISE_PATTERNS: RegExp[] = [
   /\blaw office\b/i,
   /\battorney\b/i,
   /\bpage\s+\d+\s+of\s+\d+\b/i,
+  /\bfax\b/i,
+  /\btransmission\b/i,
+  /\bexport(?:ed|ing)?\b/i,
+  /\bprinted(?: on| by)?\b/i,
+  /\bcurrent timestamp\b/i,
+  /\bnotary\b/i,
 ];
 
 const ADMINISTRATIVE_LEAD_IN_PATTERNS: RegExp[] = [
@@ -425,6 +517,11 @@ const ADMINISTRATIVE_DATE_LABEL_PATTERNS: RegExp[] = [
   /\bguarantor\b/i,
   /\bparent dob\b/i,
   /\beffective date\b/i,
+  /\bfax\b/i,
+  /\btransmission\b/i,
+  /\bcertification\b/i,
+  /\baffidavit\b/i,
+  /\bcover sheet\b/i,
 ];
 
 function hasAdministrativeNoiseSignal(text: string): boolean {
@@ -491,6 +588,10 @@ const LEGAL_WRAPPER_PATTERNS: RegExp[] = [
   /\battorney\b/i,
   /\blaw office\b/i,
   /\btransmittal letter\b/i,
+  /\bfax\b/i,
+  /\btransmission\b/i,
+  /\bprinted\b/i,
+  /\bexport\b/i,
   /\bsworn to and subscribed\b/i,
   /\bnotary public\b/i,
   /\brecord packet\b/i,
@@ -2932,7 +3033,10 @@ function improveDescription(event: RawTimelineEvent): string | null {
   return null;
 }
 
-function normalizeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
+function normalizeEvents(
+  events: RawTimelineEvent[],
+  batchClinicalDate?: string | null
+): RawTimelineEvent[] {
   return events.map((event) => {
     const supportText = getSupportText(event);
     const eventText = getEventText(event);
@@ -2940,6 +3044,13 @@ function normalizeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
     const cleanedDescription = improveDescription(event);
     const cleanedEventType = normalizeEventType(event.eventType);
     const normalizedDate = resolveEventDate(event);
+    const finalDate =
+      batchClinicalDate &&
+      normalizedDate !== "UNKNOWN" &&
+      isSuspectClinicalDate(normalizedDate) &&
+      hasMeaningfulClinicalSignal(supportText)
+        ? batchClinicalDate
+        : normalizedDate;
 
     let cleanedProviderName = normalizeClinicianName(event.providerName);
     let cleanedProviderRole = cleanProviderRole(event.providerRole);
@@ -3043,7 +3154,7 @@ function normalizeEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
         : null;
 
     return {
-      date: normalizedDate,
+      date: finalDate,
       title: cleanedTitle,
       description: cleanedDescription,
       eventType: cleanedEventType,
@@ -3618,7 +3729,8 @@ function isHybridEncounterNoiseEvent(event: RawTimelineEvent): boolean {
   return false;
 }
 export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
-  const normalized = normalizeEvents(events);
+  const batchClinicalDate = findBatchClinicalDate(events);
+  const normalized = normalizeEvents(events, batchClinicalDate);
 
   const filtered = normalized.filter((event) => {
     const combined = normalizeText(

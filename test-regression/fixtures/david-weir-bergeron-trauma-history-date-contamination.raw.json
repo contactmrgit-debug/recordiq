@@ -1,0 +1,58 @@
+[
+  {
+    "date": "2021-05-18",
+    "title": "Workplace head injury after pipe fell from derrick",
+    "description": "Work related injury after being struck in the head and neck by a three foot piece of pipe. Positive loss of consciousness was reported.",
+    "eventType": "incident",
+    "sourcePage": 2,
+    "sourceExcerpt": "DATE OF SERVICE: 05/18/2021. Work related injury after being struck in the head and neck by a three foot piece of pipe on 02/02/2019."
+  },
+  {
+    "date": "2021-08-22",
+    "title": "C2 fracture imaging result",
+    "description": "Historical imaging summary documented a nondisplaced C2 fracture from the original work injury.",
+    "eventType": "report",
+    "sourcePage": 3,
+    "sourceExcerpt": "DATE OF SERVICE: 08/22/2021. C2 nondisplaced fracture was described as part of the 02/02/2019 injury."
+  },
+  {
+    "date": "2021-08-23",
+    "title": "CTA neck showed vascular injury concern",
+    "description": "Historical CTA neck summary documented vertebral artery abnormality from the original injury.",
+    "eventType": "report",
+    "sourcePage": 4,
+    "sourceExcerpt": "DATE OF SERVICE: 08/23/2021. CTA neck and CT angiogram described vertebral artery abnormality from the 02/02/2019 work injury."
+  },
+  {
+    "date": "2021-11-29",
+    "title": "Imaging showed nondisplaced left scapular fracture",
+    "description": "Historical fracture finding documented after the original work injury.",
+    "eventType": "report",
+    "sourcePage": 5,
+    "sourceExcerpt": "DATE OF SERVICE: 11/29/2021. Left scapular nondisplaced fracture was documented as part of the 02/02/2019 injury history."
+  },
+  {
+    "date": "2021-12-15",
+    "title": "CT head showed no acute intracranial injury",
+    "description": "Historical CT head summary documented left scalp and periorbital injury findings.",
+    "eventType": "report",
+    "sourcePage": 6,
+    "sourceExcerpt": "DATE OF SERVICE: 12/15/2021. CT head and historical imaging summary referenced the 02/02/2019 work related injury."
+  },
+  {
+    "date": "2022-01-31",
+    "title": "Neurology follow-up for postconcussive syndrome",
+    "description": "Follow-up after the 02/02/2019 injury with headaches and memory symptoms.",
+    "eventType": "appointment",
+    "sourcePage": 7,
+    "sourceExcerpt": "DATE OF SERVICE: 01/31/2022. Neurology follow-up for postconcussive syndrome. The old 02/02/2019 injury date is discussed only as history."
+  },
+  {
+    "date": "2022-03-08",
+    "title": "Telephone follow-up for persistent migraines",
+    "description": "Telephone follow-up after the 02/02/2019 injury for persistent migraines and postconcussive symptoms.",
+    "eventType": "appointment",
+    "sourcePage": 8,
+    "sourceExcerpt": "DATE OF SERVICE: 03/08/2022. Telephone follow-up for persistent migraines and postconcussive syndrome. The 02/02/2019 injury date appears only as prior history."
+  }
+]

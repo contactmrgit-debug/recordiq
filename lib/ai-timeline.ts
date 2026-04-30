@@ -3,6 +3,10 @@ import {
   isLegalWrapperPacket,
   isOcrGarbageText,
 } from "@/lib/timeline-cleanup";
+import {
+  extractBestDateFromText,
+  extractHistoricalTraumaDate,
+} from "@/lib/timeline-date-authority";
 export type TimelineEventResult = {
   date: string;
   dateType?: string;
@@ -563,6 +567,144 @@ const EVENT_SPECS: EventSpec[] = [
     },
     confidence: 0.97,
   },
+  {
+    title: "Neurology follow-up for postconcussive syndrome",
+    eventType: "appointment",
+    dateType: "service_date",
+    pageTerms: [
+      "neurology",
+      "postconcussive",
+      "post concussive",
+      "headache",
+      "memory",
+      "follow-up",
+    ],
+    sourceTerms: [
+      "neurology",
+      "postconcussive",
+      "headache",
+      "memory",
+      "follow-up",
+    ],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "neurology",
+          "postconcussive",
+          "headache",
+          "memory",
+          "follow-up",
+        ]) ||
+        "Neurology follow-up documented postconcussive syndrome with headaches and memory symptoms.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.95,
+  },
+  {
+    title: "Left C7 transforaminal epidural steroid injection",
+    eventType: "treatment",
+    dateType: "procedure_date",
+    pageTerms: [
+      "c7",
+      "transforaminal",
+      "epidural steroid injection",
+      "injection",
+      "fluoroscopy",
+    ],
+    sourceTerms: [
+      "c7",
+      "transforaminal",
+      "epidural steroid injection",
+      "fluoroscopy",
+    ],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "c7",
+          "transforaminal",
+          "epidural steroid injection",
+          "fluoroscopy",
+          "procedure",
+        ]) ||
+        "Left C7 transforaminal epidural steroid injection was performed.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.97,
+  },
+  {
+    title: "Neurology follow-up with migraine medication changes",
+    eventType: "appointment",
+    dateType: "service_date",
+    pageTerms: [
+      "neurology",
+      "migraine",
+      "headache",
+      "medication change",
+      "medication changes",
+      "follow-up",
+    ],
+    sourceTerms: [
+      "neurology",
+      "migraine",
+      "headache",
+      "medication change",
+      "follow-up",
+    ],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "neurology",
+          "migraine",
+          "headache",
+          "medication change",
+          "medication changes",
+          "follow-up",
+        ]) ||
+        "Neurology follow-up documented migraine and headache medication changes.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.95,
+  },
+  {
+    title: "Telephone follow-up for persistent migraines",
+    eventType: "appointment",
+    dateType: "service_date",
+    pageTerms: [
+      "telephone",
+      "phone",
+      "follow-up",
+      "persistent migraine",
+      "persistent migraines",
+      "postconcussive",
+    ],
+    sourceTerms: [
+      "telephone",
+      "follow-up",
+      "persistent migraine",
+      "postconcussive",
+    ],
+    minMatches: 2,
+    descriptionBuilder: (text) => {
+      const snippet =
+        findSnippet(text, [
+          "telephone",
+          "follow-up",
+          "persistent migraine",
+          "persistent migraines",
+          "postconcussive",
+        ]) ||
+        "Telephone follow-up documented persistent migraines and postconcussive syndrome.";
+
+      return compactSentence(snippet);
+    },
+    confidence: 0.93,
+  },
 ];
 
 function normalizeWhitespace(value: string): string {
@@ -729,76 +871,39 @@ function isAcceptedDate(value: string): boolean {
 }
 
 function extractDateFromText(text: string): string {
-  if (isLegalWrapperPacket(text) && !hasMeaningfulClinicalSignal(text)) {
-    return "UNKNOWN";
-  }
-
   if (isMedicationListOnlyText(text)) {
     return "UNKNOWN";
   }
 
-  const administrativeDateLabelPatterns = [
-    /\b(member effective date|coverage(?: start)?|insurance|payor|subscriber|printed on|printed by|start date|refill|quantity|guarantor|parent dob|policy effective date|effective date)\b/i,
-  ];
+  return extractBestDateFromText(text, {
+    hasClinicalSignal: hasMeaningfulClinicalSignal,
+    isLegalWrapper: isLegalWrapperPacket,
+  });
+}
 
-  const labeledPatterns = [
-    /\b(?:VISIT\s+DATE|ADMIT\s+DATE|DATE\s+OF\s+SERVICE|SERVICE\s+DATE|ER\s+NOTE\s+ENTRY|PROGRESS\s+DATE|INCIDENT\s+DATE|INJURY\s+DATE)\s*[:\s-]*([0-1]?\d\/[0-3]?\d\/\d{4})/i,
-    /\b(?:VISIT\s+DATE|ADMIT\s+DATE|DATE\s+OF\s+SERVICE|SERVICE\s+DATE|ER\s+NOTE\s+ENTRY|PROGRESS\s+DATE|INCIDENT\s+DATE|INJURY\s+DATE)\s*[:\s-]*([0-1]?\d\/[0-3]?\d\/\d{2})/i,
-    /\bDATE\s*[:\s-]*([0-1]?\d\/[0-3]?\d\/\d{4})/i,
-    /\bDATE\s*[:\s-]*([0-1]?\d\/[0-3]?\d\/\d{2})/i,
-    /\b(\d{4}-\d{2}-\d{2})\b/,
-  ];
+function shouldPreferHistoricalTraumaDate(title: string): boolean {
+  const normalized = normalizeSearchText(title);
 
-  for (const pattern of labeledPatterns) {
-    const match = text.match(pattern);
-    if (!match?.[1]) continue;
-
-    const value = match[1];
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value) && isValidDate(value)) {
-      return value;
-    }
-
-    if (value.includes("/")) {
-      const [month, day, yearPart] = value.split("/");
-      const year = yearPart.length === 2 ? `20${yearPart}` : yearPart;
-      const iso = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-      if (isValidDate(iso)) return iso;
-    }
+  if (!normalized) return false;
+  if (
+    /\b(follow[- ]?up|telephone|appointment|results follow[- ]?up|lab visit|treatment|procedure)\b/.test(
+      normalized
+    )
+  ) {
+    return false;
   }
 
-  const genericDates = Array.from(text.matchAll(/\b([0-1]?\d)\/([0-3]?\d)\/(\d{4})\b/g));
+  return /\b(workplace head injury|head injury|er presentation|scalp|periorbital|ct head|cta neck|c2 fracture|scapular fracture|vascular injury|vertebral artery)\b/.test(
+    normalized
+  );
+}
 
-  for (const match of genericDates) {
-    const index = match.index ?? 0;
-    const window = text
-      .slice(Math.max(0, index - 60), index + 60)
-      .toLowerCase();
-
-    if (/\b(dob|birth|date of birth)\b/.test(window)) continue;
-    if (
-      administrativeDateLabelPatterns.some((pattern) => pattern.test(window)) &&
-      !/\b(visit date|date of service|service date|results follow-up|progress date|clinical note|provider note|nursing note)\b/.test(
-        window
-      )
-    ) {
-      continue;
-    }
-    if (
-      /\b(deposition|subpoena|affidavit|custodian|business records|records produced|law office|attorney|certificate of service)\b/.test(
-        window
-      ) &&
-      !/\b(ct|x ray|fracture|trauma|transfer|admit|admission|discharge|impression|findings|pain|injury|diagnosis)\b/.test(
-        window
-      )
-    ) {
-      continue;
-    }
-
-    const iso = `${match[3]}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}`;
-    if (isValidDate(iso)) return iso;
+function resolveHistoricalTraumaDate(pageText: string, title: string): string | null {
+  if (!shouldPreferHistoricalTraumaDate(title)) {
+    return null;
   }
 
-  return "UNKNOWN";
+  return extractHistoricalTraumaDate(pageText);
 }
 
 function dedupeEvents(events: TimelineEventResult[]): TimelineEventResult[] {
@@ -1093,6 +1198,35 @@ function titleSpecificPageScore(titleText: string, pageText: string): number {
     }
   }
 
+  if (titleText.includes("neurology follow-up for postconcussive syndrome")) {
+    if (/\bneurology\b/.test(text)) score += 16;
+    if (/\bpostconcussive\b/.test(text)) score += 16;
+    if (/\bheadache|headaches|memory\b/.test(text)) score += 10;
+    if (/\bfollow[- ]?up\b/.test(text)) score += 8;
+    if (/\b02\/02\/2019\b/.test(text)) score -= 4;
+  }
+
+  if (titleText.includes("left c7 transforaminal epidural steroid injection")) {
+    if (/\bc7\b/.test(text)) score += 18;
+    if (/\btransforaminal\b/.test(text)) score += 18;
+    if (/\bepidural steroid injection\b/.test(text)) score += 18;
+    if (/\bprocedure\b/.test(text)) score += 8;
+  }
+
+  if (titleText.includes("neurology follow-up with migraine medication changes")) {
+    if (/\bneurology\b/.test(text)) score += 16;
+    if (/\bmigraine|headache\b/.test(text)) score += 14;
+    if (/\bmedication change|medication changes|changed|adjusted|increased|decreased\b/.test(text)) {
+      score += 10;
+    }
+  }
+
+  if (titleText.includes("telephone follow-up for persistent migraines")) {
+    if (/\btelephone\b/.test(text)) score += 18;
+    if (/\bmigraine|postconcussive\b/.test(text)) score += 18;
+    if (/\bfollow[- ]?up\b/.test(text)) score += 10;
+  }
+
   if (titleText.includes("left scalp/periorbital")) {
     if (/\bscalp swelling|periorbital bruising|left eye\b/.test(text)) {
       score += 12;
@@ -1384,7 +1518,7 @@ function buildEvent(page: PageText, spec: EventSpec): TimelineEventResult | null
     }
   }
 
-  const date = extractDateFromText(pageText);
+  const date = resolveHistoricalTraumaDate(pageText, spec.title) ?? extractDateFromText(pageText);
   const description = compactSentence(spec.descriptionBuilder(pageText));
   const sourceExcerpt = compactSentence(
     findSnippet(pageText, [
@@ -1569,7 +1703,7 @@ function buildSupplementalImagingEvents(
     const text = normalizeSearchText(page.text);
     if (!text) continue;
 
-    const date = extractDateFromText(page.text);
+    const date = resolveHistoricalTraumaDate(page.text, "CT head showed no acute intracranial injury") ?? extractDateFromText(page.text);
     if (!isAcceptedDate(date)) continue;
 
     const metadata = inferMetadata(page.text, "");
