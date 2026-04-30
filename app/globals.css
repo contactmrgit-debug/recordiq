@@ -86,3 +86,9 @@ body {
 .riq-works-grid .riq-step-card .riq-step-copy p {
   font-weight: 400 !important;
 }
+.riq-process-img-icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  display: block;
+}

@@ -1604,10 +1604,9 @@ function ExportIcon() {
 function CloudUploadIcon() {
   return (
     <IconBase>
-      <path d="M4 7.5h6l1.5 2H20v8.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7.5Z" />
-      <path d="M4 7.5V6a2 2 0 0 1 2-2h3.5l1.5 2H18a2 2 0 0 1 2 2v1.5" />
-      <path d="M8 13h8" />
-      <path d="M8 16h5" />
+      <path d="M7 18h10a4 4 0 0 0 .6-7.9A5.2 5.2 0 0 0 6.6 9.2 3.6 3.6 0 0 0 7 18Z" />
+      <path d="M12 16V9.5" />
+      <path d="m9.2 12.2 2.8-2.8 2.8 2.8" />
     </IconBase>
   );
 }
@@ -1625,17 +1624,14 @@ function DocumentSearchIcon() {
 
 function ChecklistIcon() {
   return (
-    <IconBase>
-      <circle cx="6" cy="7" r="1.1" />
-      <circle cx="6" cy="12" r="1.1" />
-      <circle cx="6" cy="17" r="1.1" />
-      <path d="M10 7h8" />
-      <path d="M10 12h8" />
-      <path d="M10 17h8" />
-    </IconBase>
+    <img
+      src="/icons/check-list.png"
+      alt=""
+      aria-hidden="true"
+      className="riq-process-img-icon"
+    />
   );
 }
-
 function DocumentExportIcon() {
   return (
     <img
