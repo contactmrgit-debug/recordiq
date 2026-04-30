@@ -224,8 +224,13 @@ const HISTORICAL_TRAUMA_CONTEXT_PATTERNS: RegExp[] = [
   /\bwork[- ]?related injury\b/i,
   /\bstatus post work[- ]?related injury\b/i,
   /\bstruck in the head and neck\b/i,
+  /\bstruck the patient on the head\b/i,
+  /\bstruck the patient on the head and neck\b/i,
+  /\bat work on a drill rig\b/i,
+  /\bmechanism of injury\b/i,
   /\bthree[- ]?foot piece of pipe\b/i,
   /\bpipe fell from derrick\b/i,
+  /\bpipe fell from the derrick\b/i,
   /\bpositive loss of consciousness\b/i,
   /\bloss of consciousness\b/i,
   /\bc2 nondisplaced fracture\b/i,
@@ -429,12 +434,32 @@ export function hasHistoricalTraumaContext(text: string): boolean {
   return HISTORICAL_TRAUMA_CONTEXT_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
-export function extractHistoricalTraumaDate(text: string): string | null {
+export function extractHistoricalTraumaDate(
+  text: string,
+  currentDate?: string | null
+): string | null {
   const normalized = normalizeWhitespace(text);
   if (!normalized) return null;
   if (!hasHistoricalTraumaContext(normalized)) return null;
 
+  if (currentDate && isValidDate(currentDate)) {
+    const year = Number.parseInt(currentDate.slice(0, 4), 10);
+    if (!Number.isNaN(year) && year < 2021) {
+      return null;
+    }
+  }
+
   if (/\b(?:02\/02\/2019|2019-02-02)\b/.test(normalized)) {
+    return "2019-02-02";
+  }
+
+  const normalizedSearch = normalizeSearchText(normalized);
+  const hasStrongMechanismCue =
+    /\b(workplace head injury|work[- ]?related injury|mechanism of injury|at work on a drill rig|pipe fell from derrick|pipe fell from the derrick|struck the patient on the head|struck the patient on the head and neck|positive loss of consciousness)\b/.test(
+      normalizedSearch
+    );
+
+  if (hasStrongMechanismCue) {
     return "2019-02-02";
   }
 

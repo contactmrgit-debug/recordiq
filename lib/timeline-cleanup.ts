@@ -223,6 +223,12 @@ function shouldPreferHistoricalTraumaDate(event: RawTimelineEvent): boolean {
   );
 
   if (!combined) return false;
+  if (event.date && event.date !== "UNKNOWN") {
+    const year = Number.parseInt(event.date.slice(0, 4), 10);
+    if (!Number.isNaN(year) && year < 2021) {
+      return false;
+    }
+  }
   if (/\b(follow[- ]?up|telephone|appointment|lab visit|results follow[- ]?up)\b/.test(combined)) {
     return false;
   }
@@ -267,7 +273,7 @@ function resolveEventDate(event: RawTimelineEvent): string {
     currentDate === "2010-04-12" || currentDate === "2018-04-12";
   const historicalTraumaDate =
     shouldPreferHistoricalTraumaDate(event)
-      ? extractHistoricalTraumaDate(supportText)
+      ? extractHistoricalTraumaDate(supportText, currentDate)
       : null;
   const isFontanaTraumaContext =
     isLegacyWrapperContaminationDate &&

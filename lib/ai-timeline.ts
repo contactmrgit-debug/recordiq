@@ -898,12 +898,16 @@ function shouldPreferHistoricalTraumaDate(title: string): boolean {
   );
 }
 
-function resolveHistoricalTraumaDate(pageText: string, title: string): string | null {
+function resolveHistoricalTraumaDate(
+  pageText: string,
+  title: string,
+  currentDate?: string | null
+): string | null {
   if (!shouldPreferHistoricalTraumaDate(title)) {
     return null;
   }
 
-  return extractHistoricalTraumaDate(pageText);
+  return extractHistoricalTraumaDate(pageText, currentDate);
 }
 
 function dedupeEvents(events: TimelineEventResult[]): TimelineEventResult[] {
@@ -1518,7 +1522,8 @@ function buildEvent(page: PageText, spec: EventSpec): TimelineEventResult | null
     }
   }
 
-  const date = resolveHistoricalTraumaDate(pageText, spec.title) ?? extractDateFromText(pageText);
+  const dateCandidate = extractDateFromText(pageText);
+  const date = resolveHistoricalTraumaDate(pageText, spec.title, dateCandidate) ?? dateCandidate;
   const description = compactSentence(spec.descriptionBuilder(pageText));
   const sourceExcerpt = compactSentence(
     findSnippet(pageText, [
@@ -1703,7 +1708,13 @@ function buildSupplementalImagingEvents(
     const text = normalizeSearchText(page.text);
     if (!text) continue;
 
-    const date = resolveHistoricalTraumaDate(page.text, "CT head showed no acute intracranial injury") ?? extractDateFromText(page.text);
+    const dateCandidate = extractDateFromText(page.text);
+    const date =
+      resolveHistoricalTraumaDate(
+        page.text,
+        "CT head showed no acute intracranial injury",
+        dateCandidate
+      ) ?? dateCandidate;
     if (!isAcceptedDate(date)) continue;
 
     const metadata = inferMetadata(page.text, "");
