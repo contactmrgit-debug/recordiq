@@ -21,6 +21,8 @@ type ApiResponse = {
   documentId?: string;
   jobId?: string;
   status?: string;
+  processingMode?: string;
+  warningMessage?: string;
   timelineEventsCreated?: number;
   uploadUrl?: string;
   key?: string;
@@ -151,6 +153,10 @@ export default function TestUploadPage() {
 
     const warnings: string[] = [];
 
+    if (data.warningMessage) {
+      warnings.push(data.warningMessage);
+    }
+
     if (!docsRes.ok || !docsJson?.success) {
       warnings.push(docsJson?.error || "Documents endpoint returned an error");
     }
@@ -176,6 +182,8 @@ export default function TestUploadPage() {
       const message = warnings.join(" â€¢ ");
       setWarning(message);
       setStatus(`Upload complete with warnings: ${message}`);
+    } else if (data.processingMode === "DEFERRED") {
+      setStatus("Large file uploaded. Timeline processing may take several minutes.");
     } else {
       setStatus("Complete");
     }

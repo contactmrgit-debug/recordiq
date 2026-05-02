@@ -13,6 +13,8 @@ export const runtime = "nodejs";
 type ProcessS3Payload = {
   caseId?: unknown;
   fileName?: unknown;
+  fileSize?: unknown;
+  pageCount?: unknown;
   mimeType?: unknown;
   recordType?: unknown;
   s3Key?: unknown;
@@ -20,6 +22,8 @@ type ProcessS3Payload = {
   s3Region?: unknown;
   fileUrl?: unknown;
 };
+
+const LARGE_PDF_SYNC_THRESHOLD_BYTES = 50 * 1024 * 1024;
 
 function isPdfUpload(fileName: string, mimeType: string): boolean {
   const lowerName = fileName.toLowerCase();
@@ -48,6 +52,18 @@ export async function POST(
       typeof body.fileName === "string" && body.fileName.trim()
         ? body.fileName.trim()
         : null;
+    const fileSize =
+      typeof body.fileSize === "number" && Number.isFinite(body.fileSize)
+        ? body.fileSize
+        : typeof body.fileSize === "string" && body.fileSize.trim()
+          ? Number(body.fileSize)
+          : null;
+    const pageCount =
+      typeof body.pageCount === "number" && Number.isFinite(body.pageCount)
+        ? body.pageCount
+        : typeof body.pageCount === "string" && body.pageCount.trim()
+          ? Number(body.pageCount)
+          : null;
     const mimeType =
       typeof body.mimeType === "string" && body.mimeType.trim()
         ? body.mimeType.trim()
@@ -133,13 +149,35 @@ export async function POST(
       recordType: providedRecordType,
     });
 
+    const shouldDeferProcessing =
+      (typeof pageCount === "number" &&
+        Number.isFinite(pageCount) &&
+        pageCount > 200) ||
+      (typeof fileSize === "number" &&
+        Number.isFinite(fileSize) &&
+        fileSize > LARGE_PDF_SYNC_THRESHOLD_BYTES);
+
+    if (shouldDeferProcessing) {
+      return NextResponse.json({
+        success: true,
+        documentId: queuedJob.documentId,
+        jobId: queuedJob.jobId,
+        status: "UPLOADED",
+        jobStatus: queuedJob.status,
+        processingMode: "DEFERRED",
+        warningMessage:
+          "Large file uploaded. Timeline processing may take several minutes.",
+      });
+    }
+
     const processingOutcome = await processQueuedDocumentJobById(queuedJob.jobId);
 
     return NextResponse.json({
       success: true,
       documentId: queuedJob.documentId,
       jobId: queuedJob.jobId,
-      queuedStatus: queuedJob.status,
+      status: processingOutcome?.success ? "PROCESSED" : processingOutcome?.finalStatus ?? "UPLOADED",
+      jobStatus: processingOutcome?.job.status ?? queuedJob.status,
       processing: processingOutcome,
     });
   } catch (error: unknown) {
