@@ -460,6 +460,8 @@ function getNormalizedSourcePacketName(event: TimelineEvent) {
 
   return sourcePacket
     .replace(/[_-]+/g, " ")
+    .replace(/&/g, " and ")
+    .replace(/[^\w\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
@@ -469,7 +471,7 @@ function getEmsAgencyName(event: TimelineEvent) {
   const packet = getNormalizedSourcePacketName(event);
   const text = `${event.title || ""} ${event.description || ""}`.toLowerCase();
 
-  if (/\breagan county fire\b/.test(packet) || /\breagan county fire\b/.test(text)) {
+  if (/\breagan county fire(?: and)? ems\b/.test(packet) || /\breagan county fire\b/.test(text)) {
     return "Reagan County Fire & EMS";
   }
 
@@ -484,11 +486,9 @@ function isEmsAttributionEvent(event: TimelineEvent) {
   const packet = getNormalizedSourcePacketName(event);
   const role = (getProviderRole(event) || "").toLowerCase();
   const text = `${event.title || ""} ${event.description || ""} ${event.providerName || ""} ${event.physicianName || ""}`.toLowerCase();
-  const hasEmsPacket = /\breagan county fire\b/.test(packet);
-  const hasEmsTransportText = /\b(ems|ambulance|transport|transport destination|crew member|primary patient caregiver|primary patient care provider)\b/.test(text);
 
   return (
-    (hasEmsPacket && hasEmsTransportText) ||
+    /\breagan county fire(?: and)? ems\b/.test(packet) ||
     /\breagan county fire\b/.test(text) ||
     role.includes("ems") ||
     /\b(ems|ambulance|transport destination|crew member|primary patient caregiver)\b/.test(text)

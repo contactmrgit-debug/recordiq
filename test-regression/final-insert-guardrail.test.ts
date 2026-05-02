@@ -425,6 +425,8 @@ function normalizePacketLabel(value?: string | null) {
   return (value || "")
     .replace(/\.[a-z0-9]+$/i, "")
     .replace(/[_-]+/g, " ")
+    .replace(/&/g, " and ")
+    .replace(/[^\w\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
@@ -439,7 +441,8 @@ function formatEmsAttributionLine(event: EmsAttributionShape) {
     event.physicianName?.trim() ||
     null;
   const emsAgency =
-    /\breagan county fire\b/.test(packet) || /\breagan county fire\b/.test(text)
+    /\breagan county fire(?: and)? ems\b/.test(packet) ||
+    /\breagan county fire\b/.test(text)
       ? "Reagan County Fire & EMS"
       : null;
   const transportDestination =
