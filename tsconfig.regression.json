@@ -11,6 +11,8 @@
   },
   "include": [
     "test-regression/run-regression.ts",
+    "test-regression/final-insert-guardrail.test.ts",
+    "test-regression/fontana-date-contamination.test.ts",
     "lib/**/*.ts",
     "types/**/*.d.ts"
   ],

@@ -77,6 +77,9 @@ try {
 
   $env:TIMELINE_REGRESSION_WRITE_OUTPUT = '0'
   & node -r ./scripts/register-regression-paths.cjs tmp-regression/test-regression/run-regression.js
+
+  & node -r ./scripts/register-regression-paths.cjs tmp-regression/test-regression/final-insert-guardrail.test.js
+  & node -r ./scripts/register-regression-paths.cjs tmp-regression/test-regression/fontana-date-contamination.test.js
 }
 finally {
   Clear-TmpRegression

@@ -1,0 +1,42 @@
+[
+  {
+    "date": "2021-07-20",
+    "title": "Workplace head injury after pipe fell from derrick",
+    "description": "Later scanned copy of the original trauma record. At work on a drill rig, a pipe fell from the derrick and struck the patient on the head.",
+    "eventType": "incident",
+    "sourcePage": 2,
+    "sourceExcerpt": "DATE OF SERVICE: 07/20/2021. Later scanned copy of the original trauma record. At work on a drill rig, a pipe fell from the derrick and struck the patient on the head."
+  },
+  {
+    "date": "2021-07-20",
+    "title": "CT head result",
+    "description": "CT head showed no acute intracranial injury with left periorbital soft tissue swelling from the original trauma encounter.",
+    "eventType": "report",
+    "sourcePage": 2,
+    "sourceExcerpt": "DATE OF SERVICE: 07/20/2021. CT head showed no acute intracranial injury with left periorbital soft tissue swelling from the original trauma encounter."
+  },
+  {
+    "date": "2021-07-20",
+    "title": "Head trauma with scalp laceration and left periorbital swelling",
+    "description": "Exam documented a scalp laceration with left periorbital swelling and bruising from the original trauma encounter.",
+    "eventType": "observation",
+    "sourcePage": 2,
+    "sourceExcerpt": "DATE OF SERVICE: 07/20/2021. Exam documented a scalp laceration with left periorbital swelling and bruising from the original trauma encounter."
+  },
+  {
+    "date": "2021-07-20",
+    "title": "Parent reported fatigue, color changes, dry lips, and thirst",
+    "description": "Parent reported fatigue, color changes, dry lips, and thirst. This is background contamination and should not become a trauma timeline event.",
+    "eventType": "communication",
+    "sourcePage": 2,
+    "sourceExcerpt": "Parent reported fatigue, color changes, dry lips, and thirst. This is background contamination and should not become a trauma timeline event."
+  },
+  {
+    "date": "2022-03-08",
+    "title": "Neurology follow-up with migraine medication changes",
+    "description": "Neurology follow-up with migraine medication changes. Topiramate dose was increased and follow-up was recommended.",
+    "eventType": "appointment",
+    "sourcePage": 3,
+    "sourceExcerpt": "DATE OF SERVICE: 03/08/2022. Neurology follow-up with migraine medication changes. Topiramate dose was increased and follow-up was recommended."
+  }
+]

@@ -20,6 +20,15 @@
         "completed the 12th grade",
         "obtained a GED"
       ]
+    },
+    {
+      "title": "Parent reported fatigue, color changes, dry lips, and thirst",
+      "date": "2019-02-02",
+      "sourcePage": 8,
+      "descriptionIncludes": [
+        "background or pediatric-style contamination",
+        "not become a trauma timeline event"
+      ]
     }
   ],
   "expectedNoDuplicateNormalizedKeys": true,

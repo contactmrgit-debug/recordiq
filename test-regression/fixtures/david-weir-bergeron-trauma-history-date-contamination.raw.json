@@ -22,5 +22,13 @@
     "eventType": "appointment",
     "sourcePage": 8,
     "sourceExcerpt": "DATE OF SERVICE: 03/08/2022. Telephone follow-up for persistent migraines and postconcussive syndrome. Raised in Picayune, Mississippi. Completed the 12th grade and obtained a GED. processing yr; aridTiis..."
+  },
+  {
+    "date": "2019-02-02",
+    "title": "Parent reported fatigue, color changes, dry lips, and thirst",
+    "description": "Parent reported fatigue, color changes, dry lips, and thirst. This looks like background or pediatric-style contamination and should not become a trauma timeline event.",
+    "eventType": "communication",
+    "sourcePage": 8,
+    "sourceExcerpt": "Parent reported fatigue, color changes, dry lips, and thirst. Background history about being raised in Picayune, Mississippi and obtaining a GED appears in the surrounding OCR."
   }
 ]

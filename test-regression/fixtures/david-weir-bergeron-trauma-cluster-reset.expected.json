@@ -1,0 +1,48 @@
+{
+  "documentName": "david-weir-bergeron-trauma-cluster-reset",
+  "minEvents": 4,
+  "maxEvents": 4,
+  "mustIncludeTitles": [
+    "Workplace head injury after pipe fell from derrick",
+    "Neurology follow-up with migraine medication changes"
+  ],
+  "mustIncludeTitlePatterns": [
+    "workplace head injury after pipe fell from derrick",
+    "ct head showed no acute intracranial injury",
+    "periorbital"
+  ],
+  "mustNotIncludeTitlePatterns": [
+    "fatigue, color changes, dry lips, and thirst"
+  ],
+  "expectedNoDuplicateNormalizedKeys": true,
+  "dateRules": [
+    {
+      "date": "2019-02-02",
+      "minEvents": 3,
+      "maxEvents": 3,
+      "mustIncludeTitles": [
+        "Workplace head injury after pipe fell from derrick"
+      ]
+    },
+    {
+      "date": "2022-03-08",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Neurology follow-up with migraine medication changes"
+      ]
+    }
+  ],
+  "eventAssertions": [
+    {
+      "title": "Workplace head injury after pipe fell from derrick",
+      "sourcePage": 2,
+      "eventType": "incident"
+    },
+    {
+      "title": "Neurology follow-up with migraine medication changes",
+      "sourcePage": 3,
+      "eventType": "appointment"
+    }
+  ]
+}
