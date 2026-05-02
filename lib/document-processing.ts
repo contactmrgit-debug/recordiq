@@ -1773,6 +1773,89 @@ function extractReportSignerName(text: string): string | null {
   return null;
 }
 
+function getImagingReportKeywords(event: RawTimelineEvent): string[] {
+  const text = normalizeWhitespace(
+    `${event.title || ""} ${event.description || ""}`
+  ).toLowerCase();
+  const keywords = new Set<string>(["imaging", "radiology", "report", "findings", "impression"]);
+
+  if (/\bc2\b/.test(text) || /\bcervical\b/.test(text) || /\bspine\b/.test(text)) {
+    keywords.add("c2");
+    keywords.add("cervical");
+    keywords.add("spine");
+    keywords.add("vertebral");
+  }
+
+  if (/\bshoulder\b/.test(text) || /\bscapul/.test(text)) {
+    keywords.add("shoulder");
+    keywords.add("scapular");
+    keywords.add("scapula");
+    keywords.add("humerus");
+  }
+
+  if (/\bhead\b/.test(text) || /\bct head\b/.test(text)) {
+    keywords.add("head");
+    keywords.add("ct head");
+  }
+
+  if (/\bct\b/.test(text) || /\bmri\b/.test(text) || /\bcta\b/.test(text)) {
+    keywords.add("ct");
+    keywords.add("mri");
+    keywords.add("cta");
+  }
+
+  return Array.from(keywords);
+}
+
+function findNearbyImagingReportSigner(
+  event: RawTimelineEvent,
+  pageTexts: PdfChunkPageText[]
+): string | null {
+  if (!pageTexts.length) return null;
+
+  const sourcePage = typeof event.sourcePage === "number" ? event.sourcePage : null;
+  const keywords = getImagingReportKeywords(event);
+  const windowPages = sourcePage
+    ? pageTexts.filter((pageText) => Math.abs(pageText.page - sourcePage) <= 3)
+    : pageTexts;
+
+  let bestSigner: string | null = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (const pageText of windowPages) {
+    const signer = extractReportSignerName(pageText.text);
+    if (!signer) continue;
+
+    const normalized = normalizeWhitespace(pageText.text).toLowerCase();
+    let score = 0;
+
+    if (sourcePage !== null && pageText.page === sourcePage) {
+      score += 50;
+    } else if (sourcePage !== null) {
+      score += Math.max(0, 20 - Math.abs(pageText.page - sourcePage) * 3);
+    } else {
+      score += 10;
+    }
+
+    for (const keyword of keywords) {
+      if (normalized.includes(keyword)) {
+        score += 4;
+      }
+    }
+
+    if (/\b(report|impression|findings|signed|electronically signed)\b/.test(normalized)) {
+      score += 10;
+    }
+
+    if (score > bestScore) {
+      bestSigner = signer;
+      bestScore = score;
+    }
+  }
+
+  return bestSigner;
+}
+
 function inferDocumentTraumaDate(
   events: RawTimelineEvent[],
   context?: RepairDocumentContext,
@@ -1867,7 +1950,9 @@ export function repairPersistedTimelineEvent(
       ? { page: event.sourcePage as number, text: exactPageText, score: 0 }
       : getBestSupportPage(pageTexts, event.title || "");
     const reportText = supportPage?.text || event.sourceExcerpt || "";
-    const signerName = extractReportSignerName(reportText);
+    const signerName =
+      extractReportSignerName(reportText) ||
+      findNearbyImagingReportSigner(event, pageTexts);
     const looksLikeImaging =
       /\b(ct|cta|x ray|xray|mri|ultrasound|imaging|radiology|report|findings|impression)\b/.test(
         normalizeWhitespace(`${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`).toLowerCase()

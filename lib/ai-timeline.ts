@@ -1532,6 +1532,119 @@ function inferMetadata(
   };
 }
 
+function extractReportSignerName(text: string): string | undefined {
+  const normalized = normalizeWhitespace(text);
+  if (!normalized) return undefined;
+
+  const patterns = [
+    /electronically signed by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}(?:\s*,?\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))?)/i,
+    /signed by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}(?:\s*,?\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))?)/i,
+    /interpreted by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}(?:\s*,?\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))?)/i,
+    /reported by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}(?:\s*,?\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))?)/i,
+    /\b(radiologist|interpreting physician)[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}(?:\s*,?\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))?)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    const candidate = match?.[1] || match?.[2];
+    if (candidate) {
+      return normalizeProviderName(candidate);
+    }
+  }
+
+  const signatureWindow = normalized.match(/(.{0,160}?)\s*,?\s*(?:electronically\s+)?signed\b/i);
+  if (signatureWindow?.[1]) {
+    const prefix = signatureWindow[1];
+    const candidates = Array.from(
+      prefix.matchAll(
+        /\b((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){1,4}(?:\s*,?\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))?)\b/g
+      ),
+      (match) => normalizeProviderName(match[1])
+    ).filter((value): value is string => Boolean(value));
+
+    if (candidates.length) {
+      return candidates[candidates.length - 1];
+    }
+  }
+
+  return undefined;
+}
+
+function imagingReportKeywords(title: string, description?: string): string[] {
+  const text = normalizeSearchText(`${title} ${description || ""}`);
+  const keywords = new Set<string>(["report", "impression", "findings", "radiology", "imaging"]);
+
+  if (/\bc2\b/.test(text) || /\bcervical\b/.test(text) || /\bspine\b/.test(text)) {
+    keywords.add("c2");
+    keywords.add("cervical");
+    keywords.add("spine");
+    keywords.add("vertebral");
+  }
+
+  if (/\bshoulder\b/.test(text) || /\bscapul/.test(text)) {
+    keywords.add("shoulder");
+    keywords.add("scapular");
+    keywords.add("scapula");
+    keywords.add("humerus");
+  }
+
+  if (/\bhead\b/.test(text) || /\bct head\b/.test(text)) {
+    keywords.add("head");
+    keywords.add("ct head");
+  }
+
+  if (/\bct\b/.test(text) || /\bmri\b/.test(text) || /\bcta\b/.test(text)) {
+    keywords.add("ct");
+    keywords.add("mri");
+    keywords.add("cta");
+  }
+
+  return Array.from(keywords);
+}
+
+function findNearbyImagingSigner(
+  pageTexts: PageText[],
+  sourcePage: number,
+  title: string,
+  description?: string
+): string | undefined {
+  const keywords = imagingReportKeywords(title, description);
+  const candidates = pageTexts.filter((pageText) => Math.abs(pageText.page - sourcePage) <= 3);
+  let bestSigner: string | undefined;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (const pageText of candidates) {
+    const signer = extractReportSignerName(pageText.text);
+    if (!signer) continue;
+
+    const normalized = normalizeSearchText(pageText.text);
+    let score = 0;
+
+    if (pageText.page === sourcePage) {
+      score += 50;
+    } else {
+      score += Math.max(0, 20 - Math.abs(pageText.page - sourcePage) * 3);
+    }
+
+    for (const keyword of keywords) {
+      if (normalized.includes(keyword)) {
+        score += 4;
+      }
+    }
+
+    if (/\b(report|impression|findings|signed|electronically signed)\b/.test(normalized)) {
+      score += 10;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestSigner = signer;
+    }
+  }
+
+  return bestSigner;
+}
+
 function normalizeProviderName(value?: string): string | undefined {
   if (!value) return undefined;
 
@@ -1549,7 +1662,11 @@ function normalizeProviderName(value?: string): string | undefined {
   return cleaned;
 }
 
-function buildEvent(page: PageText, spec: EventSpec): TimelineEventResult | null {
+function buildEvent(
+  page: PageText,
+  spec: EventSpec,
+  pageTexts: PageText[]
+): TimelineEventResult | null {
   const pageText = sourcePageToText(page);
   if (isLowQualityTimelinePage(pageText)) {
     return null;
@@ -1614,9 +1731,19 @@ function buildEvent(page: PageText, spec: EventSpec): TimelineEventResult | null
       combinedSupportText
     );
 
+  const exactImagingSigner =
+    isSignedImagingReport ? extractReportSignerName(pageText) : undefined;
+  const nearbyImagingSigner =
+    isSignedImagingReport && !exactImagingSigner
+      ? findNearbyImagingSigner(pageTexts, page.page, spec.title, description)
+      : undefined;
+  const imagingSigner = exactImagingSigner || nearbyImagingSigner;
+
   const physicianName =
-    isSignedImagingReport || isTransferPhysician
-      ? metadata.physicianName
+    isSignedImagingReport
+      ? imagingSigner || metadata.physicianName
+      : isTransferPhysician
+        ? metadata.physicianName
       : undefined;
 
   const physicianRole =
@@ -1693,7 +1820,7 @@ function extractLocalTimelineEvents(pageTexts: PageText[]): TimelineEventResult[
     const page = findBestPage(pageTexts, spec);
     if (!page) continue;
 
-    const event = buildEvent(page, spec);
+    const event = buildEvent(page, spec, pageTexts);
     if (event) {
       const isOverrideCandidate =
         spec.title === "Grouped medications" ||
@@ -1780,7 +1907,7 @@ function buildSupplementalImagingEvents(
       ) ?? dateCandidate;
     if (!isAcceptedDate(date)) continue;
 
-    const metadata = inferMetadata(page.text, "");
+  const metadata = inferMetadata(page.text, "");
 
     if (
       /\bct head\b/.test(text) &&
@@ -1789,6 +1916,12 @@ function buildSupplementalImagingEvents(
       ) &&
       !hasEventWithTitle(existingEvents, page.page, /\bct head\b/)
     ) {
+      const nearbySigner = findNearbyImagingSigner(
+        pageTexts,
+        page.page,
+        "CT head showed no acute intracranial injury",
+        page.text
+      );
       supplemental.push({
         date,
         dateType: "service_date",
@@ -1808,7 +1941,7 @@ function buildSupplementalImagingEvents(
             "findings",
           ])
         ),
-        physicianName: metadata.physicianName,
+        physicianName: nearbySigner || metadata.physicianName,
         physicianRole: metadata.physicianRole,
         medicalFacility: metadata.medicalFacility,
         facilityType: metadata.facilityType,
@@ -1822,6 +1955,12 @@ function buildSupplementalImagingEvents(
       ) &&
       !hasEventWithTitle(existingEvents, page.page, /\bcta\b/)
     ) {
+      const nearbySigner = findNearbyImagingSigner(
+        pageTexts,
+        page.page,
+        "CTA neck showed vascular injury concern",
+        page.text
+      );
       supplemental.push({
         date,
         dateType: "service_date",
@@ -1841,7 +1980,7 @@ function buildSupplementalImagingEvents(
             "findings",
           ])
         ),
-        physicianName: metadata.physicianName,
+        physicianName: nearbySigner || metadata.physicianName,
         physicianRole: metadata.physicianRole,
         medicalFacility: metadata.medicalFacility,
         facilityType: metadata.facilityType,
@@ -1854,6 +1993,12 @@ function buildSupplementalImagingEvents(
       /\bvertebral foramen\b/.test(text) &&
       !hasEventWithTitle(existingEvents, page.page, /\bc2\b/)
     ) {
+      const nearbySigner = findNearbyImagingSigner(
+        pageTexts,
+        page.page,
+        "C2 fracture with vertebral foramen extension",
+        page.text
+      );
       supplemental.push({
         date,
         dateType: "service_date",
@@ -1873,7 +2018,7 @@ function buildSupplementalImagingEvents(
             "findings",
           ])
         ),
-        physicianName: metadata.physicianName,
+        physicianName: nearbySigner || metadata.physicianName,
         physicianRole: metadata.physicianRole,
         medicalFacility: metadata.medicalFacility,
         facilityType: metadata.facilityType,
@@ -1885,6 +2030,12 @@ function buildSupplementalImagingEvents(
       /\bfracture\b/.test(text) &&
       !hasEventWithTitle(existingEvents, page.page, /\bscapular\b/)
     ) {
+      const nearbySigner = findNearbyImagingSigner(
+        pageTexts,
+        page.page,
+        "Imaging showed nondisplaced left scapular fracture",
+        page.text
+      );
       supplemental.push({
         date,
         dateType: "service_date",
@@ -1904,7 +2055,7 @@ function buildSupplementalImagingEvents(
             "findings",
           ])
         ),
-        physicianName: metadata.physicianName,
+        physicianName: nearbySigner || metadata.physicianName,
         physicianRole: metadata.physicianRole,
         medicalFacility: metadata.medicalFacility,
         facilityType: metadata.facilityType,
