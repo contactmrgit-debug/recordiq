@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { repairPersistedTimelineEvents } from "@/lib/document-processing";
+import { loadRepairPageTextsForDocuments } from "@/lib/document-processing";
 import { prisma } from "@/lib/prisma";
 import { generateTimelineSummary } from "@/lib/timeline-summary";
 
@@ -46,30 +47,11 @@ export async function GET(
       },
     });
 
-    const documentIds = Array.from(
-      new Set(timelineEvents.map((event) => event.documentId).filter(Boolean) as string[])
+    const pageTextsByDocument = await loadRepairPageTextsForDocuments(
+      timelineEvents
+        .map((event) => event.documentId)
+        .filter((documentId): documentId is string => Boolean(documentId))
     );
-    const pageRows = documentIds.length
-      ? await prisma.documentPage.findMany({
-          where: { documentId: { in: documentIds } },
-          select: {
-            documentId: true,
-            pageNumber: true,
-            text: true,
-          },
-          orderBy: [{ documentId: "asc" }, { pageNumber: "asc" }],
-        })
-      : [];
-
-    const pageTextsByDocument = new Map<string, { page: number; text: string }[]>();
-    for (const row of pageRows) {
-      const list = pageTextsByDocument.get(row.documentId) ?? [];
-      list.push({
-        page: row.pageNumber,
-        text: row.text || "",
-      });
-      pageTextsByDocument.set(row.documentId, list);
-    }
 
     const rawEventsByDocument = new Map<
       string,
@@ -134,9 +116,12 @@ export async function GET(
     });
 
     for (const [documentId, items] of rawEventsByDocument.entries()) {
+      const pageTexts = pageTextsByDocument.get(documentId) ?? [];
+      if (!pageTexts.length) continue;
+
       const repairedGroup = repairPersistedTimelineEvents(
         items.map((item) => item.event),
-        pageTextsByDocument.get(documentId) ?? []
+        pageTexts
       );
 
       for (let i = 0; i < items.length; i++) {

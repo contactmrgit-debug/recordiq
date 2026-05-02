@@ -1436,6 +1436,12 @@ type SupportPageOverrideTarget = {
   keywords: string[];
 };
 
+type RepairPageTextRow = {
+  documentId: string;
+  page: number;
+  text: string;
+};
+
 const SUPPORT_PAGE_OVERRIDE_TARGETS: SupportPageOverrideTarget[] = [
   {
     titlePattern: /\bgrouped medications\b/i,
@@ -1478,6 +1484,95 @@ const SUPPORT_PAGE_OVERRIDE_TARGETS: SupportPageOverrideTarget[] = [
 
 function normalizeSupportPageText(value: string): string {
   return normalizeWhitespace(value).toLowerCase();
+}
+
+function extractPageTextsFromMergedText(text: string): { page: number; text: string }[] {
+  const normalized = normalizeWhitespace(text);
+  if (!normalized) return [];
+
+  const markerRegex = /--- PAGE (\d+) ---\s*/g;
+  const matches = Array.from(normalized.matchAll(markerRegex));
+  if (!matches.length) {
+    return [{ page: 1, text: normalized }];
+  }
+
+  const pages: { page: number; text: string }[] = [];
+  for (let i = 0; i < matches.length; i++) {
+    const current = matches[i];
+    const next = matches[i + 1];
+    const start = (current.index ?? 0) + current[0].length;
+    const end = next?.index ?? normalized.length;
+    const pageNumber = Number.parseInt(current[1], 10);
+    const pageText = normalized.slice(start, end).trim();
+    if (Number.isFinite(pageNumber) && pageText) {
+      pages.push({ page: pageNumber, text: pageText });
+    }
+  }
+
+  return pages.length ? pages : [{ page: 1, text: normalized }];
+}
+
+export async function loadRepairPageTextsForDocuments(
+  documentIds: string[]
+): Promise<Map<string, { page: number; text: string }[]>> {
+  const result = new Map<string, { page: number; text: string }[]>();
+  const uniqueDocumentIds = Array.from(new Set(documentIds.filter(Boolean)));
+
+  if (!uniqueDocumentIds.length) {
+    return result;
+  }
+
+  try {
+    const rows = await prisma.$queryRaw<RepairPageTextRow[]>(Prisma.sql`
+      SELECT
+        "documentId",
+        "pageNumber" AS "page",
+        "rawText" AS "text"
+      FROM "DocumentPage"
+      WHERE "documentId" IN (${Prisma.join(uniqueDocumentIds)})
+      ORDER BY "documentId" ASC, "pageNumber" ASC
+    `);
+
+    if (rows.length > 0) {
+      for (const row of rows) {
+        const text = normalizeWhitespace(row.text);
+        if (!text) continue;
+
+        const list = result.get(row.documentId) ?? [];
+        list.push({ page: row.page, text });
+        result.set(row.documentId, list);
+      }
+
+      if (result.size > 0) {
+        return result;
+      }
+    }
+  } catch (error) {
+    console.warn("loadRepairPageTextsForDocuments raw page text fallback failed:", error);
+  }
+
+  try {
+    const documents = await prisma.document.findMany({
+      where: { id: { in: uniqueDocumentIds } },
+      select: {
+        id: true,
+        extractedText: true,
+      },
+    });
+
+    for (const document of documents) {
+      const text = normalizeWhitespace(document.extractedText || "");
+      if (!text) continue;
+
+      const pages = extractPageTextsFromMergedText(text);
+      if (!pages.length) continue;
+      result.set(document.id, pages);
+    }
+  } catch (error) {
+    console.warn("loadRepairPageTextsForDocuments extractedText fallback failed:", error);
+  }
+
+  return result;
 }
 
 function getSupportPageTarget(title: string): SupportPageOverrideTarget | null {
