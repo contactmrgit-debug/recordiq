@@ -50,6 +50,24 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         .filter((documentId): documentId is string => Boolean(documentId))
     );
 
+    const documentContexts = await prisma.document.findMany({
+      where: {
+        id: {
+          in: timelineEvents
+            .map((event) => event.documentId)
+            .filter((documentId): documentId is string => Boolean(documentId)),
+        },
+      },
+      select: {
+        id: true,
+        fileName: true,
+        recordType: true,
+      },
+    });
+    const documentContextById = new Map(
+      documentContexts.map((document) => [document.id, document])
+    );
+
     const rawEventsByDocument = new Map<
       string,
       {
@@ -104,21 +122,37 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         eventType: event.eventType || "other",
         sourcePage: event.sourcePage ?? null,
       };
-    });
+    }) as Array<{
+      date: string;
+      title: string;
+      description: string;
+      eventType: string;
+      sourcePage: number | null;
+    } | null>;
 
     const repairedForSummary = [...repairedTimelineEvents];
     for (const [documentId, items] of rawEventsByDocument.entries()) {
       const pageTexts = pageTextsByDocument.get(documentId) ?? [];
+      const context = documentContextById.get(documentId) ?? undefined;
       if (!pageTexts.length) continue;
 
       const repairedGroup = repairPersistedTimelineEvents(
         items.map((item) => item.event),
-        pageTexts
+        pageTexts,
+        context
       );
 
       for (let i = 0; i < items.length; i++) {
         const { index } = items[i];
         const repaired = repairedGroup[i];
+        if (
+          !repaired ||
+          (!repaired.title.trim() && !(repaired.description || "").trim())
+        ) {
+          repairedForSummary[index] = null;
+          continue;
+        }
+
         repairedForSummary[index] = {
           date: repaired.date,
           title: repaired.title || "",
@@ -129,8 +163,13 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       }
     }
 
+    const filteredSummaryEvents = repairedForSummary.filter(
+      (event): event is NonNullable<(typeof repairedForSummary)[number]> =>
+        Boolean(event)
+    );
+
     const summary = generateTimelineSummary(
-      repairedForSummary.map((event) => ({
+      filteredSummaryEvents.map((event) => ({
         date: event.date,
         title: event.title || "",
         description: event.description || "",
@@ -139,20 +178,31 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       }))
     );
 
+    const responseTimelineEvents = timelineEvents
+      .map((event, index) => {
+        const repaired = repairedForSummary[index];
+        if (!repaired) {
+          return null;
+        }
+
+        return {
+          ...event,
+          eventDate: event.eventDate,
+          title: repaired.title,
+          description: repaired.description,
+          eventType: repaired.eventType,
+          sourcePage: repaired.sourcePage,
+          reviewStatus: event.reviewStatus,
+          isHidden: event.isHidden,
+          physicianName: event.physicianName,
+          medicalFacility: event.medicalFacility,
+        };
+      })
+      .filter(Boolean);
+
     return NextResponse.json({
       success: true,
-      timelineEvents: repairedForSummary.map((event, index) => ({
-        ...timelineEvents[index],
-        eventDate: timelineEvents[index].eventDate,
-        title: event.title,
-        description: event.description,
-        eventType: event.eventType,
-        sourcePage: event.sourcePage,
-        reviewStatus: timelineEvents[index].reviewStatus,
-        isHidden: timelineEvents[index].isHidden,
-        physicianName: timelineEvents[index].physicianName,
-        medicalFacility: timelineEvents[index].medicalFacility,
-      })),
+      timelineEvents: responseTimelineEvents,
       summary,
     });
   } catch (error) {

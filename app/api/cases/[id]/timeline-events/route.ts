@@ -53,6 +53,24 @@ export async function GET(
         .filter((documentId): documentId is string => Boolean(documentId))
     );
 
+    const documentContexts = await prisma.document.findMany({
+      where: {
+        id: {
+          in: timelineEvents
+            .map((event) => event.documentId)
+            .filter((documentId): documentId is string => Boolean(documentId)),
+        },
+      },
+      select: {
+        id: true,
+        fileName: true,
+        recordType: true,
+      },
+    });
+    const documentContextById = new Map(
+      documentContexts.map((document) => [document.id, document])
+    );
+
     const rawEventsByDocument = new Map<
       string,
       {
@@ -113,22 +131,52 @@ export async function GET(
         physicianName: event.physicianName || null,
         medicalFacility: event.medicalFacility || null,
       };
-    });
+    }) as Array<
+      | {
+          id: string;
+          date: string;
+          title: string;
+          description: string;
+          eventType: string;
+          sourcePage: number | null;
+          reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
+          isHidden: boolean;
+          documentId: string | null;
+          physicianName: string | null;
+          medicalFacility: string | null;
+        }
+      | null
+    >;
 
     for (const [documentId, items] of rawEventsByDocument.entries()) {
       const pageTexts = pageTextsByDocument.get(documentId) ?? [];
+      const context = documentContextById.get(documentId) ?? undefined;
       if (!pageTexts.length) continue;
 
       const repairedGroup = repairPersistedTimelineEvents(
         items.map((item) => item.event),
-        pageTexts
+        pageTexts,
+        context
       );
 
       for (let i = 0; i < items.length; i++) {
         const { index } = items[i];
         const repaired = repairedGroup[i];
+        const current = timelineEventsResponse[index];
+        if (
+          !repaired ||
+          (!repaired.title.trim() && !(repaired.description || "").trim())
+        ) {
+          timelineEventsResponse[index] = null;
+          continue;
+        }
+
+        if (!current) {
+          continue;
+        }
+
         timelineEventsResponse[index] = {
-          ...timelineEventsResponse[index],
+          ...current,
           date: repaired.date,
           title: repaired.title || "",
           description: repaired.description || "",
@@ -142,11 +190,38 @@ export async function GET(
       }
     }
 
-    const summary = generateTimelineSummary(timelineEventsResponse);
+    const finalTimelineEvents = timelineEventsResponse.filter(
+      (event): event is NonNullable<(typeof timelineEventsResponse)[number]> =>
+        Boolean(event)
+    );
+
+    const summary = generateTimelineSummary(finalTimelineEvents);
+
+    const responseTimelineEvents = timelineEvents
+      .map((event, index) => {
+        const repaired = timelineEventsResponse[index];
+        if (!repaired) {
+          return null;
+        }
+
+        return {
+          ...event,
+          eventDate: event.eventDate,
+          title: repaired.title,
+          description: repaired.description,
+          eventType: repaired.eventType,
+          sourcePage: repaired.sourcePage,
+          reviewStatus: repaired.reviewStatus,
+          isHidden: repaired.isHidden,
+          physicianName: repaired.physicianName,
+          medicalFacility: repaired.medicalFacility,
+        };
+      })
+      .filter(Boolean);
 
     return NextResponse.json({
       success: true,
-      timelineEvents: timelineEventsResponse,
+      timelineEvents: responseTimelineEvents,
       summary,
     });
   } catch (error) {

@@ -6,6 +6,7 @@ import {
   repairPersistedTimelineEvent,
   repairPersistedTimelineEvents,
 } from "../lib/document-processing";
+import { generateTimelineSummary } from "../lib/timeline-summary";
 
 type PageText = {
   page: number;
@@ -177,5 +178,190 @@ assert.ok(
   /approximately six migraine headaches per week/i.test(repairedNeurology?.description || "")
 );
 assert.ok(/ongoing migraine management/i.test(repairedNeurology?.description || ""));
+
+const envisionFileName =
+  "Envision Imaging of Acadiana- Medical MR - 210618 Joshua James Bergeron.pdf";
+const envisionPageTexts = [
+  {
+    page: 1,
+    text:
+      "ENVISION IMAGING OF ACADIANA. MRI Cervical Spine WO. C2 marrow edema corresponding to prior fracture. Central disc protrusion at C3-C4 and C4-C5. Mild central canal stenosis at C5-C6 and C6-C7.",
+  },
+  {
+    page: 2,
+    text:
+      "ENVISION IMAGING OF ACADIANA. CT left shoulder WO contrast. Findings: subacute nondisplaced scapular fracture involving the upper body/spine.",
+  },
+];
+
+const envisionInsertRows = applyFinalTimelineInsertGuardrails(
+  [
+    {
+      caseId: "envision-case",
+      documentId: "envision-doc",
+      eventDate: new Date("2019-02-21T00:00:00.000Z"),
+      title: "Workplace head injury after pipe fell from derrick",
+      description: "Pipe fell from derrick and struck the patient at work.",
+      eventType: "incident",
+      sourcePage: 1,
+      reviewStatus: "PENDING",
+      isHidden: false,
+      physicianName: null,
+      medicalFacility: "Reagan Memorial Hospital",
+    },
+    {
+      caseId: "envision-case",
+      documentId: "envision-doc",
+      eventDate: new Date("2019-02-21T00:00:00.000Z"),
+      title: "CT head showed no acute intracranial injury",
+      description: "CT head showed no acute intracranial injury.",
+      eventType: "report",
+      sourcePage: 1,
+      reviewStatus: "PENDING",
+      isHidden: false,
+      physicianName: null,
+      medicalFacility: "Reagan Memorial Hospital",
+    },
+    {
+      caseId: "envision-case",
+      documentId: "envision-doc",
+      eventDate: new Date("2019-02-21T00:00:00.000Z"),
+      title: "Grouped medications",
+      description:
+        "Encounter medications documented included hydromorphone, ondansetron, ketorolac, and Tdap.",
+      eventType: "treatment",
+      sourcePage: 1,
+      reviewStatus: "PENDING",
+      isHidden: false,
+      physicianName: null,
+      medicalFacility: "Reagan Memorial Hospital",
+    },
+    {
+      caseId: "envision-case",
+      documentId: "envision-doc",
+      eventDate: new Date("2019-02-21T00:00:00.000Z"),
+      title: "MRI Cervical Spine WO",
+      description:
+        "C2 marrow edema corresponding to prior fracture. Central disc protrusion at C3-C4 and C4-C5.",
+      eventType: "imaging",
+      sourcePage: 1,
+      reviewStatus: "PENDING",
+      isHidden: false,
+      physicianName: null,
+      medicalFacility: null,
+    },
+    {
+      caseId: "envision-case",
+      documentId: "envision-doc",
+      eventDate: new Date("2019-02-21T00:00:00.000Z"),
+      title: "CT left shoulder WO contrast",
+      description:
+        "Subacute nondisplaced scapular fracture involving the upper body/spine.",
+      eventType: "imaging",
+      sourcePage: 2,
+      reviewStatus: "PENDING",
+      isHidden: false,
+      physicianName: null,
+      medicalFacility: null,
+    },
+  ] as any,
+  envisionPageTexts as any,
+  envisionFileName
+);
+
+assert(
+  !envisionInsertRows.some((event) =>
+    /workplace head injury|ct head showed no acute intracranial injury|grouped medications/i.test(
+      event.title
+    )
+  ),
+  "Envision packet should not keep Reagan Memorial trauma rows"
+);
+assert(
+  envisionInsertRows.some((event) => /MRI Cervical Spine WO/i.test(event.title)),
+  "Envision packet should retain the cervical MRI"
+);
+assert(
+  envisionInsertRows.some((event) => /CT left shoulder WO contrast/i.test(event.title)),
+  "Envision packet should retain the shoulder CT"
+);
+
+const repairedEnvisionPersisted = repairPersistedTimelineEvents(
+  [
+    {
+      date: "2019-02-21",
+      title: "Workplace head injury after pipe fell from derrick",
+      description: "Pipe fell from derrick and struck the patient at work.",
+      eventType: "incident",
+      sourcePage: 1,
+    },
+    {
+      date: "2019-02-21",
+      title: "CT head showed no acute intracranial injury",
+      description: "CT head showed no acute intracranial injury.",
+      eventType: "report",
+      sourcePage: 1,
+    },
+    {
+      date: "2019-02-21",
+      title: "MRI Cervical Spine WO",
+      description:
+        "C2 marrow edema corresponding to prior fracture. Central disc protrusion at C3-C4 and C4-C5.",
+      eventType: "imaging",
+      sourcePage: 1,
+    },
+    {
+      date: "2019-02-21",
+      title: "CT left shoulder WO contrast",
+      description:
+        "Subacute nondisplaced scapular fracture involving the upper body/spine.",
+      eventType: "imaging",
+      sourcePage: 2,
+    },
+  ],
+  envisionPageTexts as any,
+  {
+    fileName: envisionFileName,
+    recordType: "IMAGING" as any,
+  }
+);
+
+const retainedEnvisionPersisted = repairedEnvisionPersisted.filter((event) =>
+  Boolean(event.title.trim() || (event.description || "").trim())
+);
+const envisionSummary = generateTimelineSummary(
+  retainedEnvisionPersisted.map((event) => ({
+    date: event.date,
+    title: event.title,
+    description: event.description,
+    eventType: event.eventType,
+    sourcePage: event.sourcePage,
+  }))
+);
+
+assert(
+  !retainedEnvisionPersisted.some((event) =>
+    /workplace head injury|ct head showed no acute intracranial injury/i.test(event.title)
+  ),
+  "Envision persisted repair should drop Reagan Memorial trauma rows"
+);
+assert(
+  retainedEnvisionPersisted.some((event) => /MRI Cervical Spine WO/i.test(event.title)),
+  "Envision persisted repair should retain the cervical MRI"
+);
+assert(
+  retainedEnvisionPersisted.some((event) => /CT left shoulder WO contrast/i.test(event.title)),
+  "Envision persisted repair should retain the shoulder CT"
+);
+assert(
+  envisionSummary.keyFindings.length > 0,
+  "Envision summary should include at least one imaging-related finding"
+);
+assert(
+  !/reagan memorial hospital|workplace head injury|grouped medications/i.test(
+    `${envisionSummary.caseSummary} ${envisionSummary.keyFindings.join(" ")}`
+  ),
+  "Envision summary should not include Reagan Memorial trauma contamination"
+);
 
 console.log("final-insert-guardrail test passed");

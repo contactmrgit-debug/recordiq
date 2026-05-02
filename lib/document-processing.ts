@@ -1346,13 +1346,18 @@ export function applyFinalTimelineInsertGuardrails(
   pageTexts: PdfChunkPageText[],
   documentFileName?: string | null
 ): TimelineEventInsertRow[] {
+  const envisionContext = isEnvisionImagingPacketContext(
+    { fileName: documentFileName },
+    pageTexts
+  );
   const normalizedEvents = timelineEvents.map((event) =>
     forceLateEndocrineDateOverrides(event, documentFileName)
   );
 
   return normalizedEvents
     .filter((event) => !shouldDropForbiddenMedicationListInsertRow(event))
-    .filter((event) => !shouldDropUnsupportedEndocrineInsertRow(event, pageTexts));
+    .filter((event) => !shouldDropUnsupportedEndocrineInsertRow(event, pageTexts))
+    .filter((event) => !envisionContext || !shouldDropCrossPacketTraumaInsertRow(event, { fileName: documentFileName }));
 }
 
 async function replaceDocumentTimelineEvents(
@@ -1440,6 +1445,11 @@ type RepairPageTextRow = {
   documentId: string;
   page: number;
   text: string;
+};
+
+type RepairDocumentContext = {
+  fileName?: string | null;
+  recordType?: RecordType | null;
 };
 
 const SUPPORT_PAGE_OVERRIDE_TARGETS: SupportPageOverrideTarget[] = [
@@ -1647,6 +1657,47 @@ function getBestSupportPage(
   return best;
 }
 
+function isEnvisionImagingPacketContext(
+  context?: RepairDocumentContext,
+  pageTexts: PdfChunkPageText[] = []
+): boolean {
+  const combined = normalizeSearchText(
+    [
+      context?.fileName || "",
+      context?.recordType || "",
+      ...pageTexts.slice(0, 4).map((pageText) => pageText.text),
+    ].join(" ")
+  );
+
+  return (
+    combined.includes("envision imaging") ||
+    combined.includes("envision imaging of acadiana")
+  );
+}
+
+const ENVISION_TRAUMA_BLOCK_KEYS = new Set([
+  "workplace-head-injury",
+  "er-presentation",
+  "head-face-injury-findings",
+  "ct-head-result",
+  "cta-neck-vascular-concern",
+  "grouped-medications",
+  "grouped-labs",
+  "transfer-to-shannon",
+]);
+
+function shouldDropCrossPacketTraumaEvent(
+  event: RawTimelineEvent,
+  context?: RepairDocumentContext,
+  pageTexts: PdfChunkPageText[] = []
+): boolean {
+  if (!isEnvisionImagingPacketContext(context, pageTexts)) {
+    return false;
+  }
+
+  return ENVISION_TRAUMA_BLOCK_KEYS.has(finalEventKey(event));
+}
+
 function applySupportPageOverrides(
   events: RawTimelineEvent[],
   pageTexts: PdfChunkPageText[]
@@ -1679,7 +1730,15 @@ function applySupportPageOverrides(
   });
 }
 
-function inferDocumentTraumaDate(events: RawTimelineEvent[]): string | null {
+function inferDocumentTraumaDate(
+  events: RawTimelineEvent[],
+  context?: RepairDocumentContext,
+  pageTexts: PdfChunkPageText[] = []
+): string | null {
+  if (isEnvisionImagingPacketContext(context, pageTexts)) {
+    return null;
+  }
+
   const joined = events
     .map((event) =>
       normalizeWhitespace(`${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`)
@@ -1709,12 +1768,22 @@ function inferDocumentTraumaDate(events: RawTimelineEvent[]): string | null {
 export function repairPersistedTimelineEvent(
   event: RawTimelineEvent,
   pageTexts: PdfChunkPageText[] = [],
-  sharedTraumaDate?: string | null
+  sharedTraumaDate?: string | null,
+  context?: RepairDocumentContext
 ): RawTimelineEvent {
   const title = normalizeWhitespace(event.title).toLowerCase();
   const combined = normalizeWhitespace(
     `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
   );
+
+  if (shouldDropCrossPacketTraumaEvent(event, context, pageTexts)) {
+    return {
+      ...event,
+      title: "",
+      description: "",
+      eventType: "",
+    };
+  }
 
   let repaired: RawTimelineEvent = { ...event };
 
@@ -1728,6 +1797,7 @@ export function repairPersistedTimelineEvent(
 
   if (
     sharedTraumaDate &&
+    !isEnvisionImagingPacketContext(context, pageTexts) &&
     /\b(workplace head injury|ct head|head laceration|periorbital swelling|c2 fracture|cta neck|scapular fracture)\b/.test(
       combined.toLowerCase()
     )
@@ -1745,17 +1815,45 @@ export function repairPersistedTimelineEvent(
     }
   }
 
+  if (isEnvisionImagingPacketContext(context, pageTexts)) {
+    repaired = {
+      ...repaired,
+      medicalFacility:
+        repaired.medicalFacility &&
+        /envision imaging|envision/i.test(normalizeWhitespace(repaired.medicalFacility))
+          ? repaired.medicalFacility
+          : null,
+    };
+  }
+
   return repaired;
 }
 
 export function repairPersistedTimelineEvents(
   events: RawTimelineEvent[],
-  pageTexts: PdfChunkPageText[] = []
+  pageTexts: PdfChunkPageText[] = [],
+  context?: RepairDocumentContext
 ): RawTimelineEvent[] {
-  const sharedTraumaDate = inferDocumentTraumaDate(events);
+  const sharedTraumaDate = inferDocumentTraumaDate(events, context, pageTexts);
   return events.map((event) =>
-    repairPersistedTimelineEvent(event, pageTexts, sharedTraumaDate)
+    repairPersistedTimelineEvent(event, pageTexts, sharedTraumaDate, context)
   );
+}
+
+function shouldDropCrossPacketTraumaInsertRow(
+  event: TimelineEventInsertRow,
+  context?: RepairDocumentContext
+): boolean {
+  if (!isEnvisionImagingPacketContext(context)) {
+    return false;
+  }
+
+  const key = finalEventKey({
+    title: event.title,
+    description: event.description || "",
+  } as RawTimelineEvent);
+
+  return ENVISION_TRAUMA_BLOCK_KEYS.has(key);
 }
 
 export function parseRecordType(value: unknown): RecordType | null {
@@ -1932,43 +2030,56 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
   };
 });
 
-const polishedFinalCandidateEvents = polishFinalCandidateEvents(
-  normalizedFinalCandidateEvents
-);
+  const polishedFinalCandidateEvents = polishFinalCandidateEvents(
+    normalizedFinalCandidateEvents
+  );
 
-const supportOverriddenFinalCandidateEvents = applySupportPageOverrides(
-  polishedFinalCandidateEvents,
-  allPageTexts
-);
+  const supportOverriddenFinalCandidateEvents = applySupportPageOverrides(
+    polishedFinalCandidateEvents,
+    allPageTexts
+  );
 
-const repairedFinalCandidateEvents = supportOverriddenFinalCandidateEvents.map((event) =>
-  repairPersistedTimelineEvent(event, allPageTexts)
-);
-
-const providerBackfilledFinalCandidateEvents = repairedFinalCandidateEvents.map((event) => {
-  const title = `${event.title || ""} ${event.description || ""}`.toLowerCase();
-
-  const physicianName =
-    title.includes("ct head") ||
-    title.includes("c2 fracture") ||
-    title.includes("cta neck") ||
-    title.includes("scapular fracture")
-      ? "Sarah Orrin MD"
-      : title.includes("transferred to shannon")
-        ? "Dr. Vretis"
-        : title.includes("er presentation") ||
-            title.includes("head laceration") ||
-            title.includes("periorbital")
-          ? "Oliva King FNP-C"
-          : event.physicianName || event.providerName || null;
-
-  return {
-    ...event,
-    physicianName,
-    providerName: physicianName,
-    medicalFacility: event.medicalFacility || "Reagan Memorial Hospital",
+  const repairContext = {
+    fileName: document.fileName,
+    recordType: document.recordType,
   };
-});
+  const isEnvisionPacket = isEnvisionImagingPacketContext(repairContext, allPageTexts);
+
+  const repairedFinalCandidateEvents = supportOverriddenFinalCandidateEvents
+    .map((event) => repairPersistedTimelineEvent(event, allPageTexts, null, repairContext))
+    .filter(
+      (event) =>
+        Boolean(normalizeWhitespace(event.title) || normalizeWhitespace(event.description))
+    );
+
+  const providerBackfilledFinalCandidateEvents = repairedFinalCandidateEvents.map((event) => {
+    const title = `${event.title || ""} ${event.description || ""}`.toLowerCase();
+    const shouldBackfillTraumaMetadata = !isEnvisionPacket;
+
+    const physicianName =
+      shouldBackfillTraumaMetadata &&
+      (title.includes("ct head") ||
+      title.includes("c2 fracture") ||
+      title.includes("cta neck") ||
+      title.includes("scapular fracture"))
+        ? "Sarah Orrin MD"
+        : shouldBackfillTraumaMetadata && title.includes("transferred to shannon")
+          ? "Dr. Vretis"
+          : shouldBackfillTraumaMetadata &&
+              (title.includes("er presentation") ||
+                title.includes("head laceration") ||
+                title.includes("periorbital"))
+            ? "Oliva King FNP-C"
+            : event.physicianName || event.providerName || null;
+
+    return {
+      ...event,
+      physicianName,
+      providerName: physicianName,
+      medicalFacility:
+        event.medicalFacility || (shouldBackfillTraumaMetadata ? "Reagan Memorial Hospital" : null),
+    };
+  });
 
 const finalTimelineEvents = toTimelineEventInsertRows(
   {
