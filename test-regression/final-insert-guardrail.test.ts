@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { applyFinalTimelineInsertGuardrails } from "../lib/document-processing";
+import {
+  applyFinalTimelineInsertGuardrails,
+  repairPersistedTimelineEvent,
+  repairPersistedTimelineEvents,
+} from "../lib/document-processing";
 
 type PageText = {
   page: number;
@@ -106,5 +110,72 @@ for (const forbiddenTitle of [
     `Forbidden endocrine event survived final insert guardrail: ${forbiddenTitle}`
   );
 }
+
+const repairedTimelinePageTexts = [
+  {
+    page: 2,
+    text: "DAVID WEIR / BERGERON legal cover sheet. Certificate of service. Printed 12/04/2021.",
+  },
+  {
+    page: 3,
+    text: "DATE OF SERVICE: 02/02/2019. In the emergency department, hydromorphone, ondansetron, ketorolac, and tdap were administered.",
+  },
+];
+
+const repairedGroupedMedications = repairPersistedTimelineEvent(
+  {
+    date: "2019-02-02",
+    title: "Grouped medications",
+    description: "Encounter medications documented included hydromorphone, ondansetron, ketorolac, and tdap.",
+    eventType: "treatment",
+    sourcePage: 2,
+    sourceExcerpt: "DAVID WEIR / BERGERON legal cover sheet. Certificate of service.",
+  },
+  repairedTimelinePageTexts as any
+);
+
+assert.equal(repairedGroupedMedications.sourcePage, 3);
+
+const repairedBatch = repairPersistedTimelineEvents(
+  [
+    {
+      date: "2019-02-02",
+      title: "Workplace head injury after pipe fell from derrick",
+      description: "At work on a drill rig, a pipe fell from the derrick and struck the patient on the head.",
+      eventType: "incident",
+      sourcePage: 2,
+    },
+    {
+      date: "2021-07-20",
+      title: "CT head showed no acute intracranial injury",
+      description: "CT head showed no acute intracranial injury with left periorbital soft tissue swelling.",
+      eventType: "report",
+      sourcePage: 2,
+    },
+    {
+      date: "2022-03-08",
+      title: "Neurology follow-up with migraine medication changes",
+      description:
+        "3/08/2022, at which time he reported that he was experiencing approximately six migraine headaches per week You recommended that Mr. Bergeron see you, (neurologist) twice per year for 10 years at which time his care needs would",
+      eventType: "appointment",
+      sourcePage: 8,
+    },
+  ],
+  repairedTimelinePageTexts as any
+);
+
+const repairedTrauma = repairedBatch.find(
+  (event) => event.title === "CT head showed no acute intracranial injury"
+);
+
+const repairedNeurology = repairedBatch.find(
+  (event) => event.title === "Neurology follow-up with migraine medication changes"
+);
+
+assert.equal(repairedTrauma?.date, "2019-02-02");
+assert.ok(
+  /approximately six migraine headaches per week/i.test(repairedNeurology?.description || "")
+);
+assert.ok(/ongoing migraine management/i.test(repairedNeurology?.description || ""));
 
 console.log("final-insert-guardrail test passed");
