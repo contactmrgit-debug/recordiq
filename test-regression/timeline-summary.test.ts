@@ -422,6 +422,29 @@ function run() {
   }
 
   {
+    const result = generateTimelineSummary(createDavidWeirCleanupTimeline());
+    assert.ok(
+      /C2 cervical spine fractures with extension through the right vertebral foramen/i.test(
+        result.caseSummary
+      )
+    );
+    assert.ok(
+      /nondisplaced left scapular fracture/i.test(result.caseSummary),
+      "Envision-style summary should retain the scapular fracture"
+    );
+    assert.ok(
+      result.keyFindings.some((bullet) =>
+        /C2 cervical spine fractures with extension through the right vertebral foramen/i.test(
+          bullet
+        )
+      )
+    );
+    assert.ok(
+      result.keyFindings.some((bullet) => /nondisplaced left scapular fracture/i.test(bullet))
+    );
+  }
+
+  {
     const result = generateTimelineSummary(createBoilerplateMixedTimeline());
     assert.ok(result.keyFindings.length <= 5);
     const highValueHits = result.keyFindings.filter((bullet) =>

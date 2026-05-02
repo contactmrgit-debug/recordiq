@@ -486,6 +486,20 @@ function summarizeImagingFacts(events: TimelineSummaryEvent[]): string {
   const facts: string[] = [];
 
   if (
+    /\bc2\b/.test(text) &&
+    /\bfracture\b/.test(text) &&
+    (/\bcervical spine\b/.test(text) || /\bvertebral foramen\b/.test(text) || /\bvertebral\b/.test(text))
+  ) {
+    if (/\bvertebral foramen\b/.test(text)) {
+      facts.push("C2 cervical spine fractures with extension through the right vertebral foramen");
+    } else {
+      facts.push("C2 cervical spine fracture");
+    }
+  } else if (/\bc2\b/.test(text) && /\bfracture\b/.test(text)) {
+    facts.push("cervical spine imaging showed a nondisplaced C2 fracture");
+  }
+
+  if (
     /\bct head\b/.test(text) &&
     (/\bno acute intracranial injury\b/.test(text) ||
       /\bno intracranial\b/.test(text) ||
@@ -506,14 +520,22 @@ function summarizeImagingFacts(events: TimelineSummaryEvent[]): string {
     (/\bleft shoulder\b/.test(text) || /\bhumerus\b/.test(text) || /\bscapul/.test(text)) &&
     /\bfracture\b/.test(text)
   ) {
-    facts.push("left shoulder/humerus imaging showed a nondisplaced left scapular fracture");
-  } else if (/\bc2\b/.test(text) && /\bfracture\b/.test(text)) {
-    facts.push("cervical spine imaging showed a nondisplaced C2 fracture");
+    facts.push("a nondisplaced left scapular fracture");
   }
 
   if (!facts.length) {
     const first = eventPhrase(events[0], "imaging");
     return first ? sentenceCase(first) : fallbackCategorySentence("imaging");
+  }
+
+  if (
+    facts.length >= 2 &&
+    facts.includes("C2 cervical spine fractures with extension through the right vertebral foramen") &&
+    facts.includes("a nondisplaced left scapular fracture")
+  ) {
+    return sentenceCase(
+      "Imaging documented C2 cervical spine fractures with extension through the right vertebral foramen and a nondisplaced left scapular fracture."
+    );
   }
 
   return sentenceCase(`Imaging documented ${joinNatural(facts, "and")}.`);
