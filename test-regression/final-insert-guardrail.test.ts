@@ -6,6 +6,7 @@ import {
   repairPersistedTimelineEvent,
   repairPersistedTimelineEvents,
 } from "../lib/document-processing";
+import { cleanTimelineEvents } from "../lib/timeline-cleanup";
 import { generateTimelineSummary } from "../lib/timeline-summary";
 
 type PageText = {
@@ -384,5 +385,31 @@ assert(
   ),
   "Envision shoulder event should use the shoulder report signer"
 );
+
+const reaganCountyEmsEvents = cleanTimelineEvents([
+  {
+    date: "2022-08-29",
+    title: "Reagan County Fire & EMS transport to Reagan Memorial Hospital",
+    description:
+      "Crew Member: Lou Carson. Primary Patient Caregiver: Lou Carson. Transport destination: Reagan Memorial Hospital.",
+    eventType: "treatment",
+    sourcePage: 1,
+    providerName: "Patient Care Paragraph Text",
+    providerRole: "Paragraph Text",
+    physicianName: "ZOLL Cloud",
+    physicianRole: "Signature Graphic",
+    medicalFacility: "Reagan County Fire & EMS",
+    sourceExcerpt:
+      "Patient Care Paragraph Text. Crew Member: Lou Carson. EMS Primary Care Provider: Lou Carson.",
+  } as any,
+]);
+
+const reaganCountyEmsEvent = reaganCountyEmsEvents.find((event) =>
+  /reagan county fire & ems transport/i.test(event.title)
+);
+
+assert.equal(reaganCountyEmsEvent?.providerName, "Lou Carson");
+assert.equal(reaganCountyEmsEvent?.medicalFacility, "Reagan County Fire & EMS");
+assert.equal(reaganCountyEmsEvent?.physicianName, null);
 
 console.log("final-insert-guardrail test passed");

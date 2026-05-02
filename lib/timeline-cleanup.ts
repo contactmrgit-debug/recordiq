@@ -1002,6 +1002,15 @@ function isGarbageProviderName(value?: string | null): boolean {
     "provider",
     "unknown",
     "not identified",
+    "patient care paragraph text",
+    "paragraph text",
+    "zoll cloud",
+    "signature graphic",
+    "signature",
+    "patient care",
+    "care paragraph text",
+    "cloud",
+    "graphic",
   ]);
 
   if (badExact.has(raw)) return true;
@@ -1044,6 +1053,50 @@ function normalizeClinicianName(value?: string | null): string | null {
 
 function cleanProviderName(value?: string | null): string | null {
   return normalizeClinicianName(value);
+}
+
+function isLikelyEmsRecord(event: RawTimelineEvent): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""} ${event.providerName || ""} ${event.physicianName || ""} ${event.medicalFacility || ""}`
+  );
+
+  return /\b(reagan county fire|reagan county fire & ems|ambulance|ems|zoll cloud|patient care paragraph text|paragraph text|signature graphic|crew member|primary patient caregiver|ems primary care provider|printed name)\b/.test(
+    combined
+  );
+}
+
+function extractEmsProviderName(event: RawTimelineEvent): string | null {
+  const supportText = normalizeWhitespace(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+  );
+  if (!supportText) return null;
+
+  const patterns = [
+    /\b(?:crew member|primary patient caregiver|ems primary care provider|printed name)\b\s*[:\-]?\s*([A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){1,4})/i,
+    /\b(?:crew member|primary patient caregiver|ems primary care provider|printed name)\b\s*[:\-]?\s*(Lou Carson)\b/i,
+    /\b(Lou Carson)\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = supportText.match(pattern);
+    const candidate = match?.[1];
+    if (!candidate) continue;
+
+    const cleaned = normalizeClinicianName(
+      candidate
+        .split(/[.;,]/)[0]
+        .replace(
+          /\b(?:primary patient caregiver|ems primary care provider|printed name|crew member|transport destination|destination)\b.*$/i,
+          ""
+        )
+        .trim()
+    );
+    if (cleaned) {
+      return cleaned;
+    }
+  }
+
+  return null;
 }
 
 function cleanProviderRole(value?: string | null): string | null {
@@ -3245,6 +3298,20 @@ function normalizeEvents(
       cleanedPhysicianRole = null;
     }
 
+    if (isLikelyEmsRecord(event)) {
+      const emsProviderName = extractEmsProviderName(event);
+
+      if (!cleanedProviderName && emsProviderName) {
+        cleanedProviderName = emsProviderName;
+        cleanedProviderRole = cleanedProviderRole || "EMS";
+      }
+
+      if (!cleanedPhysicianNameRaw && emsProviderName) {
+        cleanedPhysicianNameRaw = emsProviderName;
+        cleanedPhysicianRole = cleanedPhysicianRole || "EMS";
+      }
+    }
+
     const hasExplicitPhysicianCue =
       /\b(electronically signed by|signed by|accepting|author|emergency physician record)\b/.test(
         supportText
@@ -3265,6 +3332,10 @@ function normalizeEvents(
 
     if (isTransferTreatment && cleanedPhysicianNameRaw && !cleanedPhysicianRole) {
       cleanedPhysicianRole = "Physician";
+    }
+
+    if (isLikelyEmsRecord(event) && !cleanedPhysicianRole && cleanedPhysicianNameRaw) {
+      cleanedPhysicianRole = "EMS";
     }
 
     let cleanedPhysicianName =
