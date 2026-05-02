@@ -190,7 +190,7 @@ export async function GET(
           reviewStatus: timelineEvents[index].reviewStatus || "PENDING",
           isHidden: repaired.isHidden ?? false,
           physicianName: repaired.physicianName || null,
-          medicalFacility: repaired.medicalFacility || null,
+          medicalFacility: repaired.medicalFacility || current.medicalFacility || null,
         };
       }
     }

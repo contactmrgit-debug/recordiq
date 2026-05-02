@@ -331,28 +331,32 @@ function groupText(events: TimelineSummaryEvent[]): string {
   );
 }
 
+function normalizePacketLabel(value?: string | null): string {
+  return normalizeText(value)
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function hasProjectReEntryPacket(events: TimelineSummaryEvent[]): boolean {
   return events.some((event) =>
-    /project reentry/i.test(
-      normalizeText(`${event.documentName || ""} ${event.medicalFacility || ""}`)
-    )
+    /project\s*re\s*entry/i.test(normalizePacketLabel(event.documentName || ""))
+  );
+}
+
+function hasReaganMemorialFacility(events: TimelineSummaryEvent[]): boolean {
+  return events.some((event) =>
+    /reagan memorial/i.test(normalizeText(event.medicalFacility || ""))
   );
 }
 
 function buildPacketPrefix(events: TimelineSummaryEvent[]): string | null {
-  if (!hasProjectReEntryPacket(events)) {
+  if (!hasProjectReEntryPacket(events) || !hasReaganMemorialFacility(events)) {
     return null;
   }
 
-  const hasReaganFacility = events.some((event) =>
-    /reagan memorial/i.test(normalizeText(event.medicalFacility || ""))
-  );
-
-  if (hasReaganFacility) {
-    return "Records include embedded Reagan Memorial records from the Project ReEntry packet.";
-  }
-
-  return "Records include records from the Project ReEntry packet.";
+  return "Records include embedded Reagan Memorial records from the Project ReEntry packet.";
 }
 
 function eventPhrase(event: TimelineSummaryEvent, category: SummaryCategory): string {

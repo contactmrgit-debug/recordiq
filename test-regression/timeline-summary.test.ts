@@ -447,8 +447,12 @@ function run() {
   {
     const projectReEntryEvents = createDavidWeirCleanupTimeline().map((event) => ({
       ...event,
-      documentName: "Project ReEntry packet.pdf",
+      documentId: "doc-project-reentry",
+      documentName: "Project_ReEntry_-_Medical.pdf",
+      physicianName: "Sarah Orrin MD",
       medicalFacility: "Reagan Memorial Hospital",
+      reviewStatus: "PENDING",
+      isHidden: false,
     }));
     const result = generateTimelineSummary(projectReEntryEvents as any);
     assert.ok(/^Records include/i.test(result.caseSummary));

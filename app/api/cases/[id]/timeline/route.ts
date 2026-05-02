@@ -132,6 +132,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       eventType: string;
       sourcePage: number | null;
       documentName: string | null;
+      medicalFacility: string | null;
     } | null>;
 
     const repairedForSummary = [...repairedTimelineEvents];
@@ -165,6 +166,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           eventType: repaired.eventType || "other",
           sourcePage: repaired.sourcePage ?? null,
           documentName: sourcePacketName,
+          medicalFacility: repaired.medicalFacility || timelineEvents[index].medicalFacility || null,
         };
       }
     }
@@ -182,6 +184,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         eventType: event.eventType || "other",
         sourcePage: event.sourcePage ?? null,
         documentName: event.documentName || null,
+        medicalFacility: event.medicalFacility || null,
       }))
     );
 
