@@ -808,7 +808,9 @@ const TELEPHONE_MIGRAINE_LEGIT_PATTERNS: RegExp[] = [
   /\bamitriptyline\b/,
 ];
 
-function isParentFatigueContaminationEvent(event: RawTimelineEvent): boolean {
+function isParentFatiguePediatricContaminationEvent(
+  event: RawTimelineEvent
+): boolean {
   const title = normalizeText(event.title || "");
   const description = normalizeText(event.description || "");
   const excerpt = normalizeText(event.sourceExcerpt || "");
@@ -2954,6 +2956,10 @@ function improveDescription(event: RawTimelineEvent): string | null {
   const physician = normalizeText(event.physicianName);
   const facility = normalizeText(event.medicalFacility);
 
+  if (isParentFatiguePediatricContaminationEvent(event)) {
+    return null;
+  }
+
   if (
     /\bdallas endocrinology\b/.test(combined) &&
     /\bresults? follow[- ]?up\b/.test(combined)
@@ -2990,13 +2996,6 @@ function improveDescription(event: RawTimelineEvent): string | null {
 
   if (/\bacth\b/.test(combined) && /\brenin\b/.test(combined)) {
     return "ACTH remained high after stress dosing and renin was elevated.";
-  }
-
-  if (
-    /\b(fatigue|tired|color changes|dry lips|thirst)\b/.test(combined) &&
-    /\b(parent|mother|nursing)\b/.test(combined)
-  ) {
-    return "Parent reported fatigue, color changes, dry lips, and thirst.";
   }
 
   if (
@@ -3878,7 +3877,7 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
 
     if (event.isHidden) return false;
 
-    if (isParentFatigueContaminationEvent(event)) {
+    if (isParentFatiguePediatricContaminationEvent(event)) {
       return false;
     }
 

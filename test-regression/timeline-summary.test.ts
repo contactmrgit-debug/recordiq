@@ -400,14 +400,24 @@ function run() {
     const cleanedEvents = cleanTimelineEvents(createDavidWeirCleanupTimeline() as any);
     assert.ok(
       !cleanedEvents.some((event) =>
-        /parent reported fatigue, color changes, dry lips, and thirst/i.test(event.title || "")
+        /parent reported fatigue|color changes, dry lips, and thirst|dry lips|thirst/i.test(
+          `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+        )
       )
     );
 
     const result = generateTimelineSummary(cleanedEvents);
-    assert.ok(!/fatigue, color changes, dry lips, and thirst/i.test(result.caseSummary));
     assert.ok(
-      !result.keyFindings.some((bullet) => /fatigue, color changes, dry lips, and thirst/i.test(bullet))
+      !/parent reported fatigue|color changes, dry lips, and thirst|dry lips|thirst/i.test(
+        result.caseSummary
+      )
+    );
+    assert.ok(
+      !result.keyFindings.some((bullet) =>
+        /parent reported fatigue|color changes, dry lips, and thirst|dry lips|thirst/i.test(
+          bullet
+        )
+      )
     );
   }
 
