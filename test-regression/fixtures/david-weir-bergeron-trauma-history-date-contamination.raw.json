@@ -18,9 +18,9 @@
   {
     "date": "2022-03-08",
     "title": "Telephone follow-up for persistent migraines",
-    "description": "OCR garble and persistent migraines noted, but this remains a telephone follow-up note rather than a historical trauma event.",
+    "description": "OCR garble and background history text leaked into the note. Raised in Picayune, Mississippi. Completed the 12th grade and obtained a GED. The encounter still mentions persistent migraines, but the background-history material is not a valid timeline event.",
     "eventType": "appointment",
     "sourcePage": 8,
-    "sourceExcerpt": "DATE OF SERVICE: 03/08/2022. Telephone follow-up for persistent migraines and postconcussive syndrome. OCR garble in the surrounding text."
+    "sourceExcerpt": "DATE OF SERVICE: 03/08/2022. Telephone follow-up for persistent migraines and postconcussive syndrome. Raised in Picayune, Mississippi. Completed the 12th grade and obtained a GED. processing yr; aridTiis..."
   }
 ]

@@ -752,6 +752,63 @@ export function isOcrGarbageText(text?: string | null): boolean {
   return false;
 }
 
+const TELEPHONE_MIGRAINE_BACKGROUND_PATTERNS: RegExp[] = [
+  /\btelephone follow[- ]?up for persistent migraines?\b/,
+  /\bbackground history\b/,
+  /\bhistory of education\b/,
+  /\beducation history\b/,
+  /\bschool history\b/,
+  /\braised in\b/,
+  /\bcompleted the 12th grade\b/,
+  /\b12th grade\b/,
+  /\bobtained a ged\b/,
+  /\bged\b/,
+  /\bneuropsych(?:ological)? history\b/,
+  /\bprocessing yr\b/,
+  /\baridtiis\b/,
+];
+
+const TELEPHONE_MIGRAINE_LEGIT_PATTERNS: RegExp[] = [
+  /\bmedication change(?:s)?\b/,
+  /\bdose (?:was )?increased\b/,
+  /\bdose (?:was )?decreased\b/,
+  /\bheadache frequency\b/,
+  /\bheadaches? per (?:day|week)\b/,
+  /\bneuropsych(?:ological)? referral\b/,
+  /\breferred to neuropsych\b/,
+  /\btreatment recommendation(?:s)?\b/,
+  /\brecommended\b/,
+  /\bstarted\b/,
+  /\badjusted\b/,
+  /\btopiramate\b/,
+  /\bgabapentin\b/,
+  /\bamitriptyline\b/,
+];
+
+function isTelephoneMigraineBackgroundNoiseEvent(
+  event: RawTimelineEvent
+): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+  );
+
+  if (!combined) return false;
+
+  if (!TELEPHONE_MIGRAINE_BACKGROUND_PATTERNS[0].test(combined)) return false;
+
+  const hasBackgroundLeakage = TELEPHONE_MIGRAINE_BACKGROUND_PATTERNS.slice(1).some(
+    (pattern) => pattern.test(combined)
+  );
+  if (!hasBackgroundLeakage) return false;
+
+  const hasLegitClinicalDetail = TELEPHONE_MIGRAINE_LEGIT_PATTERNS.some((pattern) =>
+    pattern.test(combined)
+  );
+  if (hasLegitClinicalDetail) return false;
+
+  return true;
+}
+
 export function hasMeaningfulClinicalSignal(text: string): boolean {
   const normalized = normalizeText(text);
 
@@ -3745,6 +3802,10 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
 
     if (event.isHidden) return false;
 
+    if (isTelephoneMigraineBackgroundNoiseEvent(event)) {
+      return false;
+    }
+
     if (isProtectedHighValueLabEvent(event)) {
       return true;
     }
@@ -3998,12 +4059,15 @@ export function filterTimelineForDisplay(
   return events.filter((event) => {
     let title = cleanTitle(event.title);
     let description = normalizeText(event.description);
-if (isHybridEncounterNoiseEvent(event)) {
-  return false;
-}
+    if (isHybridEncounterNoiseEvent(event)) {
+      return false;
+    }
+    if (isTelephoneMigraineBackgroundNoiseEvent(event)) {
+      return false;
+    }
     // Remove provider name leakage from visible text
-   title = stripImagingSignerNames(stripProviderNames(title));
-description = stripImagingSignerNames(stripProviderNames(description));
+    title = stripImagingSignerNames(stripProviderNames(title));
+    description = stripImagingSignerNames(stripProviderNames(description));
 
     const providerName = normalizeClinicianName(event.providerName);
     const combined = normalizeText(

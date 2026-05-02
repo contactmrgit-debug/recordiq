@@ -1,15 +1,26 @@
 {
   "documentName": "david-weir-bergeron-trauma-history-date-contamination",
-  "minEvents": 3,
-  "maxEvents": 3,
+  "minEvents": 2,
+  "maxEvents": 2,
   "mustIncludeTitles": [
     "Workplace head injury after pipe fell from derrick",
-    "Neurology follow-up with migraine medication changes",
-    "Telephone follow-up for persistent migraines"
+    "Neurology follow-up with migraine medication changes"
   ],
   "mustIncludeEventTypes": [
     "incident",
     "appointment"
+  ],
+  "mustNotIncludeEvents": [
+    {
+      "title": "Telephone follow-up for persistent migraines",
+      "date": "2022-03-08",
+      "sourcePage": 8,
+      "descriptionIncludes": [
+        "Raised in Picayune, Mississippi",
+        "completed the 12th grade",
+        "obtained a GED"
+      ]
+    }
   ],
   "expectedNoDuplicateNormalizedKeys": true,
   "dateRules": [
@@ -23,11 +34,10 @@
     },
     {
       "date": "2022-03-08",
-      "minEvents": 2,
-      "maxEvents": 2,
+      "minEvents": 1,
+      "maxEvents": 1,
       "mustIncludeTitles": [
-        "Neurology follow-up with migraine medication changes",
-        "Telephone follow-up for persistent migraines"
+        "Neurology follow-up with migraine medication changes"
       ]
     }
   ],
@@ -39,11 +49,6 @@
     },
     {
       "title": "Neurology follow-up with migraine medication changes",
-      "sourcePage": 8,
-      "eventType": "appointment"
-    },
-    {
-      "title": "Telephone follow-up for persistent migraines",
       "sourcePage": 8,
       "eventType": "appointment"
     }

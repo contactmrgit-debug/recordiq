@@ -1,0 +1,103 @@
+{
+  "documentName": "david-weir-bergeron-date-authority",
+  "minEvents": 6,
+  "maxEvents": 6,
+  "expectedTitlesInOrder": [
+    "Workplace head injury after pipe fell from derrick",
+    "Neurology follow-up for postconcussive syndrome",
+    "Left C7 transforaminal epidural steroid injection",
+    "Hydrocortisone and fludrocortisone doses increased",
+    "Neurology follow-up with migraine medication changes",
+    "Telephone follow-up for persistent migraines"
+  ],
+  "mustIncludeTitles": [
+    "Workplace head injury after pipe fell from derrick",
+    "Neurology follow-up for postconcussive syndrome",
+    "Left C7 transforaminal epidural steroid injection",
+    "Hydrocortisone and fludrocortisone doses increased",
+    "Neurology follow-up with migraine medication changes",
+    "Telephone follow-up for persistent migraines"
+  ],
+  "mustIncludeEventTypes": [
+    "incident",
+    "appointment",
+    "treatment"
+  ],
+  "mustNotIncludeTitlePatterns": [
+    "affidavit|certification|legal cover sheet|fax|printed|export|current timestamp|order number"
+  ],
+  "mustNotIncludeDescriptionPatterns": [
+    "affidavit|certification|legal cover sheet|fax|printed|export|current timestamp|order number"
+  ],
+  "expectedNoDuplicateNormalizedKeys": true,
+  "dateRules": [
+    {
+      "date": "2019-02-02",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Workplace head injury after pipe fell from derrick"
+      ]
+    },
+    {
+      "date": "2021-05-24",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Neurology follow-up for postconcussive syndrome"
+      ]
+    },
+    {
+      "date": "2021-06-22",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Left C7 transforaminal epidural steroid injection"
+      ]
+    },
+    {
+      "date": "2021-08-22",
+      "minEvents": 2,
+      "maxEvents": 2,
+      "mustIncludeTitles": [
+        "Hydrocortisone and fludrocortisone doses increased",
+        "Neurology follow-up with migraine medication changes"
+      ]
+    },
+    {
+      "date": "2021-11-29",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Telephone follow-up for persistent migraines"
+      ]
+    }
+  ],
+  "eventAssertions": [
+    {
+      "title": "Workplace head injury after pipe fell from derrick",
+      "sourcePage": 2,
+      "eventType": "incident"
+    },
+    {
+      "title": "Neurology follow-up for postconcussive syndrome",
+      "sourcePage": 3,
+      "eventType": "appointment"
+    },
+    {
+      "title": "Left C7 transforaminal epidural steroid injection",
+      "sourcePage": 4,
+      "eventType": "treatment"
+    },
+    {
+      "title": "Neurology follow-up with migraine medication changes",
+      "sourcePage": 5,
+      "eventType": "appointment"
+    },
+    {
+      "title": "Telephone follow-up for persistent migraines",
+      "sourcePage": 6,
+      "eventType": "appointment"
+    }
+  ]
+}
