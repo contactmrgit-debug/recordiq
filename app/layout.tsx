@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RecordIQ",
-  description: "RecordIQ upload and timeline workspace",
+  title: "VeraChron",
+  description: "Turn complex records into verified timelines.",
 };
 
 export default function RootLayout({
