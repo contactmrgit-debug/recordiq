@@ -800,7 +800,7 @@ const activeDocument = useMemo(() => {
   getProviderRole
 );
 
-    const safeTitle = (caseData?.title || "recordiq-case")
+    const safeTitle = (caseData?.title || "verachron-case")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
@@ -926,7 +926,7 @@ Status: ${row.reviewStatus}
       <div className="flex justify-start">
         <Image
           src="/recordiq_logo_transparent.png"
-          alt="RecordIQ logo"
+          alt="VeraChron logo"
           width={220}
           height={220}
           priority
