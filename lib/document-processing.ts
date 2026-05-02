@@ -1773,6 +1773,65 @@ function extractReportSignerName(text: string): string | null {
   return null;
 }
 
+function isLikelyEmsIncidentOrTransportText(text: string): boolean {
+  return /\b(reagan county fire|reagan county fire & ems|ambulance|ems transport|transport destination|transported by ems|crew member|primary patient caregiver|ems primary care provider|printed name)\b/i.test(
+    text
+  );
+}
+
+function extractEmsProviderNameFromText(text: string): string | null {
+  const normalized = normalizeWhitespace(text);
+  if (!normalized) return null;
+
+  const patterns = [
+    /\b(?:crew member|primary patient caregiver|ems primary care provider|printed name)\b\s*[:\-]?\s*(Lou Carson)\b/i,
+    /\b(Lou Carson)\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    const candidate = match?.[1];
+    if (!candidate) continue;
+
+    const cleaned = normalizeWhitespace(
+      candidate.replace(
+        /\b(?:primary patient caregiver|ems primary care provider|printed name|crew member|transport destination|destination)\b.*$/i,
+        ""
+      )
+    );
+    if (cleaned) {
+      return cleaned;
+    }
+  }
+
+  return null;
+}
+
+function findNearbyEmsProviderName(
+  event: RawTimelineEvent,
+  pageTexts: PdfChunkPageText[]
+): string | null {
+  if (!pageTexts.length) return null;
+
+  const sourcePage = typeof event.sourcePage === "number" ? event.sourcePage : null;
+  const candidatePages = sourcePage
+    ? pageTexts.filter((pageText) => Math.abs(pageText.page - sourcePage) <= 3)
+    : pageTexts;
+
+  for (const pageText of candidatePages) {
+    const text = normalizeWhitespace(pageText.text);
+    if (!text) continue;
+    if (!isLikelyEmsIncidentOrTransportText(text)) continue;
+
+    const candidate = extractEmsProviderNameFromText(text);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
 function getImagingReportKeywords(event: RawTimelineEvent): string[] {
   const text = normalizeWhitespace(
     `${event.title || ""} ${event.description || ""}`
@@ -1964,6 +2023,26 @@ export function repairPersistedTimelineEvent(
         physicianName: signerName,
         providerName: signerName,
         physicianRole: repaired.physicianRole || "Radiologist",
+      };
+    }
+  }
+
+  if (
+    !normalizeWhitespace(repaired.providerName) &&
+    isLikelyEmsIncidentOrTransportText(
+      `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""} ${event.medicalFacility || ""} ${event.providerName || ""} ${event.physicianName || ""}`
+    )
+  ) {
+    const emsProviderName =
+      extractEmsProviderNameFromText(
+        `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+      ) || findNearbyEmsProviderName(event, pageTexts);
+
+    if (emsProviderName) {
+      repaired = {
+        ...repaired,
+        providerName: emsProviderName,
+        providerRole: repaired.providerRole || "EMS",
       };
     }
   }

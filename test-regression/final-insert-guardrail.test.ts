@@ -412,6 +412,42 @@ assert.equal(reaganCountyEmsEvent?.providerName, "Lou Carson");
 assert.equal(reaganCountyEmsEvent?.medicalFacility, "Reagan County Fire & EMS");
 assert.equal(reaganCountyEmsEvent?.physicianName, null);
 
+const reaganCountyEmsSignedRow = repairPersistedTimelineEvent(
+  {
+    date: "2022-08-29",
+    title: "Reagan County Fire & EMS transport to Reagan Memorial Hospital",
+    description:
+      "Patient transported to Reagan Memorial Hospital after EMS response.",
+    eventType: "treatment",
+    sourcePage: 23,
+    providerName: null,
+    providerRole: null,
+    physicianName: null,
+    physicianRole: null,
+    medicalFacility: "Reagan County Fire & EMS",
+    sourceExcerpt:
+      "Patient transported to Reagan Memorial Hospital after EMS response.",
+  } as any,
+  [
+    {
+      page: 23,
+      text:
+        "Reagan County Fire & EMS transport to Reagan Memorial Hospital. Patient transported after EMS response.",
+    },
+    {
+      page: 24,
+      text:
+        "Crew Member: Lou Carson. Primary Patient Caregiver: Lou Carson. EMS Primary Care Provider: Lou Carson. Electronically signed by Lou Carson.",
+    },
+  ] as any,
+  null,
+  { fileName: "Reagan_County_Fire_and_EMS_220829.pdf" } as any
+);
+
+assert.equal(reaganCountyEmsSignedRow.providerName, "Lou Carson");
+assert.equal(reaganCountyEmsSignedRow.physicianName, null);
+assert.equal(reaganCountyEmsSignedRow.medicalFacility, "Reagan County Fire & EMS");
+
 type EmsAttributionShape = {
   documentName?: string | null;
   title?: string | null;
