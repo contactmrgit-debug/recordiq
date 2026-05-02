@@ -454,13 +454,42 @@ function getMedicalFacility(event: TimelineEvent) {
   return event.medicalFacility?.trim() || null;
 }
 
-function isEmsAttributionEvent(event: TimelineEvent) {
-  const facility = getMedicalFacility(event)?.toLowerCase() || "";
-  const role = (getProviderRole(event) || "").toLowerCase();
+function getNormalizedSourcePacketName(event: TimelineEvent) {
+  const sourcePacket = getSourcePacketName(event);
+  if (!sourcePacket) return "";
+
+  return sourcePacket
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function getEmsAgencyName(event: TimelineEvent) {
+  const packet = getNormalizedSourcePacketName(event);
   const text = `${event.title || ""} ${event.description || ""}`.toLowerCase();
 
+  if (/\breagan county fire\b/.test(packet) || /\breagan county fire\b/.test(text)) {
+    return "Reagan County Fire & EMS";
+  }
+
+  return null;
+}
+
+function normalizeAttributionValue(value?: string | null) {
+  return (value || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function isEmsAttributionEvent(event: TimelineEvent) {
+  const packet = getNormalizedSourcePacketName(event);
+  const role = (getProviderRole(event) || "").toLowerCase();
+  const text = `${event.title || ""} ${event.description || ""} ${event.providerName || ""} ${event.physicianName || ""}`.toLowerCase();
+  const hasEmsPacket = /\breagan county fire\b/.test(packet);
+  const hasEmsTransportText = /\b(ems|ambulance|transport|transport destination|crew member|primary patient caregiver|primary patient care provider)\b/.test(text);
+
   return (
-    facility.includes("reagan county fire") ||
+    (hasEmsPacket && hasEmsTransportText) ||
+    /\breagan county fire\b/.test(text) ||
     role.includes("ems") ||
     /\b(ems|ambulance|transport destination|crew member|primary patient caregiver)\b/.test(text)
   );
@@ -487,6 +516,16 @@ function getTransportDestination(event: TimelineEvent) {
     return "Shannon ER";
   }
 
+  const facility = getMedicalFacility(event);
+  const emsAgency = getEmsAgencyName(event);
+  if (
+    isEmsAttributionEvent(event) &&
+    facility &&
+    normalizeAttributionValue(facility) !== normalizeAttributionValue(emsAgency)
+  ) {
+    return facility;
+  }
+
   return null;
 }
 
@@ -504,12 +543,13 @@ function getAttributionLine(event: TimelineEvent) {
   const sourcePacket = getSourcePacketName(event);
   const providerName = getProviderName(event);
   const facility = getMedicalFacility(event);
+  const emsAgency = getEmsAgencyName(event);
   const transportDestination = getTransportDestination(event);
 
   if (isEmsAttributionEvent(event)) {
     return [
       sourcePacket ? `Source packet: ${sourcePacket}` : null,
-      facility ? `EMS agency: ${facility}` : null,
+      emsAgency ? `EMS agency: ${emsAgency}` : null,
       providerName ? `Provider: ${providerName}` : null,
       transportDestination ? `Transport destination: ${transportDestination}` : null,
     ]

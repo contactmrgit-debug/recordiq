@@ -81,7 +81,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           documentName: string | null;
           reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
           isHidden: boolean;
+          providerName: string | null;
+          providerRole: string | null;
           physicianName: string | null;
+          physicianRole: string | null;
           medicalFacility: string | null;
           sourceExcerpt: string;
         };
@@ -105,7 +108,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             sourcePage: event.sourcePage ?? null,
             reviewStatus: event.reviewStatus || "PENDING",
             isHidden: event.isHidden ?? false,
+            providerName: null,
+            providerRole: null,
             physicianName: event.physicianName || null,
+            physicianRole: null,
             medicalFacility: event.medicalFacility || null,
             documentName: documentContextById.get(documentId)?.fileName || null,
             sourceExcerpt: event.description || "",
@@ -133,6 +139,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       sourcePage: number | null;
       documentName: string | null;
       medicalFacility: string | null;
+      providerName: string | null;
+      providerRole: string | null;
+      physicianName: string | null;
+      physicianRole: string | null;
     } | null>;
 
     const repairedForSummary = [...repairedTimelineEvents];
@@ -166,6 +176,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           eventType: repaired.eventType || "other",
           sourcePage: repaired.sourcePage ?? null,
           documentName: sourcePacketName,
+          providerName: repaired.providerName || null,
+          providerRole: repaired.providerRole || null,
+          physicianName: repaired.physicianName || null,
+          physicianRole: repaired.physicianRole || null,
           medicalFacility: repaired.medicalFacility || timelineEvents[index].medicalFacility || null,
         };
       }
@@ -185,6 +199,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         sourcePage: event.sourcePage ?? null,
         documentName: event.documentName || null,
         medicalFacility: event.medicalFacility || null,
+        providerName: event.providerName || null,
+        providerRole: event.providerRole || null,
+        physicianName: event.physicianName || null,
+        physicianRole: event.physicianRole || null,
       }))
     );
 
@@ -205,7 +223,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           documentName: repaired.documentName || null,
           reviewStatus: event.reviewStatus,
           isHidden: event.isHidden,
+          providerName: repaired.providerName || null,
+          providerRole: repaired.providerRole || null,
           physicianName: event.physicianName,
+          physicianRole: repaired.physicianRole || null,
           medicalFacility: event.medicalFacility,
         };
       })

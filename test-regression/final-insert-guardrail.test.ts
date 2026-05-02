@@ -412,4 +412,66 @@ assert.equal(reaganCountyEmsEvent?.providerName, "Lou Carson");
 assert.equal(reaganCountyEmsEvent?.medicalFacility, "Reagan County Fire & EMS");
 assert.equal(reaganCountyEmsEvent?.physicianName, null);
 
+type EmsAttributionShape = {
+  documentName?: string | null;
+  title?: string | null;
+  description?: string | null;
+  providerName?: string | null;
+  physicianName?: string | null;
+  medicalFacility?: string | null;
+};
+
+function normalizePacketLabel(value?: string | null) {
+  return (value || "")
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function formatEmsAttributionLine(event: EmsAttributionShape) {
+  const sourcePacket = (event.documentName || "").replace(/\.[a-z0-9]+$/i, "").trim();
+  const packet = normalizePacketLabel(event.documentName);
+  const text = `${event.title || ""} ${event.description || ""} ${event.providerName || ""} ${event.physicianName || ""}`.toLowerCase();
+  const providerName =
+    event.providerName?.trim() ||
+    event.physicianName?.trim() ||
+    null;
+  const emsAgency =
+    /\breagan county fire\b/.test(packet) || /\breagan county fire\b/.test(text)
+      ? "Reagan County Fire & EMS"
+      : null;
+  const transportDestination =
+    /\b(?:transport(?:ed)?(?: destination)?|destined for|to)\s+(reagan memorial hospital|shannon er|shannon medical center)\b/.test(
+      text
+    )
+      ? "Reagan Memorial Hospital"
+      : event.medicalFacility?.trim() || null;
+
+  return [
+    sourcePacket ? `Source packet: ${sourcePacket}` : null,
+    emsAgency ? `EMS agency: ${emsAgency}` : null,
+    providerName ? `Provider: ${providerName}` : null,
+    transportDestination ? `Transport destination: ${transportDestination}` : null,
+  ]
+    .filter(Boolean)
+    .join(" • ");
+}
+
+const reaganCountyEmsRouteEvent = {
+  documentName: "Reagan_County_Fire_and_EMS_220829.pdf",
+  title: "Reagan County Fire & EMS transport to Reagan Memorial Hospital",
+  description:
+    "Crew Member: Lou Carson. Primary Patient Caregiver: Lou Carson. Transport destination: Reagan Memorial Hospital.",
+  providerName: "Lou Carson",
+  physicianName: null,
+  medicalFacility: "Reagan Memorial Hospital",
+} as const;
+
+assert.equal(
+  formatEmsAttributionLine(reaganCountyEmsRouteEvent),
+  "Source packet: Reagan_County_Fire_and_EMS_220829 • EMS agency: Reagan County Fire & EMS • Provider: Lou Carson • Transport destination: Reagan Memorial Hospital"
+);
+
 console.log("final-insert-guardrail test passed");

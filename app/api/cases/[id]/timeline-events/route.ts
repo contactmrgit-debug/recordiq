@@ -84,7 +84,10 @@ export async function GET(
           documentName: string | null;
           reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
           isHidden: boolean;
+          providerName: string | null;
+          providerRole: string | null;
           physicianName: string | null;
+          physicianRole: string | null;
           medicalFacility: string | null;
           sourceExcerpt: string;
         };
@@ -108,7 +111,10 @@ export async function GET(
             sourcePage: event.sourcePage ?? null,
             reviewStatus: event.reviewStatus || "PENDING",
             isHidden: event.isHidden ?? false,
+            providerName: null,
+            providerRole: null,
             physicianName: event.physicianName || null,
+            physicianRole: null,
             medicalFacility: event.medicalFacility || null,
             documentName: documentContextById.get(documentId)?.fileName || null,
             sourceExcerpt: event.description || "",
@@ -145,10 +151,13 @@ export async function GET(
           documentName: string | null;
           reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
           isHidden: boolean;
-          documentId: string | null;
-          physicianName: string | null;
-          medicalFacility: string | null;
-        }
+        documentId: string | null;
+        providerName: string | null;
+        providerRole: string | null;
+        physicianName: string | null;
+        physicianRole: string | null;
+        medicalFacility: string | null;
+      }
       | null
     >;
 
@@ -189,7 +198,10 @@ export async function GET(
           documentName: current.documentName,
           reviewStatus: timelineEvents[index].reviewStatus || "PENDING",
           isHidden: repaired.isHidden ?? false,
+          providerName: repaired.providerName || null,
+          providerRole: repaired.providerRole || null,
           physicianName: repaired.physicianName || null,
+          physicianRole: repaired.physicianRole || null,
           medicalFacility: repaired.medicalFacility || current.medicalFacility || null,
         };
       }
@@ -219,7 +231,10 @@ export async function GET(
           documentName: repaired.documentName || null,
           reviewStatus: repaired.reviewStatus,
           isHidden: repaired.isHidden,
+          providerName: repaired.providerName || null,
+          providerRole: repaired.providerRole || null,
           physicianName: repaired.physicianName,
+          physicianRole: repaired.physicianRole || null,
           medicalFacility: repaired.medicalFacility,
         };
       })
