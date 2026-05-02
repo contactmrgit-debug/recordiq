@@ -81,6 +81,7 @@ export async function GET(
           description: string;
           eventType: string;
           sourcePage: number | null;
+          documentName: string | null;
           reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
           isHidden: boolean;
           physicianName: string | null;
@@ -109,6 +110,7 @@ export async function GET(
             isHidden: event.isHidden ?? false,
             physicianName: event.physicianName || null,
             medicalFacility: event.medicalFacility || null,
+            documentName: documentContextById.get(documentId)?.fileName || null,
             sourceExcerpt: event.description || "",
           },
         });
@@ -128,6 +130,7 @@ export async function GET(
         reviewStatus: event.reviewStatus || "PENDING",
         isHidden: event.isHidden ?? false,
         documentId: event.documentId || null,
+        documentName: documentContextById.get(event.documentId || "")?.fileName || null,
         physicianName: event.physicianName || null,
         medicalFacility: event.medicalFacility || null,
       };
@@ -139,6 +142,7 @@ export async function GET(
           description: string;
           eventType: string;
           sourcePage: number | null;
+          documentName: string | null;
           reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
           isHidden: boolean;
           documentId: string | null;
@@ -182,6 +186,7 @@ export async function GET(
           description: repaired.description || "",
           eventType: repaired.eventType || "other",
           sourcePage: repaired.sourcePage ?? null,
+          documentName: current.documentName,
           reviewStatus: timelineEvents[index].reviewStatus || "PENDING",
           isHidden: repaired.isHidden ?? false,
           physicianName: repaired.physicianName || null,
@@ -211,6 +216,7 @@ export async function GET(
           description: repaired.description,
           eventType: repaired.eventType,
           sourcePage: repaired.sourcePage,
+          documentName: repaired.documentName || null,
           reviewStatus: repaired.reviewStatus,
           isHidden: repaired.isHidden,
           physicianName: repaired.physicianName,

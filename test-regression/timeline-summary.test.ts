@@ -445,6 +445,19 @@ function run() {
   }
 
   {
+    const projectReEntryEvents = createDavidWeirCleanupTimeline().map((event) => ({
+      ...event,
+      documentName: "Project ReEntry packet.pdf",
+      medicalFacility: "Reagan Memorial Hospital",
+    }));
+    const result = generateTimelineSummary(projectReEntryEvents as any);
+    assert.ok(/^Records include/i.test(result.caseSummary));
+    assert.ok(/Project ReEntry packet/i.test(result.caseSummary));
+    assert.ok(/Reagan Memorial/i.test(result.caseSummary));
+    assert.ok(/C2 cervical spine fractures with extension through the right vertebral foramen/i.test(result.caseSummary));
+  }
+
+  {
     const result = generateTimelineSummary(createBoilerplateMixedTimeline());
     assert.ok(result.keyFindings.length <= 5);
     const highValueHits = result.keyFindings.filter((bullet) =>

@@ -78,6 +78,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           description: string;
           eventType: string;
           sourcePage: number | null;
+          documentName: string | null;
           reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
           isHidden: boolean;
           physicianName: string | null;
@@ -106,6 +107,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             isHidden: event.isHidden ?? false,
             physicianName: event.physicianName || null,
             medicalFacility: event.medicalFacility || null,
+            documentName: documentContextById.get(documentId)?.fileName || null,
             sourceExcerpt: event.description || "",
           },
         });
@@ -121,6 +123,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         description: event.description || "",
         eventType: event.eventType || "other",
         sourcePage: event.sourcePage ?? null,
+        documentName: documentContextById.get(event.documentId || "")?.fileName || null,
       };
     }) as Array<{
       date: string;
@@ -128,12 +131,14 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       description: string;
       eventType: string;
       sourcePage: number | null;
+      documentName: string | null;
     } | null>;
 
     const repairedForSummary = [...repairedTimelineEvents];
     for (const [documentId, items] of rawEventsByDocument.entries()) {
       const pageTexts = pageTextsByDocument.get(documentId) ?? [];
       const context = documentContextById.get(documentId) ?? undefined;
+      const sourcePacketName = context?.fileName || null;
       if (!pageTexts.length) continue;
 
       const repairedGroup = repairPersistedTimelineEvents(
@@ -159,6 +164,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           description: repaired.description || "",
           eventType: repaired.eventType || "other",
           sourcePage: repaired.sourcePage ?? null,
+          documentName: sourcePacketName,
         };
       }
     }
@@ -175,6 +181,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         description: event.description || "",
         eventType: event.eventType || "other",
         sourcePage: event.sourcePage ?? null,
+        documentName: event.documentName || null,
       }))
     );
 
@@ -192,6 +199,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           description: repaired.description,
           eventType: repaired.eventType,
           sourcePage: repaired.sourcePage,
+          documentName: repaired.documentName || null,
           reviewStatus: event.reviewStatus,
           isHidden: event.isHidden,
           physicianName: event.physicianName,

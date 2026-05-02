@@ -442,12 +442,30 @@ function getMedicalFacility(event: TimelineEvent) {
   return event.medicalFacility?.trim() || null;
 }
 
+function getSourcePacketName(event: TimelineEvent) {
+  const sourceName = event.documentName?.trim() || null;
+
+  if (!sourceName) {
+    return null;
+  }
+
+  return sourceName.replace(/\.[a-z0-9]+$/i, "").replace(/\s+/g, " ").trim();
+}
+
 function getAttributionLine(event: TimelineEvent) {
+  const sourcePacket = getSourcePacketName(event);
   const providerName = getProviderName(event);
   const providerRole = getProviderRole(event);
   const facility = getMedicalFacility(event);
 
-  return [providerName, providerRole, facility].filter(Boolean).join(" • ");
+  return [
+    sourcePacket ? `Source packet: ${sourcePacket}` : null,
+    providerName,
+    providerRole,
+    facility ? `Medical facility: ${facility}` : null,
+  ]
+    .filter(Boolean)
+    .join(" • ");
 }
 
 function getSourcePage(event?: TimelineEvent | null) {

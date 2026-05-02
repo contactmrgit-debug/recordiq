@@ -12,6 +12,8 @@ type TimelineSummaryEvent = {
   description?: string | null;
   eventType?: string | null;
   sourcePage?: number | null;
+  documentName?: string | null;
+  medicalFacility?: string | null;
 };
 
 type SummaryCategory =
@@ -327,6 +329,30 @@ function groupText(events: TimelineSummaryEvent[]): string {
       .map((event) => `${event.title || ""} ${event.description || ""}`)
       .join(" ")
   );
+}
+
+function hasProjectReEntryPacket(events: TimelineSummaryEvent[]): boolean {
+  return events.some((event) =>
+    /project reentry/i.test(
+      normalizeText(`${event.documentName || ""} ${event.medicalFacility || ""}`)
+    )
+  );
+}
+
+function buildPacketPrefix(events: TimelineSummaryEvent[]): string | null {
+  if (!hasProjectReEntryPacket(events)) {
+    return null;
+  }
+
+  const hasReaganFacility = events.some((event) =>
+    /reagan memorial/i.test(normalizeText(event.medicalFacility || ""))
+  );
+
+  if (hasReaganFacility) {
+    return "Records include embedded Reagan Memorial records from the Project ReEntry packet.";
+  }
+
+  return "Records include records from the Project ReEntry packet.";
 }
 
 function eventPhrase(event: TimelineSummaryEvent, category: SummaryCategory): string {
@@ -838,7 +864,10 @@ export function generateTimelineSummary(
   const grouped = chooseBestEventPerCategory(events);
   const keyFindings = buildKeyFindings(mode, grouped);
   const selectedGroups = collectTopGroups(grouped, CATEGORY_ORDER.length);
-  const caseSummary = buildCaseSummary(selectedGroups);
+  const packetPrefix = buildPacketPrefix(events);
+  const caseSummary = [packetPrefix, buildCaseSummary(selectedGroups)]
+    .filter(Boolean)
+    .join(" ");
 
   return {
     caseSummary,
