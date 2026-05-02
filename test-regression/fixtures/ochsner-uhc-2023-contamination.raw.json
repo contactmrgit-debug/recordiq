@@ -1,0 +1,70 @@
+[
+  {
+    "date": "2023-06-07",
+    "title": "Emergency department presentation with rash and bleeding from mouth and nose",
+    "description": "Main encounter at Ochsner University Hospital / Ochsner Health for rash, coagulation disorder, and bleeding from the mouth and nose.",
+    "eventType": "symptom",
+    "sourcePage": 4,
+    "sourceExcerpt": "06/07/2023 emergency department presentation at Ochsner University Hospital / Ochsner Health for rash, coagulation disorder, and bleeding from the mouth and nose.",
+    "documentName": "Ochsner_UHC_2023.pdf"
+  },
+  {
+    "date": "2023-06-07",
+    "title": "Severe thrombocytopenia with platelet count of 1 documented",
+    "description": "Platelet count of 1 was documented with severe thrombocytopenia and coagulation disorder workup.",
+    "eventType": "report",
+    "sourcePage": 5,
+    "sourceExcerpt": "Platelet count of 1 was documented with severe thrombocytopenia and coagulation disorder workup.",
+    "documentName": "Ochsner_UHC_2023.pdf"
+  },
+  {
+    "date": "2023-06-07",
+    "title": "Dexamethasone and platelet treatment given",
+    "description": "Dexamethasone was administered and platelet-related treatment/workup was started.",
+    "eventType": "treatment",
+    "sourcePage": 5,
+    "sourceExcerpt": "Dexamethasone was administered and platelet-related treatment/workup was started.",
+    "documentName": "Ochsner_UHC_2023.pdf"
+  },
+  {
+    "date": "2023-06-07",
+    "title": "Transferred for hematology evaluation",
+    "description": "Transferred to another facility for hematology evaluation and further management.",
+    "eventType": "transfer",
+    "sourcePage": 6,
+    "sourceExcerpt": "Transferred to another facility for hematology evaluation and further management.",
+    "documentName": "Ochsner_UHC_2023.pdf"
+  },
+  {
+    "date": "2019-02-02",
+    "title": "Workplace head injury after pipe fell from derrick",
+    "description": "At work on a drill rig, a pipe fell from the derrick and struck the patient on the head.",
+    "eventType": "incident",
+    "sourcePage": 46,
+    "sourceExcerpt": "At work on a drill rig, a pipe fell from the derrick and struck the patient on the head."
+  },
+  {
+    "date": "2019-02-02",
+    "title": "CT head showed no acute intracranial injury",
+    "description": "CT head showed no acute intracranial injury with left periorbital soft tissue swelling.",
+    "eventType": "report",
+    "sourcePage": 46,
+    "sourceExcerpt": "CT head showed no acute intracranial injury with left periorbital soft tissue swelling."
+  },
+  {
+    "date": "2019-02-02",
+    "title": "Grouped medications",
+    "description": "Encounter medications documented: hydromorphone, ondansetron, ketorolac, Tdap, acetaminophen.",
+    "eventType": "treatment",
+    "sourcePage": 46,
+    "sourceExcerpt": "Encounter medications documented: hydromorphone, ondansetron, ketorolac, Tdap, acetaminophen."
+  },
+  {
+    "date": "2019-02-02",
+    "title": "Transferred to Shannon by air transport",
+    "description": "Patient was transferred to Shannon Medical Center by air transport.",
+    "eventType": "transfer",
+    "sourcePage": 46,
+    "sourceExcerpt": "Patient was transferred to Shannon Medical Center by air transport."
+  }
+]

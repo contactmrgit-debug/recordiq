@@ -1,0 +1,43 @@
+{
+  "documentName": "ochsner-uhc-2023-contamination",
+  "minEvents": 4,
+  "maxEvents": 4,
+  "mustIncludeTitles": [
+    "Emergency department presentation with rash and bleeding from mouth and nose",
+    "Severe thrombocytopenia with platelet count of 1 documented",
+    "Dexamethasone and platelet treatment given",
+    "Transferred for hematology evaluation"
+  ],
+  "mustNotIncludeTitlePatterns": [
+    "workplace head injury|pipe fell from derrick|ct head showed no acute intracranial injury|grouped medications|shannon"
+  ],
+  "mustNotIncludeDescriptionPatterns": [
+    "workplace head injury|pipe fell from derrick|hydromorphone|ondansetron|tdap|shannon"
+  ],
+  "expectedNoDuplicateNormalizedKeys": true,
+  "dateRules": [
+    {
+      "date": "2023-06-07",
+      "minEvents": 4,
+      "maxEvents": 4,
+      "mustIncludeTitles": [
+        "Emergency department presentation with rash and bleeding from mouth and nose",
+        "Severe thrombocytopenia with platelet count of 1 documented",
+        "Dexamethasone and platelet treatment given",
+        "Transferred for hematology evaluation"
+      ]
+    }
+  ],
+  "eventAssertions": [
+    {
+      "title": "Severe thrombocytopenia with platelet count of 1 documented",
+      "sourcePage": 5,
+      "eventType": "report"
+    },
+    {
+      "title": "Transferred for hematology evaluation",
+      "sourcePage": 6,
+      "eventType": "other"
+    }
+  ]
+}

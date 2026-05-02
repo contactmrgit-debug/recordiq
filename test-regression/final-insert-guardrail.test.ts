@@ -513,4 +513,31 @@ assert.equal(
   "Source packet: Reagan_County_Fire_and_EMS_220829 • EMS agency: Reagan County Fire & EMS • Provider: Lou Carson • Transport destination: Reagan Memorial Hospital"
 );
 
+const ochsnerOcrFixturePath = path.join(
+  rootDir,
+  "test-regression",
+  "fixtures",
+  "ochsner-uhc-2023-contamination.raw.json"
+);
+const ochsnerRawEvents = JSON.parse(
+  fs.readFileSync(ochsnerOcrFixturePath, "utf8")
+) as Parameters<typeof cleanTimelineEvents>[0];
+const ochsnerCleanedEvents = cleanTimelineEvents(ochsnerRawEvents as any);
+const ochsnerSummary = generateTimelineSummary(ochsnerCleanedEvents);
+
+assert.equal(ochsnerCleanedEvents.length, 4);
+assert.match(
+  ochsnerSummary.caseSummary,
+  /severe thrombocytopenia with a platelet count of 1/i
+);
+assert.match(ochsnerSummary.caseSummary, /bleeding from the mouth and nose/i);
+assert.match(ochsnerSummary.caseSummary, /dexamethasone and platelet-related treatment/i);
+assert.match(ochsnerSummary.caseSummary, /transfer for hematology evaluation/i);
+assert.ok(
+  !/reagan memorial|workplace head injury|hydromorphone|ondansetron|tdap|shannon/i.test(
+    `${ochsnerSummary.caseSummary} ${ochsnerSummary.keyFindings.join(" ")}`
+  ),
+  "Ochsner summary should not include Reagan trauma contamination"
+);
+
 console.log("final-insert-guardrail test passed");

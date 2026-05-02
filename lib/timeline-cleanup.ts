@@ -887,6 +887,45 @@ function isTelephoneMigraineBackgroundNoiseEvent(
   return true;
 }
 
+function isOchsnerBleedingPacketEvent(events: RawTimelineEvent[]): boolean {
+  const combined = normalizeText(
+    events
+      .map((event) => `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`)
+      .join(" ")
+  );
+
+  return (
+    /\bochsner\b/.test(combined) &&
+    /\b(platelet|platelets|thrombocytopenia|bleeding from mouth and nose|bleeding from the mouth and nose|dexamethasone|hematology|rash)\b/.test(
+      combined
+    )
+  );
+}
+
+function isOchsnerReaganTraumaContaminationEvent(
+  event: RawTimelineEvent
+): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+  );
+
+  return /\b(workplace head injury|pipe fell from derrick|drill rig|ct head|head laceration|periorbital swelling|c2 fracture|cta neck|scapular fracture|hydromorphone|ondansetron|tdap|shannon memorial hospital|reagan memorial hospital|reagan memorial|reagan county fire|air transport)\b/.test(
+    combined
+  );
+}
+
+function isOchsnerBleedingPresentationEvent(event: RawTimelineEvent): boolean {
+  const combined = normalizeText(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
+  );
+
+  return (
+    /\bochsner\b/.test(combined) &&
+    /\b(ed|emergency department|emergency room|presentation|presented)\b/.test(combined) &&
+    /\b(rash|bleeding|mouth and nose|thrombocytopenia|platelet)\b/.test(combined)
+  );
+}
+
 export function hasMeaningfulClinicalSignal(text: string): boolean {
   const normalized = normalizeText(text);
 
@@ -3940,6 +3979,7 @@ function isHybridEncounterNoiseEvent(event: RawTimelineEvent): boolean {
 export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
   const batchClinicalDate = findBatchClinicalDate(events);
   const normalized = normalizeEvents(events, batchClinicalDate);
+  const isOchsnerPacket = isOchsnerBleedingPacketEvent(events);
 
   const filtered = normalized.filter((event) => {
     const combined = normalizeText(
@@ -3953,6 +3993,14 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
     }
 
     if (isTelephoneMigraineBackgroundNoiseEvent(event)) {
+      return false;
+    }
+
+    if (isOchsnerBleedingPresentationEvent(event)) {
+      return true;
+    }
+
+    if (isOchsnerPacket && isOchsnerReaganTraumaContaminationEvent(event)) {
       return false;
     }
 

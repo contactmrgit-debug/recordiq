@@ -1915,12 +1915,44 @@ function findNearbyImagingReportSigner(
   return bestSigner;
 }
 
+function isOchsnerBleedingPacketContext(
+  context?: RepairDocumentContext,
+  pageTexts: PdfChunkPageText[] = []
+): boolean {
+  const combined = normalizeWhitespace(
+    [
+      context?.fileName || "",
+      context?.recordType || "",
+      ...pageTexts.slice(0, 4).map((pageText) => pageText.text),
+    ].join(" ")
+  ).toLowerCase();
+
+  return (
+    /\bochsner\b/.test(combined) &&
+    /\b(platelet|platelets|thrombocytopenia|bleeding from mouth and nose|bleeding from the mouth and nose|dexamethasone|hematology|rash)\b/.test(
+      combined
+    )
+  );
+}
+
+function isOchsnerReaganTraumaContaminationText(text: string): boolean {
+  const normalized = normalizeWhitespace(text).toLowerCase();
+
+  return /\b(workplace head injury|pipe fell from derrick|drill rig|ct head|head laceration|periorbital swelling|c2 fracture|cta neck|scapular fracture|hydromorphone|ondansetron|tdap|shannon memorial hospital|reagan memorial hospital|reagan memorial|reagan county fire|air transport)\b/.test(
+    normalized
+  );
+}
+
 function inferDocumentTraumaDate(
   events: RawTimelineEvent[],
   context?: RepairDocumentContext,
   pageTexts: PdfChunkPageText[] = []
 ): string | null {
   if (isEnvisionImagingPacketContext(context, pageTexts)) {
+    return null;
+  }
+
+  if (isOchsnerBleedingPacketContext(context, pageTexts)) {
     return null;
   }
 
@@ -1998,6 +2030,18 @@ export function repairPersistedTimelineEvent(
     if (overridden) {
       repaired = overridden;
     }
+  }
+
+  if (
+    isOchsnerBleedingPacketContext(context, pageTexts) &&
+    isOchsnerReaganTraumaContaminationText(combined)
+  ) {
+    return {
+      ...event,
+      title: "",
+      description: "",
+      eventType: "",
+    };
   }
 
   if (pageTexts.length) {

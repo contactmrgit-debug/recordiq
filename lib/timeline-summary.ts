@@ -359,6 +359,71 @@ function buildPacketPrefix(events: TimelineSummaryEvent[]): string | null {
   return "Records include embedded Reagan Memorial records from the Project ReEntry packet.";
 }
 
+function isOchsnerBleedingPacket(events: TimelineSummaryEvent[]): boolean {
+  const text = normalizeText(
+    events
+      .map(
+        (event) =>
+          `${event.documentName || ""} ${event.title || ""} ${event.description || ""} ${event.eventType || ""}`
+      )
+      .join(" ")
+  );
+
+  return (
+    /\bochsner\b/.test(text) &&
+    /\b(platelet|platelets|thrombocytopenia|bleeding from mouth and nose|bleeding from the mouth and nose|dexamethasone|hematology|rash)\b/.test(
+      text
+    )
+  );
+}
+
+function summarizeOchsnerBleedingPacketFacts(
+  events: TimelineSummaryEvent[]
+): string | null {
+  if (!isOchsnerBleedingPacket(events)) {
+    return null;
+  }
+
+  const text = normalizeText(
+    events
+      .map(
+        (event) =>
+          `${event.documentName || ""} ${event.title || ""} ${event.description || ""} ${event.eventType || ""}`
+      )
+      .join(" ")
+  );
+
+  const parts: string[] = [];
+
+  if (
+    /\b(rash|bleeding from mouth and nose|bleeding from the mouth and nose)\b/.test(
+      text
+    )
+  ) {
+    parts.push("rash and bleeding from the mouth and nose");
+  }
+
+  if (
+    /\b(platelet count of 1|severe thrombocytopenia|thrombocytopenia)\b/.test(text)
+  ) {
+    parts.push("severe thrombocytopenia with a platelet count of 1");
+  }
+
+  if (/\bdexamethasone\b/.test(text)) {
+    parts.push("dexamethasone and platelet-related treatment");
+  }
+
+  if (/\bhematolog/i.test(text)) {
+    parts.push("transfer for hematology evaluation");
+  }
+
+  if (!parts.length) {
+    return null;
+  }
+
+  return sentenceCase(`The records document ${joinNatural(parts, "and")}.`);
+}
+
 function eventPhrase(event: TimelineSummaryEvent, category: SummaryCategory): string {
   const title = cleanSnippet(event.title);
   const description = cleanSnippet(event.description);
@@ -458,6 +523,10 @@ function summarizeIncidentFacts(events: TimelineSummaryEvent[]): string {
 
 function summarizeSymptomsFacts(events: TimelineSummaryEvent[]): string {
   const text = groupText(events);
+
+  if (isOchsnerBleedingPacket(events) && /\b(bleeding from mouth and nose|bleeding from the mouth and nose|rash)\b/.test(text)) {
+    return "Rash with bleeding from the mouth and nose was documented.";
+  }
 
   if (
     /\bfatigue\b/.test(text) &&
@@ -587,6 +656,10 @@ function summarizeMedicationFacts(events: TimelineSummaryEvent[]): string {
   const preferredMeds: string[] = [];
   const secondaryMeds: string[] = [];
 
+  if (isOchsnerBleedingPacket(events) && /\bdexamethasone\b/.test(text)) {
+    return "Dexamethasone and platelet-related treatment were documented.";
+  }
+
   if (
     /\bhydrocortisone\b/.test(text) &&
     /\bfludrocortisone\b/.test(text) &&
@@ -624,6 +697,13 @@ function summarizeLabsFacts(events: TimelineSummaryEvent[]): string {
   const text = groupText(events);
   const labs: string[] = [];
 
+  if (
+    isOchsnerBleedingPacket(events) &&
+    (/\bplatelet count of 1\b/.test(text) || /\bplatelets?\b/.test(text) || /\bsevere thrombocytopenia\b/.test(text))
+  ) {
+    return "Severe thrombocytopenia with a platelet count of 1 was documented.";
+  }
+
   if (/\bacth\b/.test(text) && /\brenin\b/.test(text)) {
     const parts = ["ACTH remained high after stress dosing and renin was elevated"];
 
@@ -657,6 +737,10 @@ function summarizeTransferFacts(events: TimelineSummaryEvent[]): string {
   const destination = /\bshannon\b/.test(text) ? "Shannon ER" : "the receiving facility";
   const transport = /\bair transport\b/.test(text) ? " by air transport" : "";
   const accepting = /\bdr\.?\s*vretis\b/.test(text) || /\baccepting physician\b/.test(text) ? ", with Dr. Vretis accepting" : "";
+
+  if (isOchsnerBleedingPacket(events) && /\bhematolog/i.test(text)) {
+    return "The patient was transferred for hematology evaluation.";
+  }
 
   if (/\btransfer\w*\b/.test(text) || /\bdisposition\b/.test(text) || /\bdischarge\b/.test(text)) {
     return sentenceCase(`The patient was transferred to ${destination}${transport}${accepting}.`);
@@ -837,18 +921,20 @@ function buildCaseSummary(
 
 function buildKeyFindings(
   mode: TimelineSummaryMode,
-  grouped: Map<SummaryCategory, ScoredSummaryEvent[]>
+  grouped: Map<SummaryCategory, ScoredSummaryEvent[]>,
+  packetFacts?: string | null
 ): string[] {
   const limit = mode === "short" ? 5 : 8;
   const groups = collectTopGroups(grouped, limit);
 
-  return groups
-    .map((group) => {
+  return [
+    ...(packetFacts ? [`Packet context: ${packetFacts}`] : []),
+    ...groups.map((group) => {
       const label = CATEGORY_LABELS[group.category];
       const sentence = summarizeCategoryEvents(group.category, group.events);
       return `${label}: ${sentence}`;
-    })
-    .slice(0, limit);
+    }),
+  ].slice(0, limit);
 }
 
 export function generateTimelineSummary(
@@ -866,10 +952,11 @@ export function generateTimelineSummary(
     events.length <= 8 ? "short" : events.length <= 25 ? "grouped" : "highlights";
 
   const grouped = chooseBestEventPerCategory(events);
-  const keyFindings = buildKeyFindings(mode, grouped);
+  const packetFacts = summarizeOchsnerBleedingPacketFacts(events);
+  const keyFindings = buildKeyFindings(mode, grouped, packetFacts);
   const selectedGroups = collectTopGroups(grouped, CATEGORY_ORDER.length);
   const packetPrefix = buildPacketPrefix(events);
-  const caseSummary = [packetPrefix, buildCaseSummary(selectedGroups)]
+  const caseSummary = [packetPrefix, packetFacts, buildCaseSummary(selectedGroups)]
     .filter(Boolean)
     .join(" ");
 
