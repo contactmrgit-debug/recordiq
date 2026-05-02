@@ -455,14 +455,12 @@ function getSourcePacketName(event: TimelineEvent) {
 function getAttributionLine(event: TimelineEvent) {
   const sourcePacket = getSourcePacketName(event);
   const providerName = getProviderName(event);
-  const providerRole = getProviderRole(event);
   const facility = getMedicalFacility(event);
 
   return [
     sourcePacket ? `Source packet: ${sourcePacket}` : null,
-    providerName,
-    providerRole,
     facility ? `Medical facility: ${facility}` : null,
+    providerName ? `Provider: ${providerName}` : null,
   ]
     .filter(Boolean)
     .join(" • ");
