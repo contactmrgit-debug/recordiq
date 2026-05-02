@@ -62,9 +62,12 @@ const EVENT_PRIORITY: Record<NonNullable<TimelineEventResult["eventType"]>, numb
 };
 
 const PROVIDER_PATTERNS: RegExp[] = [
-  /electronically signed by[:\s]+([A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,3}\s*(?:MD|DO|PA-C|PA|NP|FNP-C)?)/i,
-  /signed by[:\s]+([A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,3}\s*(?:MD|DO|PA-C|PA|NP|FNP-C)?)/i,
-  /accepting(?: physician| provider)?[:\s]+([A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,3}\s*(?:MD|DO|PA-C|PA|NP|FNP-C)?)/i,
+  /\b((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))\s*,?\s*(?:electronically\s+)?signed\b/i,
+  /\b((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))\s*,?\s*(?:interpreted|reported)\b/i,
+  /electronically signed by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
+  /signed by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
+  /accepting(?: physician| provider)?[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
+  /\b(radiologist|interpreting physician)[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
   /\b(Dr\.?\s+[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,2})\b/i,
 ];
 
@@ -1447,9 +1450,9 @@ function inferMetadata(
 
   const providerMatch = PROVIDER_PATTERNS
     .map((pattern) => text.match(pattern))
-    .find((match): match is RegExpMatchArray => Boolean(match?.[1]));
+    .find((match): match is RegExpMatchArray => Boolean(match?.[1] || match?.[2]));
 
-  let providerName = normalizeProviderName(providerMatch?.[1]);
+  let providerName = normalizeProviderName(providerMatch?.[1] || providerMatch?.[2]);
 
   if (!providerName) {
     const signedByMatch = text.match(
@@ -1463,6 +1466,24 @@ function inferMetadata(
     providerName = normalizeProviderName(
       drMatch?.[1] ? `Dr. ${drMatch[1]}` : undefined
     );
+  }
+
+  if (!providerName) {
+    const signatureWindow = text.match(
+      /(.{0,140}?)\s*,?\s*(?:electronically\s+)?signed\b/i
+    );
+    if (signatureWindow?.[1]) {
+      const candidates = Array.from(
+        signatureWindow[1].matchAll(
+          /\b((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){1,4}(?:\s*,?\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))?)\b/g
+        ),
+        (match) => normalizeProviderName(match[1])
+      ).filter((value): value is string => Boolean(value));
+
+      if (candidates.length) {
+        providerName = candidates[candidates.length - 1];
+      }
+    }
   }
 
   if (!providerName) {

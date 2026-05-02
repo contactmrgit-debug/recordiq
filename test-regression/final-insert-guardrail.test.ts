@@ -185,12 +185,12 @@ const envisionPageTexts = [
   {
     page: 1,
     text:
-      "ENVISION IMAGING OF ACADIANA. MRI Cervical Spine WO. C2 marrow edema corresponding to prior fracture. Central disc protrusion at C3-C4 and C4-C5. Mild central canal stenosis at C5-C6 and C6-C7.",
+      "ENVISION IMAGING OF ACADIANA. MRI Cervical Spine WO. C2 marrow edema corresponding to prior fracture. Central disc protrusion at C3-C4 and C4-C5. Mild central canal stenosis at C5-C6 and C6-C7. F. Michael Hindelang III, MD electronically signed the cervical spine report.",
   },
   {
     page: 2,
     text:
-      "ENVISION IMAGING OF ACADIANA. CT left shoulder WO contrast. Findings: subacute nondisplaced scapular fracture involving the upper body/spine.",
+      "ENVISION IMAGING OF ACADIANA. CT left shoulder WO contrast. Findings: subacute nondisplaced scapular fracture involving the upper body/spine. Sarah Orrin MD electronically signed the shoulder report.",
   },
 ];
 
@@ -362,6 +362,22 @@ assert(
     `${envisionSummary.caseSummary} ${envisionSummary.keyFindings.join(" ")}`
   ),
   "Envision summary should not include Reagan Memorial trauma contamination"
+);
+assert(
+  repairedEnvisionPersisted.some(
+    (event) =>
+      /mri cervical spine wo/i.test(event.title) &&
+      /f\. michael hindelang iii, md/i.test(event.physicianName || "")
+  ),
+  "Envision MRI event should prefer the cervical report signer"
+);
+assert(
+  repairedEnvisionPersisted.some(
+    (event) =>
+      /ct left shoulder wo contrast/i.test(event.title) &&
+      /sarah orrin md/i.test(event.physicianName || "")
+  ),
+  "Envision shoulder event should use the shoulder report signer"
 );
 
 console.log("final-insert-guardrail test passed");

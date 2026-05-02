@@ -1730,6 +1730,49 @@ function applySupportPageOverrides(
   });
 }
 
+function extractReportSignerName(text: string): string | null {
+  const normalized = normalizeWhitespace(text);
+  if (!normalized) return null;
+
+  const patterns = [
+    /electronically signed by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
+    /signed by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
+    /interpreted by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
+    /reported by[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
+    /\b(radiologist|interpreting physician)[:\s]+((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){0,4}\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    const candidate = match?.[1] || match?.[2];
+    if (!candidate) continue;
+
+    const cleaned = normalizeWhitespace(candidate);
+    if (cleaned) {
+      return cleaned;
+    }
+  }
+
+  const signatureWindow = normalized.match(
+    /(.{0,140}?)\s*,?\s*(?:electronically\s+)?signed\b/i
+  );
+  if (signatureWindow?.[1]) {
+    const prefix = signatureWindow[1];
+    const candidates = Array.from(
+      prefix.matchAll(
+        /\b((?:Dr\.?\s+)?(?:[A-Z]\.\s*)?[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){1,4}(?:\s*,?\s*(?:III|IV|MD|DO|PA-C|PA|NP|FNP-C))?)\b/g
+      ),
+      (match) => normalizeWhitespace(match[1])
+    );
+
+    if (candidates.length) {
+      return candidates[candidates.length - 1];
+    }
+  }
+
+  return null;
+}
+
 function inferDocumentTraumaDate(
   events: RawTimelineEvent[],
   context?: RepairDocumentContext,
@@ -1812,6 +1855,31 @@ export function repairPersistedTimelineEvent(
     const overridden = applySupportPageOverrides([repaired], pageTexts)[0];
     if (overridden) {
       repaired = overridden;
+    }
+  }
+
+  if (pageTexts.length) {
+    const exactPageText =
+      typeof event.sourcePage === "number"
+        ? pageTexts.find((pageText) => pageText.page === event.sourcePage)?.text || null
+        : null;
+    const supportPage = exactPageText
+      ? { page: event.sourcePage as number, text: exactPageText, score: 0 }
+      : getBestSupportPage(pageTexts, event.title || "");
+    const reportText = supportPage?.text || event.sourceExcerpt || "";
+    const signerName = extractReportSignerName(reportText);
+    const looksLikeImaging =
+      /\b(ct|cta|x ray|xray|mri|ultrasound|imaging|radiology|report|findings|impression)\b/.test(
+        normalizeWhitespace(`${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`).toLowerCase()
+      );
+
+    if (signerName && looksLikeImaging) {
+      repaired = {
+        ...repaired,
+        physicianName: signerName,
+        providerName: signerName,
+        physicianRole: repaired.physicianRole || "Radiologist",
+      };
     }
   }
 
