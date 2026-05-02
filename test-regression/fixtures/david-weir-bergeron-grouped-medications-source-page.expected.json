@@ -1,0 +1,26 @@
+{
+  "documentName": "david-weir-bergeron-grouped-medications-source-page",
+  "minEvents": 1,
+  "maxEvents": 1,
+  "mustIncludeTitles": [
+    "Grouped medications"
+  ],
+  "expectedNoDuplicateNormalizedKeys": true,
+  "dateRules": [
+    {
+      "date": "2019-02-02",
+      "minEvents": 1,
+      "maxEvents": 1,
+      "mustIncludeTitles": [
+        "Grouped medications"
+      ]
+    }
+  ],
+  "eventAssertions": [
+    {
+      "title": "Grouped medications",
+      "sourcePage": 3,
+      "eventType": "treatment"
+    }
+  ]
+}

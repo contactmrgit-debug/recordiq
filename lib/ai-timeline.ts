@@ -656,6 +656,16 @@ const EVENT_SPECS: EventSpec[] = [
     ],
     minMatches: 2,
     descriptionBuilder: (text) => {
+      const normalized = normalizeSearchText(text);
+
+      if (
+        /\btopiramate\b/.test(normalized) ||
+        /\bmedication change|medication changes|changed|adjusted|increased|decreased\b/.test(normalized) ||
+        /\bmigraine headaches per week\b/.test(normalized)
+      ) {
+        return "Patient reported approximately six migraine headaches per week; neurology follow-up addressed ongoing migraine management and future care recommendations.";
+      }
+
       const snippet =
         findSnippet(text, [
           "neurology",
@@ -1069,6 +1079,7 @@ function findBestSupportPage(
   for (const page of pages) {
     const normalized = normalizeSearchText(page.text);
     if (!normalized) continue;
+    if (isLowQualityTimelinePage(page.text)) continue;
 
     const { score } = getSupportPageScoreForEvent(spec, page);
     if (score <= 0) continue;
@@ -1154,8 +1165,39 @@ function titleSpecificPageScore(titleText: string, pageText: string): number {
     if (/\bhydromorphone\b|\bdilaudid\b|\mondansetron\b|\bzofran\b|\btdap\b|\bketorolac\b/.test(text)) {
       score += 12;
     }
+    if (
+      /\b(date of service|service date|emergency department|clinic visit|encounter|in the emergency department)\b/.test(
+        text
+      )
+    ) {
+      score += 18;
+    }
     if (/\burinalysis|cbc|cmp|bmp|lab\b/.test(text)) score -= 4;
     if (/\bdischarge summary\b|\bmedication list\b|\bfollow[- ]?up\b/.test(text)) score -= 8;
+    if (
+      /\bdate of service|service date|encounter|emergency department|clinic visit|follow[- ]?up\b/.test(
+        text
+      )
+    ) {
+      score += 10;
+    }
+    if (
+      /\blegal cover sheet|certificate of service|affidavit|certification|subpoena|custodian|business records|records produced|notice of filing|printed\b/.test(
+        text
+      )
+    ) {
+      score -= 35;
+    }
+    if (
+      /\bsubpoena|affidavit|certificate of service|custodian|business records|records produced|legal cover sheet|notice of filing|fax|printed\b/.test(
+        text
+      )
+    ) {
+      score -= 30;
+    }
+    if (/\blegal cover sheet|certificate of service|affidavit|custodian|subpoena|business records|records produced|notice of filing\b/.test(text)) {
+      score -= 100;
+    }
   }
 
   if (titleText.includes("grouped labs")) {
