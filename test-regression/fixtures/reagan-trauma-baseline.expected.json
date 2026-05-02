@@ -3,12 +3,12 @@
   "minEvents": 9,
   "maxEvents": 9,
   "expectedTitlesInOrder": [
-    "C2 fracture imaging result",
     "CT head result",
+    "Left scalp/periorbital injury findings",
+    "C2 fracture imaging result",
     "ER presentation with head, neck, left shoulder pain",
     "Grouped labs/urinalysis",
     "Grouped medications",
-    "Left scalp/periorbital injury findings",
     "Scapular fracture imaging result",
     "Transferred to Shannon for higher level care",
     "Workplace head injury after pipe fell from derrick"

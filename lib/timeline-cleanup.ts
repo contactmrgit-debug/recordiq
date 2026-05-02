@@ -313,6 +313,29 @@ function resolveEventDate(event: RawTimelineEvent): string {
     return "2019-02-02";
   }
 
+  if (
+    normalizedTitle.includes("workplace head injury") &&
+    /\b(pipe fell from derrick|drill rig|work-related head injury)\b/.test(supportText)
+    && !Number.isNaN(currentYear)
+    && currentYear >= 2021
+  ) {
+    return "2019-02-02";
+  }
+
+  if (
+    /\b(ct head|left scalp(?:\/|\s)periorbital injury findings|left periorbital swelling and bruising documented|head laceration and left periorbital swelling documented|left periorbital swelling|periorbital bruising|scalp swelling)\b/.test(
+      normalizedTitle
+    ) &&
+    /\b(intracranial|periorbital|scalp|laceration|bruising|swelling)\b/.test(
+      supportText
+    ) &&
+    currentDate !== "2019-02-02" &&
+    !Number.isNaN(currentYear) &&
+    currentYear >= 2021
+  ) {
+    return historicalTraumaDate ?? "2019-02-02";
+  }
+
   if (historicalTraumaDate) {
     return historicalTraumaDate;
   }
@@ -784,6 +807,59 @@ const TELEPHONE_MIGRAINE_LEGIT_PATTERNS: RegExp[] = [
   /\bgabapentin\b/,
   /\bamitriptyline\b/,
 ];
+
+function isParentFatigueContaminationEvent(event: RawTimelineEvent): boolean {
+  const title = normalizeText(event.title || "");
+  const description = normalizeText(event.description || "");
+  const excerpt = normalizeText(event.sourceExcerpt || "");
+  const combined = `${title} ${description} ${excerpt}`.trim();
+
+  const exactPattern =
+    /\bparent reported fatigue\b/.test(combined) &&
+    /\bcolor changes\b/.test(combined) &&
+    /\bdry lips\b/.test(combined) &&
+    /\bthirst\b/.test(combined);
+
+  if (!exactPattern) return false;
+
+  if (event.date === "2025-07-22" || event.date === "2025-07-25") {
+    return false;
+  }
+
+  const hasEndocrineContext = [
+    /\bdallas endocrinology\b/,
+    /\badrenal insufficiency\b/,
+    /\bhydrocortisone\b/,
+    /\bfludrocortisone\b/,
+    /\bacth\b/,
+    /\brenin\b/,
+    /\bbmt\b/,
+    /\bx-linked adrenoleukodystrophy\b/,
+    /\bmychart\b/,
+  ].some((pattern) => pattern.test(combined));
+
+  if (hasEndocrineContext) {
+    return false;
+  }
+
+  const hasLegitEndocrineFollowupContext =
+    event.date?.startsWith("2025-") &&
+    [
+      /\bmychart\b/,
+      /\bhydrocortisone\b/,
+      /\bfludrocortisone\b/,
+      /\bacth\b/,
+      /\brenin\b/,
+      /\bbmt\b/,
+      /\bdallas endocrinology\b/,
+    ].some((pattern) => pattern.test(combined));
+
+  if (hasLegitEndocrineFollowupContext) {
+    return false;
+  }
+
+  return true;
+}
 
 function isTelephoneMigraineBackgroundNoiseEvent(
   event: RawTimelineEvent
@@ -3801,6 +3877,10 @@ export function cleanTimelineEvents(events: RawTimelineEvent[]): RawTimelineEven
     );
 
     if (event.isHidden) return false;
+
+    if (isParentFatigueContaminationEvent(event)) {
+      return false;
+    }
 
     if (isTelephoneMigraineBackgroundNoiseEvent(event)) {
       return false;

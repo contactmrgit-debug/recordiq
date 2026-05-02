@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { cleanTimelineEvents } from "../lib/timeline-cleanup.ts";
 import {
   classifySummaryCategory,
   generateTimelineSummary,
@@ -177,6 +178,66 @@ function createEndocrineTimeline(): SummaryEvent[] {
   ];
 }
 
+function createDavidWeirCleanupTimeline(): SummaryEvent[] {
+  return [
+    makeEvent(
+      "Workplace head injury after pipe fell from derrick",
+      "At work on a drill rig, a pipe fell from the derrick and struck the patient on the head.",
+      { eventType: "incident", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "ER presentation with head, neck, and left shoulder pain",
+      "Emergency department presentation with head pain, neck pain, and left shoulder pain after the injury.",
+      { eventType: "symptom", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "CT head showed no acute intracranial injury",
+      "CT head showed no acute intracranial injury with left periorbital soft tissue swelling.",
+      { eventType: "report", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "Head laceration and left periorbital swelling documented",
+      "Exam documented a scalp laceration with left periorbital swelling and bruising.",
+      { eventType: "observation", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "C2 fracture with vertebral foramen extension",
+      "CT neck showed C2 fracture with vertebral foramen extension and vascular injury concern.",
+      { eventType: "report", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "CTA neck showed vascular injury concern",
+      "CTA neck showed vascular injury concern involving the vertebral artery.",
+      { eventType: "report", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "Nondisplaced left scapular fracture",
+      "Imaging showed a nondisplaced left scapular fracture.",
+      { eventType: "report", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "Grouped medications",
+      "Encounter medications documented: hydromorphone, ondansetron, ketorolac, tdap, acetaminophen.",
+      { eventType: "treatment", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "CBC and metabolic panel results documented",
+      "CBC and metabolic panel results documented during the trauma encounter.",
+      { eventType: "report", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "Parent reported fatigue, color changes, dry lips, and thirst",
+      "Parent reported fatigue, color changes, dry lips, and thirst.",
+      { eventType: "communication", sourcePage: 46, date: "2019-02-02" }
+    ),
+    makeEvent(
+      "Neurology follow-up with migraine medication changes",
+      "Neurology follow-up documented migraine medication changes and follow-up recommendations.",
+      { eventType: "appointment", sourcePage: 47, date: "2022-03-08" }
+    ),
+  ];
+}
+
 function createLargeTimeline(): SummaryEvent[] {
   const events: SummaryEvent[] = [
     makeEvent("Workplace injury", "Pipe fell from derrick and caused head trauma."),
@@ -333,6 +394,21 @@ function run() {
     assert.ok(/hydrocortisone and fludrocortisone/i.test(result.caseSummary));
     assert.ok(/fatigue, color changes, dry lips, and thirst/i.test(result.caseSummary));
     assert.ok(/BMT team/i.test(result.caseSummary) || /ER/i.test(result.caseSummary));
+  }
+
+  {
+    const cleanedEvents = cleanTimelineEvents(createDavidWeirCleanupTimeline() as any);
+    assert.ok(
+      !cleanedEvents.some((event) =>
+        /parent reported fatigue, color changes, dry lips, and thirst/i.test(event.title || "")
+      )
+    );
+
+    const result = generateTimelineSummary(cleanedEvents);
+    assert.ok(!/fatigue, color changes, dry lips, and thirst/i.test(result.caseSummary));
+    assert.ok(
+      !result.keyFindings.some((bullet) => /fatigue, color changes, dry lips, and thirst/i.test(bullet))
+    );
   }
 
   {
