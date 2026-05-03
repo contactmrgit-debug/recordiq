@@ -290,7 +290,7 @@ function rowsToCsv(rows: Record<string, string | number>[]) {
     ...rows.map((row) => headers.map((h) => escapeValue(row[h] ?? "")).join(",")),
   ];
 
-  return lines.join("\n");
+  return lines.join(" | ");
 }
 
 function fileIsPdf(documentItem?: DocumentItem | null) {
@@ -576,7 +576,7 @@ function getAttributionLine(event: TimelineEvent) {
       transportDestination ? `Transport destination: ${transportDestination}` : null,
     ]
       .filter(Boolean)
-      .join(" • ");
+      .join(" | ");
   }
 
   return [
@@ -585,7 +585,7 @@ function getAttributionLine(event: TimelineEvent) {
     providerName ? `Provider: ${providerName}` : null,
   ]
     .filter(Boolean)
-    .join(" • ");
+    .join(" | ");
 }
 
 function getSourcePage(event?: TimelineEvent | null) {
@@ -683,7 +683,7 @@ function getSourcePage(event?: TimelineEvent | null) {
       setDocuments(nextDocs);
       setEvents(nextEvents);
       setTimelineSummary(nextSummary);
-      setLoadWarning(warnings.length ? warnings.join(" • ") : null);
+      setLoadWarning(warnings.length ? warnings.join(" | ") : null);
 
       const currentSelectedEventId = selectedEventIdRef.current;
       const resolvedSelectedEventId =
@@ -788,7 +788,7 @@ const filteredEvents = useMemo(() => {
 
   const codeText = codes
     .map((code) => `${code.code} ${code.label} ${code.detail || ""}`.toLowerCase())
-    .join(" ");
+    .join(" | ");
 
   return (
     (event.title || "").toLowerCase().includes(q) ||
@@ -964,7 +964,7 @@ Status: ${event.reviewStatus || "PENDING"}
   .join("\n")}
 `
         )
-        .join("\n-------------------------\n\n");
+        .join(" | ");
 
       downloadBlob(
         content,
@@ -1097,11 +1097,11 @@ Status: ${event.reviewStatus || "PENDING"}
               </button>
             </div>
           </div>
-          <span>• {documents.length} documents</span>
-          <span>• {events.length} events</span>
-          <span>• {stats.pending} pending</span>
-          <span>• {stats.approved} approved</span>
-          <span>• {stats.hidden} hidden</span>
+          <span>| {documents.length} documents</span>
+          <span>| {events.length} events</span>
+          <span>| {stats.pending} pending</span>
+          <span>| {stats.approved} approved</span>
+          <span>| {stats.hidden} hidden</span>
         </div>
 
         {caseData?.description ? (
@@ -1136,7 +1136,7 @@ Status: ${event.reviewStatus || "PENDING"}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98]"
           >
             Export
-            <span className="text-xs">▾</span>
+            <span className="text-xs">?</span>
           </button>
 
           {downloadOpen ? (
@@ -1191,26 +1191,31 @@ Status: ${event.reviewStatus || "PENDING"}
 
     <div className="h-[calc(100vh-245px)] overflow-y-auto px-4 py-4">
       {timelineSummary ? (
-        <div className="mb-4 rounded-[24px] border border-amber-200 bg-amber-50/90 px-4 py-4 shadow-sm">
+        <div className="mb-4 overflow-hidden rounded-[28px] border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white px-5 py-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-900">
-              Case Summary
-            </h3>
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+                Summary Layer
+              </div>
+              <h3 className="mt-1 text-base font-semibold text-amber-950">
+                Case Summary
+              </h3>
+            </div>
             <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
               {timelineSummary.mode}
             </span>
           </div>
 
-          <p className="mt-2 text-sm leading-6 text-amber-950">
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-amber-950">
             {timelineSummary.caseSummary}
           </p>
 
           {timelineSummary.keyFindings.length ? (
-            <div className="mt-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+            <div className="mt-5 border-t border-amber-200/70 pt-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-800">
                 Key Findings
               </div>
-              <ul className="mt-2 space-y-1.5 text-sm leading-6 text-amber-950">
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-amber-950">
                 {timelineSummary.keyFindings.map((finding) => (
                   <li key={finding} className="flex gap-2">
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
@@ -1235,17 +1240,22 @@ Status: ${event.reviewStatus || "PENDING"}
 
           {groupedEvents.map((group) => (
             <div key={group.date} className="mb-8">
-              <div className="mb-4 pl-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                {formatDate(group.date)}
+              <div className="mb-4 flex items-center gap-3 pl-2">
+                <div className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+                  {formatDate(group.date)}
+                </div>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200">
+                  {group.groups.reduce((total, section) => total + section.items.length, 0)} events
+                </span>
               </div>
 
               <div className="space-y-4">
                 {group.groups.map((section) => (
                   <div
                     key={`${group.date}-${section.category}`}
-                    className="rounded-3xl border border-slate-200 bg-slate-50/70 p-3"
+                    className="rounded-[24px] border border-slate-200 bg-white/90 p-3 shadow-sm"
                   >
-                    <div className="mb-3 flex flex-wrap items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <div className="mb-3 flex flex-wrap items-center gap-2 px-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                       <span>{section.categoryLabel}</span>
                       <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
                         {section.items.length} events
@@ -1305,15 +1315,13 @@ Status: ${event.reviewStatus || "PENDING"}
 
                             <span
                               className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusPillClasses(
-                                event.reviewStatus || "PENDING"
+                                timelineEvent.reviewStatus || "PENDING"
                               )}`}
                             >
-                              {event.reviewStatus || "PENDING"}
+                              {timelineEvent.reviewStatus || "PENDING"}
                             </span>
 
-                            
-
-{event.documentId ? (
+                            {timelineEvent.documentId ? (
                           <button
   type="button"
   onClick={(e) => {
@@ -1321,7 +1329,7 @@ Status: ${event.reviewStatus || "PENDING"}
     void openSourceDocument(timelineEvent);
   }}
   className={`rounded-full px-3 py-1 text-xs font-medium ${
-    event.documentId === selectedDocumentId
+    timelineEvent.documentId === selectedDocumentId
       ? "border border-blue-500 bg-blue-600 text-white"
       : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
   }`}
@@ -1334,7 +1342,7 @@ Status: ${event.reviewStatus || "PENDING"}
   </span>
 )}
 
-                            {event.isHidden ? (
+                            {timelineEvent.isHidden ? (
                               <span className="rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600">
                                 Hidden
                               </span>
@@ -1418,10 +1426,10 @@ Status: ${event.reviewStatus || "PENDING"}
 
   <button
     type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-                                          updateEvent(eventId, { reviewStatus: "APPROVED" });
-    }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateEvent(eventId, { reviewStatus: "APPROVED" });
+                                  }}
     disabled={isUpdating}
    className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700"
   >
@@ -1430,10 +1438,10 @@ Status: ${event.reviewStatus || "PENDING"}
 
   <button
     type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-                                          updateEvent(eventId, { reviewStatus: "REJECTED" });
-    }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateEvent(eventId, { reviewStatus: "REJECTED" });
+                                  }}
     disabled={isUpdating}
     className="rounded-xl bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700"
   >
@@ -1442,13 +1450,13 @@ Status: ${event.reviewStatus || "PENDING"}
 
   <button
     type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-                                          updateEvent(eventId, {
-        reviewStatus: "PENDING",
-        isHidden: false,
-      });
-    }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateEvent(eventId, {
+                                      reviewStatus: "PENDING",
+                                      isHidden: false,
+                                    });
+                                  }}
     disabled={isUpdating}
     className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-300"
   >
@@ -1457,12 +1465,12 @@ Status: ${event.reviewStatus || "PENDING"}
 
   <button
     type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-                                          updateEvent(eventId, {
-        isHidden: !timelineEvent.isHidden,
-      });
-    }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateEvent(eventId, {
+                                      isHidden: !timelineEvent.isHidden,
+                                    });
+                                  }}
     disabled={isUpdating}
     className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
   >
@@ -1637,7 +1645,7 @@ Status: ${event.reviewStatus || "PENDING"}
         </div>
         <div className="mt-1 text-xs text-slate-500">
           {activeDocument?.fileName
-            ? `${activeDocument.fileName} · Page ${currentSourcePage ?? "N/A"}`
+            ? `${activeDocument.fileName} | Page ${currentSourcePage ?? "N/A"}`
             : "Click Source on a timeline event to preview the supporting document page."}
         </div>
       </div>
@@ -1675,4 +1683,5 @@ Status: ${event.reviewStatus || "PENDING"}
   </div>
 );
 }
+
 
