@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import {
   buildTimelineDisplayGroups,
   generateTimelineSummary,
@@ -1118,14 +1117,10 @@ Status: ${event.reviewStatus || "PENDING"}
   <div className="p-5">
     <div className="grid grid-cols-[260px_1fr_360px] items-center gap-6">
       <div className="flex justify-start">
-        <Image
-          src="/recordiq_logo_transparent.png"
-          alt="VeraChron logo"
-          width={220}
-          height={220}
-          priority
-          className="h-24 w-auto object-contain sm:h-28 xl:h-32"
-        />
+        <div className="text-2xl font-bold tracking-tight">
+          <span className="text-slate-950">Vera</span>
+          <span className="text-blue-700">Chron</span>
+        </div>
       </div>
 
       <div className="flex min-w-0 flex-col items-center justify-center text-center">
