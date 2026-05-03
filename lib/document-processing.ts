@@ -1943,6 +1943,22 @@ function isOchsnerReaganTraumaContaminationText(text: string): boolean {
   );
 }
 
+function shouldDropOchsnerReaganTraumaEvent(
+  event: RawTimelineEvent,
+  context?: RepairDocumentContext,
+  pageTexts: PdfChunkPageText[] = []
+): boolean {
+  if (!isOchsnerBleedingPacketContext(context, pageTexts)) {
+    return false;
+  }
+
+  const combined = normalizeWhitespace(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""} ${event.providerName || ""} ${event.physicianName || ""} ${event.medicalFacility || ""}`
+  ).toLowerCase();
+
+  return isOchsnerReaganTraumaContaminationText(combined);
+}
+
 function inferDocumentTraumaDate(
   events: RawTimelineEvent[],
   context?: RepairDocumentContext,
@@ -2036,6 +2052,15 @@ export function repairPersistedTimelineEvent(
     isOchsnerBleedingPacketContext(context, pageTexts) &&
     isOchsnerReaganTraumaContaminationText(combined)
   ) {
+    return {
+      ...event,
+      title: "",
+      description: "",
+      eventType: "",
+    };
+  }
+
+  if (shouldDropOchsnerReaganTraumaEvent(event, context, pageTexts)) {
     return {
       ...event,
       title: "",
