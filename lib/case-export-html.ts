@@ -90,10 +90,10 @@ function renderGroupedEvents(
                         }
                         <div class="title">${escapeHtml(event.title || "")}</div>
                         <div>${escapeHtml(event.description || "")}</div>
-                        <div class="details">
-                          ${escapeHtml(event.eventType || "other")} â€¢
-                          Page ${escapeHtml(String(event.sourcePage ?? "-"))} â€¢
-                          ${escapeHtml(getDocumentName(event.documentId))} â€¢
+                                                <div class="details">
+                          ${escapeHtml(event.eventType || "other")} | 
+                          Page ${escapeHtml(String(event.sourcePage ?? "-"))} | 
+                          ${escapeHtml(getDocumentName(event.documentId))} | 
                           ${escapeHtml(event.reviewStatus || "PENDING")}
                         </div>
                       </div>
@@ -145,7 +145,7 @@ export function buildCaseExportHtml({
         <h1>${escapeHtml(caseData?.title || "Case Chronology")}</h1>
         <div class="meta">
           ${escapeHtml(caseData?.caseType || "")}
-          ${caseData?.subjectName ? ` • ${escapeHtml(caseData.subjectName)}` : ""}
+          ${caseData?.subjectName ? ` | ${escapeHtml(caseData.subjectName)}` : ""}
         </div>
         ${renderSummary(summary)}
         <div class="timeline-heading">Timeline</div>
@@ -154,4 +154,5 @@ export function buildCaseExportHtml({
     </html>
   `;
 }
+
 
