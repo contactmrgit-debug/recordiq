@@ -145,6 +145,20 @@ function describeTraceEvent(event: Pick<
   return parts.join(" | ");
 }
 
+function describeInsertRow(event: Pick<
+  TimelineEventInsertRow,
+  "title" | "eventDate" | "sourcePage" | "medicalFacility" | "physicianName" | "documentId"
+>): string {
+  return [
+    `title=${normalizeWhitespace(event.title) || "(blank)"}`,
+    `date=${event.eventDate.toISOString().slice(0, 10)}`,
+    `sourcePage=${typeof event.sourcePage === "number" ? event.sourcePage : "?"}`,
+    `facility=${normalizeWhitespace(event.medicalFacility) || "(blank)"}`,
+    `provider=${normalizeWhitespace(event.physicianName) || "(blank)"}`,
+    `documentId=${normalizeWhitespace(event.documentId) || "(blank)"}`,
+  ].join(" | ");
+}
+
 function fingerprintTraceEvent(event: Pick<
   RawTimelineEvent,
   "date" | "title" | "description" | "eventType" | "sourcePage" | "medicalFacility"
@@ -204,6 +218,19 @@ function getOchsnerGuardReason(
   }
 
   return null;
+}
+
+function buildRawEventFromInsertRow(event: TimelineEventInsertRow): RawTimelineEvent {
+  return {
+    date: event.eventDate.toISOString().slice(0, 10),
+    title: event.title,
+    description: event.description || "",
+    eventType: event.eventType,
+    sourcePage: event.sourcePage ?? undefined,
+    physicianName: event.physicianName,
+    providerName: event.physicianName,
+    medicalFacility: event.medicalFacility,
+  };
 }
 
 function parseDateToUtc(date: string): Date | null {
@@ -855,7 +882,10 @@ function finalEventScore(event: RawTimelineEvent): number {
   return score;
 }
 
-function polishFinalCandidateEvents(events: RawTimelineEvent[]): RawTimelineEvent[] {
+function polishFinalCandidateEvents(
+  events: RawTimelineEvent[],
+  options?: { isOchsnerPacket?: boolean }
+): RawTimelineEvent[] {
   const hasBetterLabs = events.some((event) => {
     const key = finalEventKey(event);
     return key === "grouped-labs" && (event.sourcePage ?? 0) > 10;
@@ -1190,7 +1220,9 @@ function polishFinalCandidateEvents(events: RawTimelineEvent[]): RawTimelineEven
 
    return Array.from(bestByKey.entries())
     .map(([key, event]) => {
-      const facility = event.medicalFacility || "Reagan Memorial Hospital";
+      const facility = options?.isOchsnerPacket
+        ? event.medicalFacility || null
+        : event.medicalFacility || "Reagan Memorial Hospital";
 
       const physicianName =
         event.physicianName ||
@@ -1477,6 +1509,17 @@ async function replaceDocumentTimelineEvents(
   pageTexts: PdfChunkPageText[],
   documentFileName?: string | null
 ) {
+  const shouldTraceSavedRows = isOchsnerTraceEnabled() && isOchsnerPacketLabel(documentFileName);
+  let savedRows: Array<{
+    id: string;
+    title: string;
+    eventDate: Date;
+    sourcePage: number | null;
+    physicianName: string | null;
+    medicalFacility: string | null;
+    documentId: string | null;
+  }> = [];
+
   await prisma.$transaction(async (tx) => {
     const preFilterEvents = timelineEvents.map((event) =>
       forceLateEndocrineDateOverrides(event, documentFileName)
@@ -1496,7 +1539,36 @@ async function replaceDocumentTimelineEvents(
         data: filteredFinalEvents,
       });
     }
+
+    if (shouldTraceSavedRows) {
+      savedRows = await tx.timelineEvent.findMany({
+        where: { documentId },
+        select: {
+          id: true,
+          title: true,
+          eventDate: true,
+          sourcePage: true,
+          physicianName: true,
+          medicalFacility: true,
+          documentId: true,
+        },
+        orderBy: [{ eventDate: "asc" }, { createdAt: "asc" }],
+      });
+      traceOchsnerMessage(`saved count=${savedRows.length}`);
+      savedRows.slice(0, 10).forEach((row, index) => {
+        traceOchsnerMessage(`saved ${index + 1}. ${describeInsertRow({
+          title: row.title,
+          eventDate: row.eventDate,
+          sourcePage: row.sourcePage,
+          medicalFacility: row.medicalFacility,
+          physicianName: row.physicianName,
+          documentId: row.documentId || "",
+        })} | id=${row.id}`);
+      });
+    }
   });
+
+  return savedRows;
 }
 
 async function finalizeJobSuccess(
@@ -2456,21 +2528,22 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
   };
 });
 
-  const polishedFinalCandidateEvents = polishFinalCandidateEvents(
-    normalizedFinalCandidateEvents
-  );
-
-  const supportOverriddenFinalCandidateEvents = applySupportPageOverrides(
-    polishedFinalCandidateEvents,
-    allPageTexts
-  );
-
   const repairContext = {
     fileName: document.fileName,
     recordType: document.recordType,
   };
   const isEnvisionPacket = isEnvisionImagingPacketContext(repairContext, allPageTexts);
   const isOchsnerPacketContext = isOchsnerBleedingPacketContext(repairContext, allPageTexts);
+
+  const polishedFinalCandidateEvents = polishFinalCandidateEvents(
+    normalizedFinalCandidateEvents,
+    { isOchsnerPacket: isOchsnerPacketContext }
+  );
+
+  const supportOverriddenFinalCandidateEvents = applySupportPageOverrides(
+    polishedFinalCandidateEvents,
+    allPageTexts
+  );
 
   if (isOchsnerTraceEnabled()) {
     traceOchsnerObject("document", {
@@ -2539,7 +2612,7 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
 
   const providerBackfilledFinalCandidateEvents = repairedFinalCandidateEvents.map((event) => {
     const title = `${event.title || ""} ${event.description || ""}`.toLowerCase();
-    const shouldBackfillTraumaMetadata = !isEnvisionPacket;
+    const shouldBackfillTraumaMetadata = !isEnvisionPacket && !isOchsnerPacketContext;
 
     const physicianName =
       shouldBackfillTraumaMetadata &&
@@ -2573,13 +2646,46 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
     );
   }
 
-const finalTimelineEvents = toTimelineEventInsertRows(
-  {
-    caseId: document.caseId,
-    documentId: document.id,
-  },
-  providerBackfilledFinalCandidateEvents
-).map((event) => forceLateEndocrineDateOverrides(event, document.fileName));
+  const finalOchsnerFilteredCandidateEvents = providerBackfilledFinalCandidateEvents.filter((event) => {
+    if (!isOchsnerPacketContext) {
+      return true;
+    }
+
+    const guardReason = getOchsnerGuardReason(event, repairContext, allPageTexts);
+    if (guardReason) {
+      if (isOchsnerTraceEnabled()) {
+        traceOchsnerMessage(
+          `final insert drop: ${describeTraceEvent(event)} | reason=${guardReason}`
+        );
+      }
+      return false;
+    }
+
+    if (isOchsnerTraceEnabled()) {
+      traceOchsnerMessage(
+        `final insert keep: ${describeTraceEvent(event)} | reason=passed Ochsner guard after backfill`
+      );
+    }
+
+    return true;
+  });
+
+  const finalTimelineEvents = toTimelineEventInsertRows(
+    {
+      caseId: document.caseId,
+      documentId: document.id,
+    },
+    finalOchsnerFilteredCandidateEvents
+  ).map((event) => forceLateEndocrineDateOverrides(event, document.fileName));
+
+  if (isOchsnerTraceEnabled()) {
+    traceOchsnerMessage(`pre-insert count=${finalTimelineEvents.length}`);
+    finalTimelineEvents
+      .slice(0, 10)
+      .forEach((row, index) =>
+        traceOchsnerMessage(`pre-insert ${index + 1}. ${describeInsertRow(row)}`)
+      );
+  }
 
   await replaceDocumentTimelineEvents(
     document.id,
