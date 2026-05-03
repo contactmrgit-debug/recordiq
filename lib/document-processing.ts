@@ -117,6 +117,95 @@ function isOchsnerPacketLabel(value?: string | null): boolean {
   );
 }
 
+function isOchsnerTraceEnabled(): boolean {
+  return process.env.OCHSNER_TRACE === "1";
+}
+
+function traceOchsnerMessage(message: string): void {
+  if (!isOchsnerTraceEnabled()) return;
+  console.log(`[OCHSNER_TRACE] ${message}`);
+}
+
+function traceOchsnerObject(label: string, value: unknown): void {
+  if (!isOchsnerTraceEnabled()) return;
+  console.log(`[OCHSNER_TRACE] ${label}`, value);
+}
+
+function describeTraceEvent(event: Pick<
+  RawTimelineEvent,
+  "title" | "medicalFacility" | "sourcePage" | "description" | "eventType"
+>): string {
+  const parts = [
+    `title=${normalizeWhitespace(event.title) || "(blank)"}`,
+    `facility=${normalizeWhitespace(event.medicalFacility) || "(blank)"}`,
+    `sourcePage=${typeof event.sourcePage === "number" ? event.sourcePage : "?"}`,
+    `type=${normalizeWhitespace(event.eventType) || "(blank)"}`,
+  ];
+
+  return parts.join(" | ");
+}
+
+function fingerprintTraceEvent(event: Pick<
+  RawTimelineEvent,
+  "date" | "title" | "description" | "eventType" | "sourcePage" | "medicalFacility"
+>): string {
+  return normalizeWhitespace(
+    [
+      event.date || "",
+      event.title || "",
+      event.description || "",
+      event.eventType || "",
+      event.sourcePage ?? "",
+      event.medicalFacility || "",
+    ].join("||")
+  ).toLowerCase();
+}
+
+function buildTraceCountMap(
+  events: Pick<
+    RawTimelineEvent,
+    "date" | "title" | "description" | "eventType" | "sourcePage" | "medicalFacility"
+  >[]
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const event of events) {
+    const key = fingerprintTraceEvent(event);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  return counts;
+}
+
+function takeTraceEvents(
+  events: Pick<
+    RawTimelineEvent,
+    "date" | "title" | "description" | "eventType" | "sourcePage" | "medicalFacility"
+  >[],
+  limit = 10
+): string[] {
+  return events.slice(0, limit).map((event, index) => `${index + 1}. ${describeTraceEvent(event)}`);
+}
+
+function getOchsnerGuardReason(
+  event: RawTimelineEvent,
+  context?: RepairDocumentContext,
+  pageTexts: PdfChunkPageText[] = []
+): string | null {
+  if (!isOchsnerBleedingPacketContext(context, pageTexts)) {
+    return null;
+  }
+
+  const combined = normalizeWhitespace(
+    `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""} ${event.providerName || ""} ${event.physicianName || ""} ${event.medicalFacility || ""}`
+  ).toLowerCase();
+
+  if (isOchsnerReaganTraumaContaminationText(combined)) {
+    return "matched Ochsner/Reagan/Shannon contamination terms";
+  }
+
+  return null;
+}
+
 function parseDateToUtc(date: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return null;
@@ -2082,6 +2171,9 @@ export function repairPersistedTimelineEvent(
     isOchsnerBleedingPacketContext(context, pageTexts) &&
     isOchsnerReaganTraumaContaminationText(combined)
   ) {
+    traceOchsnerMessage(
+      `repair drop: ${describeTraceEvent(event)} | reason=matched Ochsner/Reagan/Shannon contamination terms`
+    );
     return {
       ...event,
       title: "",
@@ -2091,6 +2183,9 @@ export function repairPersistedTimelineEvent(
   }
 
   if (shouldDropOchsnerReaganTraumaEvent(event, context, pageTexts)) {
+    traceOchsnerMessage(
+      `repair drop: ${describeTraceEvent(event)} | reason=matched Ochsner/Reagan/Shannon contamination terms`
+    );
     return {
       ...event,
       title: "",
@@ -2375,6 +2470,40 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
     recordType: document.recordType,
   };
   const isEnvisionPacket = isEnvisionImagingPacketContext(repairContext, allPageTexts);
+  const isOchsnerPacketContext = isOchsnerBleedingPacketContext(repairContext, allPageTexts);
+
+  if (isOchsnerTraceEnabled()) {
+    traceOchsnerObject("document", {
+      id: document.id,
+      fileName: document.fileName,
+      fileUrl: document.fileUrl,
+      normalizedSourcePacket: normalizePacketLabel(document.fileName),
+      isOchsnerPacketContext,
+    });
+    traceOchsnerMessage(`raw/extracted count=${allRawChunkEvents.length}`);
+    takeTraceEvents(allRawChunkEvents).forEach((line) => traceOchsnerMessage(`raw/extracted ${line}`));
+    traceOchsnerMessage(`cleaned count=${allCleanedChunkEvents.length}`);
+    takeTraceEvents(allCleanedChunkEvents).forEach((line) => traceOchsnerMessage(`cleaned ${line}`));
+
+    const cleanedCounts = buildTraceCountMap(allCleanedChunkEvents);
+    for (const event of allRawChunkEvents) {
+      const key = fingerprintTraceEvent(event);
+      const remaining = cleanedCounts.get(key) || 0;
+      const guardReason = getOchsnerGuardReason(event, repairContext, allPageTexts);
+      const isTraumaLike = Boolean(guardReason);
+
+      if (isTraumaLike && remaining > 0) {
+        cleanedCounts.set(key, remaining - 1);
+        traceOchsnerMessage(
+          `clean guard kept: ${describeTraceEvent(event)} | reason=${guardReason ? "not dropped: " + guardReason : "did not match Ochsner/Reagan/Shannon guard"}`
+        );
+      } else if (isTraumaLike) {
+        traceOchsnerMessage(
+          `clean guard dropped: ${describeTraceEvent(event)} | reason=${guardReason || "matched Ochsner/Reagan/Shannon contamination terms"}`
+        );
+      }
+    }
+  }
 
   const repairedFinalCandidateEvents = supportOverriddenFinalCandidateEvents
     .map((event) => repairPersistedTimelineEvent(event, allPageTexts, null, repairContext))
@@ -2382,6 +2511,31 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
       (event) =>
         Boolean(normalizeWhitespace(event.title) || normalizeWhitespace(event.description))
     );
+
+  if (isOchsnerTraceEnabled()) {
+    traceOchsnerMessage(`repaired/final count=${repairedFinalCandidateEvents.length}`);
+    takeTraceEvents(repairedFinalCandidateEvents).forEach((line) =>
+      traceOchsnerMessage(`repaired/final ${line}`)
+    );
+
+    const finalCounts = buildTraceCountMap(repairedFinalCandidateEvents);
+    for (const event of supportOverriddenFinalCandidateEvents) {
+      const key = fingerprintTraceEvent(event);
+      const remaining = finalCounts.get(key) || 0;
+      const guardReason = getOchsnerGuardReason(event, repairContext, allPageTexts);
+
+      if (guardReason && remaining > 0) {
+        finalCounts.set(key, remaining - 1);
+        traceOchsnerMessage(
+          `final guard kept: ${describeTraceEvent(event)} | reason=not dropped: ${guardReason}`
+        );
+      } else if (guardReason) {
+        traceOchsnerMessage(
+          `final guard dropped: ${describeTraceEvent(event)} | reason=${guardReason}`
+        );
+      }
+    }
+  }
 
   const providerBackfilledFinalCandidateEvents = repairedFinalCandidateEvents.map((event) => {
     const title = `${event.title || ""} ${event.description || ""}`.toLowerCase();
@@ -2411,6 +2565,13 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
         event.medicalFacility || (shouldBackfillTraumaMetadata ? "Reagan Memorial Hospital" : null),
     };
   });
+
+  if (isOchsnerTraceEnabled()) {
+    traceOchsnerMessage(`provider/backfill count=${providerBackfilledFinalCandidateEvents.length}`);
+    takeTraceEvents(providerBackfilledFinalCandidateEvents).forEach((line) =>
+      traceOchsnerMessage(`provider/backfill ${line}`)
+    );
+  }
 
 const finalTimelineEvents = toTimelineEventInsertRows(
   {
