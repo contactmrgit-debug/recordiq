@@ -5,6 +5,7 @@ import {
   loadRepairPageTextsForDocuments,
   repairPersistedTimelineEvents,
 } from "@/lib/document-processing";
+import { formatTimelineDateValue } from "@/lib/timeline-date";
 
 export const dynamic = "force-dynamic";
 
@@ -92,16 +93,14 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     >();
 
     const repairedTimelineEvents = timelineEvents.map((event, index) => {
+      const mappedDate = formatTimelineDateValue(event.eventDate);
       const documentId = event.documentId || "";
       if (documentId) {
         const list = rawEventsByDocument.get(documentId) ?? [];
         list.push({
           index,
           event: {
-            date:
-              event.eventDate instanceof Date
-                ? event.eventDate.toISOString().split("T")[0]
-                : "UNKNOWN",
+            date: mappedDate,
             title: event.title || "",
             description: event.description || "",
             eventType: event.eventType || "other",
@@ -121,18 +120,22 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       }
 
       return {
-        date:
-          event.eventDate instanceof Date
-            ? event.eventDate.toISOString().split("T")[0]
-            : "UNKNOWN",
+        date: mappedDate,
+        eventDate: mappedDate,
         title: event.title || "",
         description: event.description || "",
         eventType: event.eventType || "other",
         sourcePage: event.sourcePage ?? null,
         documentName: documentContextById.get(event.documentId || "")?.fileName || null,
+        medicalFacility: event.medicalFacility || null,
+        providerName: null,
+        providerRole: null,
+        physicianName: event.physicianName || null,
+        physicianRole: null,
       };
     }) as Array<{
       date: string;
+      eventDate: string;
       title: string;
       description: string;
       eventType: string;
@@ -171,6 +174,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
         repairedForSummary[index] = {
           date: repaired.date,
+          eventDate: repaired.date,
           title: repaired.title || "",
           description: repaired.description || "",
           eventType: repaired.eventType || "other",
@@ -215,7 +219,8 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
         return {
           ...event,
-          eventDate: event.eventDate,
+          date: formatTimelineDateValue(event.eventDate),
+          eventDate: formatTimelineDateValue(event.eventDate),
           title: repaired.title,
           description: repaired.description,
           eventType: repaired.eventType,

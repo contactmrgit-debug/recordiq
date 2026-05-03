@@ -3,6 +3,7 @@ import { repairPersistedTimelineEvents } from "@/lib/document-processing";
 import { loadRepairPageTextsForDocuments } from "@/lib/document-processing";
 import { prisma } from "@/lib/prisma";
 import { generateTimelineSummary } from "@/lib/timeline-summary";
+import { formatTimelineDateValue } from "@/lib/timeline-date";
 
 export const dynamic = "force-dynamic";
 
@@ -95,16 +96,14 @@ export async function GET(
     >();
 
     const timelineEventsResponse = timelineEvents.map((event, index) => {
+      const mappedDate = formatTimelineDateValue(event.eventDate);
       const documentId = event.documentId || "";
       if (documentId) {
         const list = rawEventsByDocument.get(documentId) ?? [];
         list.push({
           index,
           event: {
-            date:
-              event.eventDate instanceof Date
-                ? event.eventDate.toISOString().split("T")[0]
-                : "UNKNOWN",
+            date: mappedDate,
             title: event.title || "",
             description: event.description || "",
             eventType: event.eventType || "other",
@@ -125,10 +124,8 @@ export async function GET(
 
       return {
         id: event.id,
-        date:
-          event.eventDate instanceof Date
-            ? event.eventDate.toISOString().split("T")[0]
-            : "UNKNOWN",
+        date: mappedDate,
+        eventDate: mappedDate,
         title: event.title || "",
         description: event.description || "",
         eventType: event.eventType || "other",
@@ -137,13 +134,17 @@ export async function GET(
         isHidden: event.isHidden ?? false,
         documentId: event.documentId || null,
         documentName: documentContextById.get(event.documentId || "")?.fileName || null,
+        providerName: null,
+        providerRole: null,
         physicianName: event.physicianName || null,
+        physicianRole: null,
         medicalFacility: event.medicalFacility || null,
       };
     }) as Array<
       | {
           id: string;
           date: string;
+          eventDate: string;
           title: string;
           description: string;
           eventType: string;
@@ -151,12 +152,12 @@ export async function GET(
           documentName: string | null;
           reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
           isHidden: boolean;
-        documentId: string | null;
-        providerName: string | null;
-        providerRole: string | null;
-        physicianName: string | null;
-        physicianRole: string | null;
-        medicalFacility: string | null;
+          documentId: string | null;
+          providerName: string | null;
+          providerRole: string | null;
+          physicianName: string | null;
+          physicianRole: string | null;
+          medicalFacility: string | null;
       }
       | null
     >;
@@ -223,7 +224,8 @@ export async function GET(
 
         return {
           ...event,
-          eventDate: event.eventDate,
+          date: formatTimelineDateValue(event.eventDate),
+          eventDate: formatTimelineDateValue(event.eventDate),
           title: repaired.title,
           description: repaired.description,
           eventType: repaired.eventType,

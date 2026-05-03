@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import { generateTimelineSummary } from "@/lib/timeline-summary";
 import { buildCaseExportHtml } from "@/lib/case-export-html";
+import { formatTimelineDateValue } from "@/lib/timeline-date";
 
 
 type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -36,6 +37,7 @@ export type DocumentItem = {
 type TimelineEvent = {
   id: string;
   date: string;
+  eventDate?: string | null;
   title: string;
   description?: string | null;
   eventType?: string | null;
@@ -72,6 +74,20 @@ type ExtractedCode = {
   detail: string;
 };
 
+function normalizeTimelineEventDate(event: {
+  date?: string | null;
+  eventDate?: string | Date | null;
+}) {
+  return formatTimelineDateValue(event.date ?? event.eventDate);
+}
+
+function normalizeTimelineEvent(event: TimelineEvent): TimelineEvent {
+  return {
+    ...event,
+    date: normalizeTimelineEventDate(event),
+  };
+}
+
 async function safeJson(res: Response, label: string) {
   const text = await res.text();
   console.log(`${label.toUpperCase()} RAW RESPONSE:`, text);
@@ -100,11 +116,13 @@ function formatDate(date?: string) {
   return `${month}/${day}/${year}`;
 }
 function eventSortTime(event: TimelineEvent) {
-  if (!event.date || event.date === "UNKNOWN") {
+  const date = normalizeTimelineEventDate(event);
+
+  if (!date || date === "UNKNOWN") {
     return Number.MAX_SAFE_INTEGER;
   }
 
-  return Number(event.date.replaceAll("-", ""));
+  return Number(date.replaceAll("-", ""));
 }
 
 function escapeHtml(value: string) {
@@ -245,7 +263,7 @@ function buildExportRows(
     caseTitle: caseData?.title || "",
     caseType: caseData?.caseType || "",
     subjectName: caseData?.subjectName || "",
-    date: event.date || "",
+    date: normalizeTimelineEventDate(event),
     provider: getProviderName(event) || "",
     providerRole: getProviderRole(event) || "",
     title: event.title || "",
@@ -644,7 +662,9 @@ function getSourcePage(event?: TimelineEvent | null) {
       }
 
       const nextEvents = Array.isArray(eventsResult.data?.timelineEvents)
-        ? eventsResult.data.timelineEvents
+        ? eventsResult.data.timelineEvents.map((event: TimelineEvent) =>
+            normalizeTimelineEvent(event)
+          )
         : [];
       const nextSummary = isTimelineSummary(eventsResult.data?.summary)
         ? eventsResult.data.summary
@@ -847,7 +867,7 @@ const filteredEvents = useMemo(() => {
     const groups: { date: string; items: TimelineEvent[] }[] = [];
 
     for (const event of filteredEvents) {
-      const key = event.date || "UNKNOWN";
+      const key = normalizeTimelineEventDate(event);
       const last = groups[groups.length - 1];
 
       if (!last || last.date !== key) {
