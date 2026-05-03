@@ -757,10 +757,14 @@ function getSourcePage(event?: TimelineEvent | null) {
     const previousEditingEventId = editingEventId;
     const previousEditTitle = editTitle;
     const previousEditDescription = editDescription;
+    const previousShowHidden = showHidden;
     const hideSelectedEvent = Boolean(updates.isHidden) && selectedEventId === eventId;
 
     try {
       setUpdatingEventId(eventId);
+      if (updates.isHidden) {
+        setShowHidden(false);
+      }
       setEvents((prev) =>
         prev.map((event) => (event.id === eventId ? { ...event, ...updates } : event))
       );
@@ -797,6 +801,7 @@ function getSourcePage(event?: TimelineEvent | null) {
       return true;
     } catch (err) {
       setEvents(previousEvents);
+      setShowHidden(previousShowHidden);
       setSelectedEventId(previousSelectedEventId);
       setSelectedDocumentId(previousSelectedDocumentId);
       setActiveSourcePage(previousActiveSourcePage);
@@ -1508,26 +1513,38 @@ Status: ${event.reviewStatus || "PENDING"}
                                       reviewStatus: "PENDING",
                                       isHidden: false,
                                     });
-                                  }}
+    }}
     disabled={isUpdating}
     className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-300"
   >
     Reset
   </button>
 
-  <button
-    type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateEvent(eventId, {
-                                      isHidden: !timelineEvent.isHidden,
-                                    });
-                                  }}
-    disabled={isUpdating}
-    className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-  >
-    {timelineEvent.isHidden ? "Unhide" : "Hide"}
-  </button>
+  {timelineEvent.isHidden ? (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        updateEvent(eventId, { isHidden: false });
+      }}
+      disabled={isUpdating}
+      className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+    >
+      Unhide
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        updateEvent(eventId, { isHidden: true });
+      }}
+      disabled={isUpdating}
+      className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+    >
+      Hide
+    </button>
+  )}
 </div>
                             </>
                           )}
