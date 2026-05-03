@@ -1,3 +1,5 @@
+import type { TimelineDisplayDateGroup } from "@/lib/timeline-summary";
+
 type ExportCaseData = {
   title?: string | null;
   caseType?: string | null;
@@ -5,7 +7,7 @@ type ExportCaseData = {
 };
 
 type ExportEvent = {
-  id?: string;
+  id?: string | null;
   date?: string | null;
   title?: string | null;
   description?: string | null;
@@ -13,11 +15,6 @@ type ExportEvent = {
   sourcePage?: number | null;
   reviewStatus?: string | null;
   documentId?: string | null;
-};
-
-type ExportEventGroup = {
-  date: string;
-  items: ExportEvent[];
 };
 
 type ExportSummary = {
@@ -28,7 +25,7 @@ type ExportSummary = {
 
 type ExportHtmlArgs = {
   caseData: ExportCaseData | null;
-  groupedEvents: ExportEventGroup[];
+  groupedEvents: TimelineDisplayDateGroup[];
   summary: ExportSummary;
   getAttributionLine: (event: ExportEvent) => string;
   getDocumentName: (documentId?: string | null) => string;
@@ -66,6 +63,52 @@ function renderSummary(summary: ExportSummary): string {
   `;
 }
 
+function renderGroupedEvents(
+  groupedEvents: TimelineDisplayDateGroup[],
+  getAttributionLine: (event: ExportEvent) => string,
+  getDocumentName: (documentId?: string | null) => string
+): string {
+  return groupedEvents
+    .map(
+      (group) => `
+        <div class="date">${escapeHtml(group.date || "Unknown")}</div>
+        ${group.groups
+          .map(
+            (section) => `
+              <div class="section">
+                <div class="section-title">${escapeHtml(section.categoryLabel)}</div>
+                ${section.items
+                  .map(
+                    (event) => `
+                      <div class="item">
+                        ${
+                          getAttributionLine(event)
+                            ? `<div class="provider">${escapeHtml(
+                                getAttributionLine(event)
+                              )}</div>`
+                            : ""
+                        }
+                        <div class="title">${escapeHtml(event.title || "")}</div>
+                        <div>${escapeHtml(event.description || "")}</div>
+                        <div class="details">
+                          ${escapeHtml(event.eventType || "other")} â€¢
+                          Page ${escapeHtml(String(event.sourcePage ?? "-"))} â€¢
+                          ${escapeHtml(getDocumentName(event.documentId))} â€¢
+                          ${escapeHtml(event.reviewStatus || "PENDING")}
+                        </div>
+                      </div>
+                    `
+                  )
+                  .join("")}
+              </div>
+            `
+          )
+          .join("")}
+      `
+    )
+    .join("");
+}
+
 export function buildCaseExportHtml({
   caseData,
   groupedEvents,
@@ -89,7 +132,10 @@ export function buildCaseExportHtml({
           .summary-list li { margin-bottom: 6px; line-height: 1.5; }
           .timeline-heading { margin-top: 16px; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #111827; }
           .date { margin-top: 24px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+          .section { margin-top: 12px; border: 1px solid #e5e7eb; border-radius: 14px; background: #f8fafc; padding: 12px; break-inside: avoid; }
+          .section-title { margin-bottom: 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #475569; }
           .item { padding: 12px 0; border-bottom: 1px solid #eee; }
+          .section .item:last-child { border-bottom: none; padding-bottom: 0; }
           .title { font-weight: bold; margin-bottom: 4px; }
           .details { color: #666; font-size: 13px; margin-top: 6px; }
           .provider { color: #222; font-size: 14px; font-weight: bold; margin-bottom: 6px; }
@@ -103,35 +149,9 @@ export function buildCaseExportHtml({
         </div>
         ${renderSummary(summary)}
         <div class="timeline-heading">Timeline</div>
-        ${groupedEvents
-          .map(
-            (group) => `
-              <div class="date">${escapeHtml(group.date || "Unknown")}</div>
-              ${group.items
-                .map(
-                  (event) => `
-                    <div class="item">
-                      ${
-                        getAttributionLine(event)
-                          ? `<div class="provider">${escapeHtml(getAttributionLine(event))}</div>`
-                          : ""
-                      }
-                      <div class="title">${escapeHtml(event.title || "")}</div>
-                      <div>${escapeHtml(event.description || "")}</div>
-                      <div class="details">
-                        ${escapeHtml(event.eventType || "other")} •
-                        Page ${escapeHtml(String(event.sourcePage ?? "-"))} •
-                        ${escapeHtml(getDocumentName(event.documentId))} •
-                        ${escapeHtml(event.reviewStatus || "PENDING")}
-                      </div>
-                    </div>
-                  `
-                )
-                .join("")}
-            `
-          )
-          .join("")}
+        ${renderGroupedEvents(groupedEvents, getAttributionLine, getDocumentName)}
       </body>
     </html>
   `;
 }
+

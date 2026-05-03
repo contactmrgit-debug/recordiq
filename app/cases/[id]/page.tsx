@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { generateTimelineSummary } from "@/lib/timeline-summary";
+import {
+  buildTimelineDisplayGroups,
+  generateTimelineSummary,
+  type TimelineDisplayDateGroup,
+} from "@/lib/timeline-summary";
 import { buildCaseExportHtml } from "@/lib/case-export-html";
 import { formatTimelineDateValue } from "@/lib/timeline-date";
 
@@ -863,22 +867,10 @@ const filteredEvents = useMemo(() => {
     setEditDescription("");
   }
 
-  const groupedEvents = useMemo(() => {
-    const groups: { date: string; items: TimelineEvent[] }[] = [];
-
-    for (const event of filteredEvents) {
-      const key = normalizeTimelineEventDate(event);
-      const last = groups[groups.length - 1];
-
-      if (!last || last.date !== key) {
-        groups.push({ date: key, items: [event] });
-      } else {
-        last.items.push(event);
-      }
-    }
-
-    return groups;
-  }, [filteredEvents]);
+  const groupedEvents = useMemo<TimelineDisplayDateGroup[]>(
+    () => buildTimelineDisplayGroups(filteredEvents),
+    [filteredEvents]
+  );
 
   const selectedEvent =
     filteredEvents.find((event) => event.id === selectedEventId) ||
@@ -948,18 +940,28 @@ const activeDocument = useMemo(() => {
     }
 
     if (format === "word") {
-      const content = rows
+      const content = groupedEvents
         .map(
-          (row) =>
-            `${row.date}
-Provider: ${row.provider}
-Role: ${row.providerRole}
-${row.title}
-${row.description}
-Type: ${row.eventType}
-Page: ${row.sourcePage}
-Document: ${row.document}
-Status: ${row.reviewStatus}
+          (group) => `
+${formatDate(group.date)}
+${group.groups
+  .map(
+    (section) => `
+${section.categoryLabel}
+${section.items
+  .map(
+    (event) => `${event.title}
+${getAttributionLine(event as TimelineEvent) ? `Attribution: ${getAttributionLine(event as TimelineEvent)}\n` : ""}${event.description || "No description"}
+Type: ${event.eventType || "other"}
+Page: ${event.sourcePage ?? ""}
+Document: ${getDocumentName(event.documentId)}
+Status: ${event.reviewStatus || "PENDING"}
+`
+  )
+  .join("\n")}
+`
+  )
+  .join("\n")}
 `
         )
         .join("\n-------------------------\n\n");
@@ -1237,26 +1239,41 @@ Status: ${row.reviewStatus}
                 {formatDate(group.date)}
               </div>
 
-              <div className="space-y-3">
-              {group.items.map((event) => {
-  const isSelected = event.id === selectedEventId;
-  const isEditing = event.id === editingEventId;
-  const isUpdating = event.id === updatingEventId;
-  const isSourceActive = event.documentId === selectedDocumentId;
-  const codes = extractMedicalCodes(
-    `${event.title || ""}\n${event.description || ""}`
-  );
+              <div className="space-y-4">
+                {group.groups.map((section) => (
+                  <div
+                    key={`${group.date}-${section.category}`}
+                    className="rounded-3xl border border-slate-200 bg-slate-50/70 p-3"
+                  >
+                    <div className="mb-3 flex flex-wrap items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <span>{section.categoryLabel}</span>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
+                        {section.items.length} events
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {section.items.map((event) => {
+                        const eventId = event.id || "";
+                        const timelineEvent = event as TimelineEvent;
+                        const isSelected = eventId === selectedEventId;
+                        const isEditing = eventId === editingEventId;
+                        const isUpdating = eventId === updatingEventId;
+                        const isSourceActive = timelineEvent.documentId === selectedDocumentId;
+                        const codes = extractMedicalCodes(
+                          `${timelineEvent.title || ""}\n${timelineEvent.description || ""}`
+                        );
 
                   return (
 <div
-  key={event.id}
+  key={eventId}
   role="button"
   tabIndex={0}
-  onClick={() => handleSelectEvent(event)}
+  onClick={() => handleSelectEvent(timelineEvent)}
   onKeyDown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      handleSelectEvent(event);
+      handleSelectEvent(timelineEvent);
     }
   }}
   className={`relative rounded-3xl border p-5 transition cursor-pointer ${
@@ -1283,7 +1300,7 @@ Status: ${row.reviewStatus}
                         <div className="w-full min-w-0">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
-                              {formatDate(event.date)}
+                              {formatDate(timelineEvent.date)}
                             </span>
 
                             <span
@@ -1301,7 +1318,7 @@ Status: ${row.reviewStatus}
   type="button"
   onClick={(e) => {
     e.stopPropagation();
-    void openSourceDocument(event);
+    void openSourceDocument(timelineEvent);
   }}
   className={`rounded-full px-3 py-1 text-xs font-medium ${
     event.documentId === selectedDocumentId
@@ -1344,7 +1361,7 @@ Status: ${row.reviewStatus}
                               <div className="flex flex-wrap gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => saveEdit(event.id)}
+                                      onClick={() => saveEdit(eventId)}
                                   disabled={isUpdating}
                                   className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                 >
@@ -1366,17 +1383,7 @@ Status: ${row.reviewStatus}
                                 {event.title}
                               </div>
 
-                              {false ? (<div className="mt-1 text-sm font-medium text-slate-700">
-  {getProviderName(event)}
-  {getProviderRole(event) ? (
-    <>
-      <span className="mx-2 text-slate-300">•</span>
-      <span>{getProviderRole(event)}</span>
-    </>
-  ) : null}
-  <span className="mx-2 text-slate-300">•</span>
-  {getMedicalFacility(event)}
-</div>) : getAttributionLine(event) ? (<div className="mt-1 text-sm font-medium text-slate-700">{getAttributionLine(event)}</div>) : null}
+                              {getAttributionLine(timelineEvent) ? (<div className="mt-1 text-sm font-medium text-slate-700">{getAttributionLine(timelineEvent)}</div>) : null}
 
                               <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
                                 {event.description || "No description"}
@@ -1401,7 +1408,7 @@ Status: ${row.reviewStatus}
     type="button"
     onClick={(e) => {
       e.stopPropagation();
-      startEditing(event);
+      startEditing(timelineEvent);
     }}
     disabled={isUpdating}
     className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
@@ -1413,7 +1420,7 @@ Status: ${row.reviewStatus}
     type="button"
     onClick={(e) => {
       e.stopPropagation();
-      updateEvent(event.id, { reviewStatus: "APPROVED" });
+                                          updateEvent(eventId, { reviewStatus: "APPROVED" });
     }}
     disabled={isUpdating}
    className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700"
@@ -1425,7 +1432,7 @@ Status: ${row.reviewStatus}
     type="button"
     onClick={(e) => {
       e.stopPropagation();
-      updateEvent(event.id, { reviewStatus: "REJECTED" });
+                                          updateEvent(eventId, { reviewStatus: "REJECTED" });
     }}
     disabled={isUpdating}
     className="rounded-xl bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700"
@@ -1437,7 +1444,7 @@ Status: ${row.reviewStatus}
     type="button"
     onClick={(e) => {
       e.stopPropagation();
-      updateEvent(event.id, {
+                                          updateEvent(eventId, {
         reviewStatus: "PENDING",
         isHidden: false,
       });
@@ -1452,14 +1459,14 @@ Status: ${row.reviewStatus}
     type="button"
     onClick={(e) => {
       e.stopPropagation();
-      updateEvent(event.id, {
-        isHidden: !event.isHidden,
+                                          updateEvent(eventId, {
+        isHidden: !timelineEvent.isHidden,
       });
     }}
     disabled={isUpdating}
     className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
   >
-    {event.isHidden ? "Unhide" : "Hide"}
+    {timelineEvent.isHidden ? "Unhide" : "Hide"}
   </button>
 </div>
                             </>
@@ -1468,7 +1475,10 @@ Status: ${row.reviewStatus}
                       </div>
                     </div>
                   );
-                })}
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -1665,3 +1675,4 @@ Status: ${row.reviewStatus}
   </div>
 );
 }
+

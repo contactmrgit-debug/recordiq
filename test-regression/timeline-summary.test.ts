@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { cleanTimelineEvents } from "../lib/timeline-cleanup.ts";
 import {
+  buildTimelineDisplayGroups,
   classifySummaryCategory,
   generateTimelineSummary,
 } from "../lib/timeline-summary.ts";
 
 type SummaryEvent = {
   date?: string | null;
+  eventDate?: string | Date | null;
   title?: string | null;
   description?: string | null;
   eventType?: string | null;
@@ -20,6 +22,7 @@ function makeEvent(
 ): SummaryEvent {
   return {
     date: "2024-01-01",
+    eventDate: overrides.eventDate ?? overrides.date ?? "2024-01-01",
     title,
     description,
     eventType: overrides.eventType ?? "other",
@@ -459,6 +462,51 @@ function run() {
     assert.ok(/Project ReEntry packet/i.test(result.caseSummary));
     assert.ok(/Reagan Memorial/i.test(result.caseSummary));
     assert.ok(/C2 cervical spine fractures with extension through the right vertebral foramen/i.test(result.caseSummary));
+  }
+
+  {
+    const ochsnerDisplayEvents = [
+      {
+        eventDate: new Date("2023-06-07T00:00:00.000Z"),
+        title: "Emergency department presentation with rash and bleeding from mouth and nose",
+        description:
+          "Main encounter at Ochsner University Hospital / Ochsner Health for rash, coagulation disorder, and bleeding from the mouth and nose.",
+        eventType: "symptom",
+        sourcePage: 4,
+        documentName: "Ochsner",
+        medicalFacility: "Ochsner University Hospital / Ochsner Health",
+        reviewStatus: "PENDING",
+        isHidden: false,
+      },
+      {
+        eventDate: new Date("2023-06-07T00:00:00.000Z"),
+        title: "Transferred for hematology evaluation",
+        description: "Transferred to another facility for hematology evaluation and further management.",
+        eventType: "transfer",
+        sourcePage: 6,
+        documentName: "Ochsner",
+        medicalFacility: "Ochsner University Hospital / Ochsner Health",
+        reviewStatus: "PENDING",
+        isHidden: false,
+      },
+    ] as any;
+
+    const displayGroups = buildTimelineDisplayGroups(ochsnerDisplayEvents);
+
+    assert.ok(displayGroups.length > 0);
+    assert.equal(displayGroups[0]?.date, "2023-06-07");
+    assert.ok(displayGroups.every((group) => group.date !== "UNKNOWN"));
+    assert.ok(
+      displayGroups.some(
+        (group) =>
+          group.date === "2023-06-07" &&
+          group.groups.some((section) =>
+            section.items.some((event) =>
+              /bleeding from the mouth and nose/i.test(event.title || "")
+            )
+          )
+      )
+    );
   }
 
   {

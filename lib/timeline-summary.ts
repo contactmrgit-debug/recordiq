@@ -1,9 +1,30 @@
+import { formatTimelineDateValue } from "@/lib/timeline-date";
+
 export type TimelineSummaryMode = "short" | "grouped" | "highlights";
 
 export type TimelineSummaryResult = {
   caseSummary: string;
   keyFindings: string[];
   mode: TimelineSummaryMode;
+};
+
+export type TimelineDisplayEvent = TimelineSummaryEvent & {
+  id?: string | null;
+  eventDate?: string | Date | null;
+  documentId?: string | null;
+  reviewStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
+  isHidden?: boolean | null;
+};
+
+export type TimelineDisplayEventGroup = {
+  category: SummaryCategory;
+  categoryLabel: string;
+  items: TimelineDisplayEvent[];
+};
+
+export type TimelineDisplayDateGroup = {
+  date: string;
+  groups: TimelineDisplayEventGroup[];
 };
 
 type TimelineSummaryEvent = {
@@ -892,7 +913,8 @@ function collectTopGroups(
 }
 
 function buildCaseSummary(
-  selectedGroups: Array<{ category: SummaryCategory; events: TimelineSummaryEvent[] }>
+  selectedGroups: Array<{ category: SummaryCategory; events: TimelineSummaryEvent[] }>,
+  maxSentences: number
 ): string {
   const sentences: string[] = [];
 
@@ -927,6 +949,7 @@ function buildCaseSummary(
   }
 
   return limited
+    .slice(0, maxSentences)
     .map((sentence) => {
       const trimmed = sentence.replace(/[\s.]+$/, "").trim();
       return trimmed.endsWith(".") ? trimmed : `${trimmed}.`;
@@ -934,12 +957,34 @@ function buildCaseSummary(
     .join(" ");
 }
 
+function summarySentenceLimit(mode: TimelineSummaryMode): number {
+  switch (mode) {
+    case "short":
+      return 2;
+    case "grouped":
+      return 3;
+    default:
+      return 4;
+  }
+}
+
+function keyFindingLimit(mode: TimelineSummaryMode): number {
+  switch (mode) {
+    case "short":
+      return 3;
+    case "grouped":
+      return 5;
+    default:
+      return 6;
+  }
+}
+
 function buildKeyFindings(
   mode: TimelineSummaryMode,
   grouped: Map<SummaryCategory, ScoredSummaryEvent[]>,
   packetFacts?: string | null
 ): string[] {
-  const limit = mode === "short" ? 5 : 8;
+  const limit = keyFindingLimit(mode);
   const groups = collectTopGroups(grouped, limit);
 
   return [
@@ -950,6 +995,108 @@ function buildKeyFindings(
       return `${label}: ${sentence}`;
     }),
   ].slice(0, limit);
+}
+
+function normalizeDisplayEvent(event: TimelineDisplayEvent): TimelineDisplayEvent {
+  const normalizedDate = formatTimelineDateValue(event.eventDate ?? event.date);
+
+  return {
+    ...event,
+    date: normalizedDate,
+    eventDate: normalizedDate,
+  };
+}
+
+function compareDisplayDates(a: string, b: string): number {
+  if (a === b) return 0;
+  if (a === "UNKNOWN") return 1;
+  if (b === "UNKNOWN") return -1;
+
+  return a.localeCompare(b);
+}
+
+function compareDisplayEvents(
+  a: TimelineDisplayEvent,
+  b: TimelineDisplayEvent,
+  aIndex: number,
+  bIndex: number
+): number {
+  const aPage = a.sourcePage ?? Number.MAX_SAFE_INTEGER;
+  const bPage = b.sourcePage ?? Number.MAX_SAFE_INTEGER;
+  if (aPage !== bPage) return aPage - bPage;
+
+  const aTitle = normalizeText(a.title || "");
+  const bTitle = normalizeText(b.title || "");
+  if (aTitle !== bTitle) return aTitle.localeCompare(bTitle);
+
+  return aIndex - bIndex;
+}
+
+export function buildTimelineDisplayGroups(
+  events: TimelineDisplayEvent[]
+): TimelineDisplayDateGroup[] {
+  const indexedEvents = events
+    .map((event, index) => ({
+      event: normalizeDisplayEvent(event),
+      index,
+    }))
+    .sort((a, b) => compareDisplayDates(a.event.date || "UNKNOWN", b.event.date || "UNKNOWN") || a.index - b.index);
+
+  const byDate = new Map<
+    string,
+    {
+      event: TimelineDisplayEvent;
+      index: number;
+    }[]
+  >();
+
+  for (const item of indexedEvents) {
+    const date = item.event.date || "UNKNOWN";
+    const bucket = byDate.get(date) || [];
+    bucket.push(item);
+    byDate.set(date, bucket);
+  }
+
+  return Array.from(byDate.entries())
+    .map(([date, items]) => {
+      const grouped = new Map<
+        SummaryCategory,
+        {
+          event: TimelineDisplayEvent;
+          index: number;
+        }[]
+      >();
+
+      for (const item of items) {
+        const category = classifySummaryCategory(item.event);
+        const bucket = grouped.get(category) || [];
+        bucket.push(item);
+        grouped.set(category, bucket);
+      }
+
+      const groups = CATEGORY_ORDER.flatMap((category) => {
+        const bucket = grouped.get(category) || [];
+        if (!bucket.length) return [];
+
+        const sorted = [...bucket].sort((a, b) =>
+          compareDisplayEvents(a.event, b.event, a.index, b.index)
+        );
+
+        return [
+          {
+            category,
+            categoryLabel: CATEGORY_LABELS[category],
+            items: sorted.map((item) => item.event),
+          },
+        ];
+      });
+
+      return {
+        date,
+        groups,
+      };
+    })
+    .sort((a, b) => compareDisplayDates(a.date, b.date));
 }
 
 export function generateTimelineSummary(
@@ -971,7 +1118,11 @@ export function generateTimelineSummary(
   const keyFindings = buildKeyFindings(mode, grouped, packetFacts);
   const selectedGroups = collectTopGroups(grouped, CATEGORY_ORDER.length);
   const packetPrefix = buildPacketPrefix(events);
-  const caseSummary = [packetPrefix, packetFacts, buildCaseSummary(selectedGroups)]
+  const caseSummary = [
+    packetPrefix,
+    packetFacts,
+    buildCaseSummary(selectedGroups, summarySentenceLimit(mode)),
+  ]
     .filter(Boolean)
     .join(" ");
 
