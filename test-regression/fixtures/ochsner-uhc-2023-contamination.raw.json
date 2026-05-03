@@ -6,7 +6,7 @@
     "eventType": "symptom",
     "sourcePage": 4,
     "sourceExcerpt": "06/07/2023 emergency department presentation at Ochsner University Hospital / Ochsner Health for rash, coagulation disorder, and bleeding from the mouth and nose.",
-    "documentName": "Ochsner_UHC_2023.pdf"
+    "documentName": "Ochsner"
   },
   {
     "date": "2023-06-07",
@@ -15,7 +15,7 @@
     "eventType": "report",
     "sourcePage": 5,
     "sourceExcerpt": "Platelet count of 1 was documented with severe thrombocytopenia and coagulation disorder workup.",
-    "documentName": "Ochsner_UHC_2023.pdf"
+    "documentName": "Ochsner"
   },
   {
     "date": "2023-06-07",
@@ -24,7 +24,7 @@
     "eventType": "treatment",
     "sourcePage": 5,
     "sourceExcerpt": "Dexamethasone was administered and platelet-related treatment/workup was started.",
-    "documentName": "Ochsner_UHC_2023.pdf"
+    "documentName": "Ochsner"
   },
   {
     "date": "2023-06-07",
@@ -33,7 +33,7 @@
     "eventType": "transfer",
     "sourcePage": 6,
     "sourceExcerpt": "Transferred to another facility for hematology evaluation and further management.",
-    "documentName": "Ochsner_UHC_2023.pdf"
+    "documentName": "Ochsner"
   },
   {
     "date": "2019-02-02",

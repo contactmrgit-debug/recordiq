@@ -34,6 +34,28 @@ type ScoredSummaryEvent = {
   index: number;
 };
 
+function normalizePacketLabel(value?: string | null): string {
+  return normalizeText(value)
+    .replace(/\.pdf$/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isOchsnerPacketLabel(value?: string | null): boolean {
+  const normalized = normalizePacketLabel(value);
+
+  if (!normalized) return false;
+
+  return (
+    normalized === "ochsner" ||
+    normalized.startsWith("ochsner uhc") ||
+    normalized.startsWith("ochsner university hospital") ||
+    normalized.startsWith("ochsner health")
+  );
+}
+
 const CATEGORY_ORDER: SummaryCategory[] = [
   "incident",
   "symptoms",
@@ -331,14 +353,6 @@ function groupText(events: TimelineSummaryEvent[]): string {
   );
 }
 
-function normalizePacketLabel(value?: string | null): string {
-  return normalizeText(value)
-    .replace(/\.[a-z0-9]+$/i, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function hasProjectReEntryPacket(events: TimelineSummaryEvent[]): boolean {
   return events.some((event) =>
     /project\s*re\s*entry/i.test(normalizePacketLabel(event.documentName || ""))
@@ -368,9 +382,10 @@ function isOchsnerBleedingPacket(events: TimelineSummaryEvent[]): boolean {
       )
       .join(" ")
   );
+  const hasOchsnerPacketLabel = events.some((event) => isOchsnerPacketLabel(event.documentName));
 
   return (
-    /\bochsner\b/.test(text) &&
+    (hasOchsnerPacketLabel || /\bochsner(?:\s+(?:university hospital|uhc|health))?\b/.test(text)) &&
     /\b(platelet|platelets|thrombocytopenia|bleeding from mouth and nose|bleeding from the mouth and nose|dexamethasone|hematology|rash)\b/.test(
       text
     )

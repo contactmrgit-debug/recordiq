@@ -95,6 +95,28 @@ function normalizeWhitespace(value?: string | null): string {
   return (value || "").replace(/\s+/g, " ").trim();
 }
 
+function normalizePacketLabel(value?: string | null): string {
+  return normalizeWhitespace(value)
+    .replace(/\.pdf$/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isOchsnerPacketLabel(value?: string | null): boolean {
+  const normalized = normalizePacketLabel(value);
+
+  if (!normalized) return false;
+
+  return (
+    normalized === "ochsner" ||
+    normalized.startsWith("ochsner uhc") ||
+    normalized.startsWith("ochsner university hospital") ||
+    normalized.startsWith("ochsner health")
+  );
+}
+
 function parseDateToUtc(date: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return null;
@@ -1926,6 +1948,14 @@ function isOchsnerBleedingPacketContext(
       ...pageTexts.slice(0, 4).map((pageText) => pageText.text),
     ].join(" ")
   ).toLowerCase();
+
+  if (isOchsnerPacketLabel(context?.fileName)) {
+    return true;
+  }
+
+  if (/\bochsner\s+(university hospital|uhc|health)\b/.test(combined)) {
+    return true;
+  }
 
   return (
     /\bochsner\b/.test(combined) &&

@@ -522,6 +522,34 @@ const ochsnerOcrFixturePath = path.join(
 const ochsnerRawEvents = JSON.parse(
   fs.readFileSync(ochsnerOcrFixturePath, "utf8")
 ) as Parameters<typeof cleanTimelineEvents>[0];
+const ochsnerLiveContext = { fileName: "Ochsner", recordType: null } as const;
+const ochsnerDroppedTraumaEvent = repairPersistedTimelineEvent(
+  {
+    date: "2019-02-02",
+    title: "ER presentation with head, neck, and left shoulder pain",
+    description:
+      "Patient was transferred to Shannon Medical Center by air transport after trauma.",
+    eventType: "symptom",
+    sourcePage: 46,
+    sourceExcerpt:
+      "ER presentation with head, neck, and left shoulder pain. Patient was transferred to Shannon Medical Center by air transport.",
+    medicalFacility: "Reagan Memorial Hospital",
+  } as any,
+  [],
+  null,
+  ochsnerLiveContext as any
+);
+assert.equal(ochsnerDroppedTraumaEvent.title, "");
+assert.equal(ochsnerDroppedTraumaEvent.description, "");
+assert.equal(ochsnerDroppedTraumaEvent.eventType, "");
+
+const ochsnerPreservedBleedEvent = repairPersistedTimelineEvent(
+  ochsnerRawEvents[0] as any,
+  [],
+  null,
+  ochsnerLiveContext as any
+);
+assert.equal(ochsnerPreservedBleedEvent.title, ochsnerRawEvents[0].title);
 const ochsnerCleanedEvents = cleanTimelineEvents(ochsnerRawEvents as any);
 const ochsnerSummary = generateTimelineSummary(ochsnerCleanedEvents);
 
