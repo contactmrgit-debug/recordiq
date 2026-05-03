@@ -387,29 +387,27 @@ export default function CasePage() {
     }
   }
 
+  function prepareSourceSelection(event: TimelineEvent) {
+    const sourcePage = getSourcePage(event);
+
+    setSelectedEventId(event.id);
+    setSelectedSourceDocument(event.documentId ?? null);
+    setActiveSourcePage(sourcePage);
+    setSourceDocumentViewUrl(null);
+    setSourceDocumentIframeSrc(null);
+
+    return sourcePage;
+  }
+
   async function openSourceDocument(event: TimelineEvent) {
+    const sourcePage = prepareSourceSelection(event);
+
     if (!event.documentId) {
-      setSelectedEventId(event.id);
-      setSelectedSourceDocument(null);
-      setActiveSourcePage(getSourcePage(event));
-      setSourceDocumentViewUrl(null);
-      setSourceDocumentIframeSrc(null);
       setSourcePreviewStatus("no-document");
       return;
     }
 
-    setSelectedEventId(event.id);
-    setSelectedSourceDocument(event.documentId);
-    setActiveSourcePage(getSourcePage(event));
-    setSourceDocumentViewUrl(null);
-    setSourceDocumentIframeSrc(null);
     setSourcePreviewStatus("loading");
-
-    const sourcePage = getSourcePage(event);
-    if (!sourcePage) {
-      setSourcePreviewStatus("no-page");
-      return;
-    }
 
     try {
       const response = await fetch(`/api/documents/${event.documentId}/view-url`, {
@@ -430,10 +428,10 @@ export default function CasePage() {
         throw new Error(json?.error || "Failed to load document view URL");
       }
 
-      const iframeSrc = `${json.url}#page=${sourcePage}`;
+      const iframeSrc = sourcePage ? `${json.url}#page=${sourcePage}` : json.url;
       setSourceDocumentViewUrl(json.url);
       setSourceDocumentIframeSrc(iframeSrc);
-      setSourcePreviewStatus("ready");
+      setSourcePreviewStatus(sourcePage ? "ready" : "no-page");
     } catch (error) {
       setSourceDocumentIframeSrc(null);
       setSourcePreviewStatus("error");
@@ -1269,7 +1267,8 @@ Status: ${event.reviewStatus || "PENDING"}
                         const isSelected = eventId === selectedEventId;
                         const isEditing = eventId === editingEventId;
                         const isUpdating = eventId === updatingEventId;
-                        const isSourceActive = timelineEvent.documentId === selectedDocumentId;
+                        const isSourceActive =
+                          isSelected && timelineEvent.documentId === selectedDocumentId;
                         const codes = extractMedicalCodes(
                           `${timelineEvent.title || ""}\n${timelineEvent.description || ""}`
                         );
@@ -1322,25 +1321,25 @@ Status: ${event.reviewStatus || "PENDING"}
                             </span>
 
                             {timelineEvent.documentId ? (
-                          <button
-  type="button"
-  onClick={(e) => {
-    e.stopPropagation();
-    void openSourceDocument(timelineEvent);
-  }}
-  className={`rounded-full px-3 py-1 text-xs font-medium ${
-    timelineEvent.documentId === selectedDocumentId
-      ? "border border-blue-500 bg-blue-600 text-white"
-      : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-  }`}
->
-  Source
-</button>
-) : (
-  <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-    No Source
-  </span>
-)}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void openSourceDocument(timelineEvent);
+                                }}
+                                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                  isSourceActive
+                                    ? "border border-blue-500 bg-blue-600 text-white"
+                                    : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                Source
+                              </button>
+                            ) : (
+                              <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+                                No source available
+                              </span>
+                            )}
 
                             {timelineEvent.isHidden ? (
                               <span className="rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600">
@@ -1575,7 +1574,7 @@ Status: ${event.reviewStatus || "PENDING"}
                   Source page
                 </div>
                 <div className="mt-1 text-sm font-medium text-slate-900">
-                  {currentSourcePage ?? "No page mapped"}
+                  {currentSourcePage ?? "Page not specified"}
                 </div>
                 <div className="mt-1 text-xs text-slate-500">
                   {activeDocument?.fileName || "No source document"}
@@ -1645,10 +1644,20 @@ Status: ${event.reviewStatus || "PENDING"}
         </div>
         <div className="mt-1 text-xs text-slate-500">
           {activeDocument?.fileName
-            ? `${activeDocument.fileName} | Page ${currentSourcePage ?? "N/A"}`
+            ? `${activeDocument.fileName} | ${
+                currentSourcePage !== null
+                  ? `Page ${currentSourcePage}`
+                  : "Page not specified"
+              }`
             : "Click Source on a timeline event to preview the supporting document page."}
         </div>
       </div>
+
+      {sourcePreviewStatus === "no-page" ? (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Page not specified. Showing the source document without a page anchor.
+        </div>
+      ) : null}
 
       {sourceDocumentIframeSrc ? (
         <iframe
