@@ -161,6 +161,19 @@ function statusPillClasses(status?: ReviewStatus) {
   }
 }
 
+function formatReviewStatusLabel(status?: ReviewStatus | null) {
+  switch (status || "PENDING") {
+    case "APPROVED":
+      return "Approved";
+    case "REJECTED":
+      return "Declined";
+    case "PENDING":
+      return "Pending";
+    default:
+      return status || "Pending";
+  }
+}
+
 function typePillClasses(type?: string | null) {
   switch ((type || "").toLowerCase()) {
     case "diagnosis":
@@ -726,43 +739,80 @@ function getSourcePage(event?: TimelineEvent | null) {
   }, []);
 
   async function updateEvent(
-  eventId: string,
-  updates: {
-    reviewStatus?: ReviewStatus;
-    isHidden?: boolean;
-    title?: string;
-    description?: string | null;
-  }
-) {
-  try {
-    setUpdatingEventId(eventId);
-
-    const res = await fetch(`/api/timeline-events/${eventId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updates),
-    });
-
-    const data = await safeJson(res, "Update event");
-
-    if (!res.ok || !data?.success) {
-      throw new Error(data?.error || "Failed to update event");
+    eventId: string,
+    updates: {
+      reviewStatus?: ReviewStatus;
+      isHidden?: boolean;
+      title?: string;
+      description?: string | null;
     }
+  ): Promise<boolean> {
+    const previousEvents = events;
+    const previousSelectedEventId = selectedEventId;
+    const previousSelectedDocumentId = selectedDocumentId;
+    const previousActiveSourcePage = activeSourcePage;
+    const previousSourcePreviewStatus = sourcePreviewStatus;
+    const previousSourceDocumentViewUrl = sourceDocumentViewUrl;
+    const previousSourceDocumentIframeSrc = sourceDocumentIframeSrc;
+    const previousEditingEventId = editingEventId;
+    const previousEditTitle = editTitle;
+    const previousEditDescription = editDescription;
+    const hideSelectedEvent = Boolean(updates.isHidden) && selectedEventId === eventId;
 
-    setEvents((prev) =>
-      prev.map((event) =>
-        event.id === eventId ? { ...event, ...updates } : event
-      )
-    );
-  } catch (err) {
-    console.error("Update event error:", err);
-    alert(err instanceof Error ? err.message : "Failed to update event");
-  } finally {
-    setUpdatingEventId(null);
+    try {
+      setUpdatingEventId(eventId);
+      setEvents((prev) =>
+        prev.map((event) => (event.id === eventId ? { ...event, ...updates } : event))
+      );
+
+      if (hideSelectedEvent) {
+        setSelectedEventId(null);
+        if (editingEventId === eventId) {
+          setEditingEventId(null);
+          setEditTitle("");
+          setEditDescription("");
+        }
+      }
+
+      const res = await fetch(`/api/timeline-events/${eventId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const data = await safeJson(res, "Update event");
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Failed to update event");
+      }
+
+      const updatedEvent = (data.timelineEvent || null) as TimelineEvent | null;
+      if (updatedEvent?.id) {
+        setEvents((prev) =>
+          prev.map((event) => (event.id === updatedEvent.id ? updatedEvent : event))
+        );
+      }
+      return true;
+    } catch (err) {
+      setEvents(previousEvents);
+      setSelectedEventId(previousSelectedEventId);
+      setSelectedDocumentId(previousSelectedDocumentId);
+      setActiveSourcePage(previousActiveSourcePage);
+      setSourcePreviewStatus(previousSourcePreviewStatus);
+      setSourceDocumentViewUrl(previousSourceDocumentViewUrl);
+      setSourceDocumentIframeSrc(previousSourceDocumentIframeSrc);
+      setEditingEventId(previousEditingEventId);
+      setEditTitle(previousEditTitle);
+      setEditDescription(previousEditDescription);
+
+      alert(err instanceof Error ? err.message : "Failed to update event");
+      return false;
+    } finally {
+      setUpdatingEventId(null);
+    }
   }
-}
 
   const visibleEvents = useMemo(() => {
     return [...events]
@@ -855,14 +905,16 @@ const filteredEvents = useMemo(() => {
       return;
     }
 
-    await updateEvent(eventId, {
+    const success = await updateEvent(eventId, {
       title: trimmedTitle,
       description: trimmedDescription || null,
     });
 
-    setEditingEventId(null);
-    setEditTitle("");
-    setEditDescription("");
+    if (success) {
+      setEditingEventId(null);
+      setEditTitle("");
+      setEditDescription("");
+    }
   }
 
   const groupedEvents = useMemo<TimelineDisplayDateGroup[]>(
@@ -873,13 +925,14 @@ const filteredEvents = useMemo(() => {
   const selectedEvent =
     filteredEvents.find((event) => event.id === selectedEventId) ||
     visibleEvents.find((event) => event.id === selectedEventId) ||
-    events.find((event) => event.id === selectedEventId) ||
     null;
 
   const currentSourcePage = getSourcePage(selectedEvent) ?? activeSourcePage;
 
   useEffect(() => {
-    setSelectedSourceDocument(selectedEvent?.documentId ?? null);
+    if (!selectedEvent) return;
+
+    setSelectedSourceDocument(selectedEvent.documentId ?? null);
     setActiveSourcePage(getSourcePage(selectedEvent));
   }, [selectedEvent]);
 
@@ -1312,13 +1365,13 @@ Status: ${event.reviewStatus || "PENDING"}
                               {formatDate(timelineEvent.date)}
                             </span>
 
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusPillClasses(
-                                timelineEvent.reviewStatus || "PENDING"
-                              )}`}
-                            >
-                              {timelineEvent.reviewStatus || "PENDING"}
-                            </span>
+                              <span
+                                className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusPillClasses(
+                                  timelineEvent.reviewStatus || "PENDING"
+                                )}`}
+                              >
+                                {formatReviewStatusLabel(timelineEvent.reviewStatus)}
+                              </span>
 
                             {timelineEvent.documentId ? (
                               <button
@@ -1529,7 +1582,7 @@ Status: ${event.reviewStatus || "PENDING"}
                   selectedEvent.reviewStatus || "PENDING"
                 )}`}
               >
-                {selectedEvent.reviewStatus || "PENDING"}
+                {formatReviewStatusLabel(selectedEvent.reviewStatus)}
               </span>
 
               <span
