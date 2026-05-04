@@ -358,6 +358,14 @@ export default function CasePage() {
   >("idle");
   const [showHidden, setShowHidden] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [renamingCase, setRenamingCase] = useState(false);
+  const [caseTitleDraft, setCaseTitleDraft] = useState("");
+  const [caseTitleError, setCaseTitleError] = useState<string | null>(null);
+  const [savingCaseTitle, setSavingCaseTitle] = useState(false);
+  const [editingPatientName, setEditingPatientName] = useState(false);
+  const [patientNameDraft, setPatientNameDraft] = useState("");
+  const [patientNameError, setPatientNameError] = useState<string | null>(null);
+  const [savingPatientName, setSavingPatientName] = useState(false);
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -397,6 +405,105 @@ export default function CasePage() {
       setSourcePreviewStatus("no-page");
     } else {
       setSourcePreviewStatus("idle");
+    }
+  }
+
+  function startCaseRename() {
+    setCaseTitleDraft(caseData?.title || "");
+    setCaseTitleError(null);
+    setRenamingCase(true);
+  }
+
+  function cancelCaseRename() {
+    setRenamingCase(false);
+    setCaseTitleDraft("");
+    setCaseTitleError(null);
+  }
+
+  function startPatientNameEdit() {
+    setPatientNameDraft(caseData?.subjectName || "");
+    setPatientNameError(null);
+    setEditingPatientName(true);
+  }
+
+  function cancelPatientNameEdit() {
+    setEditingPatientName(false);
+    setPatientNameDraft("");
+    setPatientNameError(null);
+  }
+
+  async function saveCaseTitle() {
+    const trimmedTitle = caseTitleDraft.trim();
+
+    if (!trimmedTitle) {
+      setCaseTitleError("Case name cannot be empty.");
+      return;
+    }
+
+    try {
+      setSavingCaseTitle(true);
+      setCaseTitleError(null);
+
+      const res = await fetch(`/api/cases/${caseId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: trimmedTitle }),
+      });
+
+      const data = await safeJson(res, "Update case");
+
+      if (!res.ok || !data?.success || !data.case) {
+        throw new Error(data?.error || "Failed to update case title");
+      }
+
+      setCaseData((prev) =>
+        prev ? { ...prev, title: data.case.title || trimmedTitle } : prev
+      );
+      setRenamingCase(false);
+      setCaseTitleDraft("");
+    } catch (error) {
+      setCaseTitleError(
+        error instanceof Error ? error.message : "Failed to update case title"
+      );
+    } finally {
+      setSavingCaseTitle(false);
+    }
+  }
+
+  async function savePatientName() {
+    const trimmedPatientName = patientNameDraft.trim();
+
+    try {
+      setSavingPatientName(true);
+      setPatientNameError(null);
+
+      const res = await fetch(`/api/cases/${caseId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ subjectName: trimmedPatientName || null }),
+      });
+
+      const data = await safeJson(res, "Update patient name");
+
+      if (!res.ok || !data?.success || !data.case) {
+        throw new Error(data?.error || "Failed to update patient name");
+      }
+
+      setCaseData((prev) =>
+        prev ? { ...prev, subjectName: data.case.subjectName ?? null } : prev
+      );
+      setEditingPatientName(false);
+      setPatientNameDraft("");
+    } catch (error) {
+      setPatientNameError(
+        error instanceof Error ? error.message : "Failed to update patient name"
+      );
+    } finally {
+      setSavingPatientName(false);
     }
   }
 
@@ -973,6 +1080,9 @@ const activeDocument = useMemo(() => {
     return { pending, approved, hidden };
   }, [events]);
 
+  const displayedPatientName = caseData?.subjectName?.trim() || "Unnamed Patient";
+  const displayedCaseTitle = caseData?.title?.trim() || "Untitled Case";
+
   function handleExport(format: "pdf" | "word" | "excel" | "zip") {
     setDownloadOpen(false);
 
@@ -1130,18 +1240,129 @@ Status: ${event.reviewStatus || "PENDING"}
 
       <div className="flex min-w-0 flex-col items-center justify-center text-center">
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl xl:text-5xl">
-            {caseData?.title || "Untitled Case"}
-          </h1>
+          {editingPatientName ? (
+            <>
+              <input
+                value={patientNameDraft}
+                onChange={(e) => setPatientNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void savePatientName();
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    cancelPatientNameEdit();
+                  }
+                }}
+                disabled={savingPatientName}
+                autoFocus
+                className="min-w-[260px] rounded-2xl border border-slate-300 bg-white px-4 py-2 text-center text-2xl font-semibold tracking-tight text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60 sm:text-3xl xl:text-4xl"
+                aria-label="Patient name"
+              />
+              <button
+                type="button"
+                onClick={() => void savePatientName()}
+                disabled={savingPatientName}
+                className="rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {savingPatientName ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={cancelPatientNameEdit}
+                disabled={savingPatientName}
+                className="rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl xl:text-5xl">
+                {displayedPatientName}
+              </h1>
+              <button
+                type="button"
+                onClick={startPatientNameEdit}
+                className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Edit patient
+              </button>
+            </>
+          )}
 
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
             {caseData?.caseType || "CASE"}
           </span>
         </div>
 
+        {patientNameError ? (
+          <div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {patientNameError}
+          </div>
+        ) : null}
+
+        {renamingCase ? (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+            <input
+              value={caseTitleDraft}
+              onChange={(e) => setCaseTitleDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void saveCaseTitle();
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  cancelCaseRename();
+                }
+              }}
+              disabled={savingCaseTitle}
+              autoFocus
+              className="min-w-[280px] rounded-2xl border border-slate-300 bg-white px-4 py-2 text-center text-base font-semibold text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+              aria-label="Case name"
+            />
+            <button
+              type="button"
+              onClick={() => void saveCaseTitle()}
+              disabled={savingCaseTitle}
+              className="rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {savingCaseTitle ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={cancelCaseRename}
+              disabled={savingCaseTitle}
+              className="rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-sm text-slate-500">
+              Case: {displayedCaseTitle}
+            </span>
+            <button
+              type="button"
+              onClick={startCaseRename}
+              className="rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Edit case
+            </button>
+          </div>
+        )}
+
+        {caseTitleError ? (
+          <div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {caseTitleError}
+          </div>
+        ) : null}
+
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-slate-500">
           <div className="w-full text-center">
-            <div>Subject: {caseData?.subjectName || "Not specified"}</div>
             <div className="mt-1 flex items-center justify-center gap-2 text-xs text-slate-400">
               <span>Case ID: {caseData?.id || caseId}</span>
               <button
