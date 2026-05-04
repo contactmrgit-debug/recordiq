@@ -20,6 +20,7 @@ type CaseData = {
   title: string;
   description?: string | null;
   caseType?: string | null;
+  patientName?: string | null;
   subjectName?: string | null;
 };
 
@@ -494,7 +495,13 @@ export default function CasePage() {
       }
 
       setCaseData((prev) =>
-        prev ? { ...prev, subjectName: data.case.subjectName ?? null } : prev
+        prev
+          ? {
+              ...prev,
+              patientName: data.case.patientName ?? data.case.subjectName ?? null,
+              subjectName: data.case.subjectName ?? data.case.patientName ?? null,
+            }
+          : prev
       );
       setEditingPatientName(false);
       setPatientNameDraft("");
@@ -1080,7 +1087,8 @@ const activeDocument = useMemo(() => {
     return { pending, approved, hidden };
   }, [events]);
 
-  const displayedPatientName = caseData?.subjectName?.trim() || "Unnamed Patient";
+  const displayedPatientName =
+    caseData?.patientName?.trim() || caseData?.subjectName?.trim() || "Unnamed Patient";
   const displayedCaseTitle = caseData?.title?.trim() || "Untitled Case";
 
   function handleExport(format: "pdf" | "word" | "excel" | "zip") {

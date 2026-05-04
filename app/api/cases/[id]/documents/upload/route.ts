@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   parseRecordType,
   queueDocumentProcessing,
+  processQueuedDocumentJobById,
   sanitizeProcessingFileName,
 } from "@/lib/document-processing";
 
@@ -112,11 +113,15 @@ export async function POST(
       recordType: providedRecordType,
     });
 
+    const processingOutcome = await processQueuedDocumentJobById(queuedJob.jobId);
+
     return NextResponse.json({
       success: true,
       documentId: queuedJob.documentId,
       jobId: queuedJob.jobId,
-      status: queuedJob.status,
+      status: processingOutcome?.success ? "PROCESSED" : processingOutcome?.finalStatus ?? queuedJob.status,
+      jobStatus: processingOutcome?.job.status ?? queuedJob.status,
+      processing: processingOutcome,
     });
   } catch (error: unknown) {
     console.error("[documents/upload] request failed", error);

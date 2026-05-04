@@ -14,6 +14,10 @@ import {
   getPdfPageCount,
   PdfChunkPageText,
 } from "@/lib/pdf-chunk-extract";
+import {
+  detectPatientNameFromText,
+  isPlaceholderPatientName,
+} from "@/lib/patient-name";
 import { prisma } from "@/lib/prisma";
 
 export type ProcessingJobStatus =
@@ -251,6 +255,36 @@ function normalizeReviewStatus(
   if (normalized === "REJECTED") return "REJECTED";
 
   return "PENDING";
+}
+
+function buildPatientNameSearchText(
+  pageTexts: PdfChunkPageText[],
+  limit = 12000
+): string {
+  const parts: string[] = [];
+  let totalLength = 0;
+
+  for (const page of pageTexts) {
+    const text = (page.text || "").replace(/\r\n?/g, "\n").trim();
+    if (!text) {
+      continue;
+    }
+
+    const remaining = limit - totalLength;
+    if (remaining <= 0) {
+      break;
+    }
+
+    const slice = text.slice(0, remaining);
+    if (!slice) {
+      continue;
+    }
+
+    parts.push(slice);
+    totalLength += slice.length;
+  }
+
+  return parts.join("\n");
 }
 
 function parseS3Location(fileUrl: string): {
@@ -2707,6 +2741,43 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
       pageCount: totalPages,
     },
   });
+
+  const patientNameSearchText = buildPatientNameSearchText(allPageTexts);
+  const detectedPatientName = detectPatientNameFromText(patientNameSearchText);
+  console.info("[patient-name] upload path reached");
+  console.info("[patient-name] extractedText length:", patientNameSearchText.length);
+  console.info("[patient-name] first 1000 chars:", patientNameSearchText.slice(0, 1000));
+  console.info("[patient-name] detected candidate:", detectedPatientName);
+  if (detectedPatientName) {
+    const existingCase = await prisma.case.findUnique({
+      where: { id: document.caseId },
+      select: { subjectName: true },
+    });
+
+    console.info("[patient-name] case name field used", "subjectName");
+    console.info("[patient-name] existing case:", {
+      subjectName: existingCase?.subjectName ?? "",
+      patientName: existingCase?.subjectName ?? "",
+    });
+
+    if (isPlaceholderPatientName(existingCase?.subjectName)) {
+      await prisma.case.update({
+        where: { id: document.caseId },
+        data: { subjectName: detectedPatientName },
+      });
+      console.info("[patient-name] updated field:", "subjectName");
+      const verifiedCase = await prisma.case.findUnique({
+        where: { id: document.caseId },
+        select: { subjectName: true },
+      });
+      console.info(
+        "[patient-name] verified saved subjectName:",
+        verifiedCase?.subjectName ?? ""
+      );
+    } else {
+      console.info("[patient-name] skipped existing patientName", existingCase?.subjectName);
+    }
+  }
 
   return {
     success: true,

@@ -31,7 +31,11 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      case: caseData,
+      case: {
+        ...caseData,
+        patientName: caseData.subjectName ?? "",
+        subjectName: caseData.subjectName ?? "",
+      },
     });
   } catch (error) {
     console.error("GET case error:", error);
@@ -75,6 +79,18 @@ export async function PATCH(
           { status: 400 }
         );
       }
+    } else if ("patientName" in body) {
+      if (typeof body.patientName === "string") {
+        const patientName = body.patientName.trim();
+        updates.subjectName = patientName || null;
+      } else if (body.patientName === null) {
+        updates.subjectName = null;
+      } else {
+        return NextResponse.json(
+          { success: false, error: "Patient name must be a string or null" },
+          { status: 400 }
+        );
+      }
     }
 
     if (Object.keys(updates).length === 0) {
@@ -99,7 +115,11 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      case: updatedCase,
+      case: {
+        ...updatedCase,
+        patientName: updatedCase.subjectName ?? "",
+        subjectName: updatedCase.subjectName ?? "",
+      },
     });
   } catch (error) {
     console.error("PATCH case error:", error);
