@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   detectPatientNameFromText,
+  shouldReplaceSubjectName,
   shouldStoreDetectedPatientName,
 } from "../lib/patient-name.ts";
 
@@ -41,3 +42,23 @@ assert.equal(
   shouldStoreDetectedPatientName("Unnamed Patient", "Joshua Bergeron"),
   true
 );
+assert.equal(
+  shouldStoreDetectedPatientName("Unnamed Case", "Joshua Bergeron"),
+  true
+);
+assert.equal(
+  shouldStoreDetectedPatientName("Our Client", "Joshua Bergeron"),
+  true
+);
+assert.equal(
+  shouldStoreDetectedPatientName("Patient", "Joshua Bergeron"),
+  true
+);
+assert.equal(
+  shouldStoreDetectedPatientName("Unknown", "Joshua Bergeron"),
+  true
+);
+assert.equal(shouldReplaceSubjectName(null), true);
+assert.equal(shouldReplaceSubjectName(""), true);
+assert.equal(shouldReplaceSubjectName("Patient"), true);
+assert.equal(shouldReplaceSubjectName("Imran Ahmad"), false);

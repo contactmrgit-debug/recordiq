@@ -105,6 +105,7 @@ const PATIENT_NAME_STOP_PATTERNS = [
 
 const PLACEHOLDER_PATIENT_NAMES = new Set([
   "unnamed patient",
+  "unnamed case",
   "our client",
   "the client",
   "client",
@@ -284,9 +285,15 @@ export function isPlaceholderPatientName(value?: string | null): boolean {
   return PLACEHOLDER_PATIENT_NAMES.has(normalized);
 }
 
+export function shouldReplaceSubjectName(
+  currentSubjectName?: string | null
+): boolean {
+  return isPlaceholderPatientName(currentSubjectName);
+}
+
 export function shouldStoreDetectedPatientName(
   currentPatientName?: string | null,
   detectedPatientName?: string | null
 ): boolean {
-  return Boolean(detectedPatientName) && isPlaceholderPatientName(currentPatientName);
+  return Boolean(detectedPatientName) && shouldReplaceSubjectName(currentPatientName);
 }

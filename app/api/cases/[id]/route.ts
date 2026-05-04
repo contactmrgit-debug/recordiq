@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildTieredTimelineSummary } from "@/lib/timeline-summary";
+import { formatTimelineDateValue } from "@/lib/timeline-date";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +31,61 @@ export async function GET(
       );
     }
 
+    const subjectName = caseData.subjectName ?? "";
+
+    const timelineEvents = await prisma.timelineEvent.findMany({
+      where: {
+        caseId: id,
+        isHidden: false,
+        OR: [
+          { reviewStatus: "APPROVED" },
+          { reviewStatus: "PENDING" },
+          { reviewStatus: null },
+        ],
+      },
+      orderBy: {
+        eventDate: "asc",
+      },
+      select: {
+        id: true,
+        documentId: true,
+        eventDate: true,
+        title: true,
+        description: true,
+        eventType: true,
+        sourcePage: true,
+        reviewStatus: true,
+        isHidden: true,
+        physicianName: true,
+        medicalFacility: true,
+      },
+    });
+
+    const responseTimelineEvents = timelineEvents.map((event) => ({
+      id: event.id,
+      date: formatTimelineDateValue(event.eventDate),
+      eventDate: formatTimelineDateValue(event.eventDate),
+      title: event.title || "",
+      description: event.description || "",
+      eventType: event.eventType || "other",
+      sourcePage: event.sourcePage ?? null,
+      documentId: event.documentId ?? null,
+      physicianName: event.physicianName ?? null,
+      medicalFacility: event.medicalFacility ?? null,
+      reviewStatus: event.reviewStatus || "PENDING",
+      isHidden: event.isHidden ?? false,
+    }));
+
+    const summary = buildTieredTimelineSummary(responseTimelineEvents);
+
     return NextResponse.json({
       success: true,
       case: {
         ...caseData,
-        patientName: caseData.subjectName ?? "",
-        subjectName: caseData.subjectName ?? "",
+        patientName: subjectName,
+        subjectName,
       },
+      summary,
     });
   } catch (error) {
     console.error("GET case error:", error);
@@ -113,12 +163,14 @@ export async function PATCH(
       },
     });
 
+    const subjectName = updatedCase.subjectName ?? "";
+
     return NextResponse.json({
       success: true,
       case: {
         ...updatedCase,
-        patientName: updatedCase.subjectName ?? "",
-        subjectName: updatedCase.subjectName ?? "",
+        patientName: subjectName,
+        subjectName,
       },
     });
   } catch (error) {
