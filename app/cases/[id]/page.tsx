@@ -1285,9 +1285,11 @@ Status: ${event.reviewStatus || "PENDING"}
               <button
                 type="button"
                 onClick={startPatientNameEdit}
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                aria-label="Edit patient name"
               >
-                Edit patient
+                <span className="text-sm leading-none">✎</span>
+                <span>Edit</span>
               </button>
             </>
           )}
@@ -1348,9 +1350,11 @@ Status: ${event.reviewStatus || "PENDING"}
             <button
               type="button"
               onClick={startCaseRename}
-              className="rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              aria-label="Edit case title"
             >
-              Edit case
+              <span className="text-sm leading-none">✎</span>
+              <span>Edit</span>
             </button>
           </div>
         )}
