@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import {
   buildTimelineDisplayGroups,
   generateTimelineSummary,
@@ -1117,10 +1118,14 @@ Status: ${event.reviewStatus || "PENDING"}
   <div className="p-5">
     <div className="grid grid-cols-[260px_1fr_360px] items-center gap-6">
       <div className="flex justify-start">
-        <div className="text-2xl font-bold tracking-tight">
-          <span className="text-slate-950">Vera</span>
-          <span className="text-blue-700">Chron</span>
-        </div>
+        <Image
+          src="/logo/verachron-logo.png"
+          alt="VeraChron"
+          width={220}
+          height={48}
+          priority
+          className="h-12 w-auto object-contain sm:h-14"
+        />
       </div>
 
       <div className="flex min-w-0 flex-col items-center justify-center text-center">
