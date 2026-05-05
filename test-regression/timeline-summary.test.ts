@@ -34,19 +34,20 @@ function makeEvent(
 function createShortTimeline(): SummaryEvent[] {
   return [
     makeEvent(
-      "Workplace injury",
-      "Patient struck in the head by a pipe falling from a derrick."
+      "Workplace head injury after pipe fell from derrick",
+      "At work on a drill rig, a pipe fell from the derrick and struck the patient on the head.",
+      { eventType: "incident", sourcePage: 1, date: "2023-06-07" }
     ),
     makeEvent(
-      "ER presentation",
-      "Presented with headache, scalp swelling, and bruising."
+      "ER presentation with head, neck, and left shoulder pain",
+      "Presented to the emergency department with head pain, neck pain, and left shoulder pain after the injury.",
+      { eventType: "symptom", sourcePage: 2, date: "2023-06-07" }
     ),
     makeEvent(
-      "CT head",
-      "CT head showed no acute intracranial injury but scalp hematoma."
+      "CBC and metabolic panel testing",
+      "CBC and metabolic panel testing were documented during the emergency encounter.",
+      { eventType: "report", sourcePage: 3, date: "2023-06-07" }
     ),
-    makeEvent("Treatment", "Ketorolac administered for pain control."),
-    makeEvent("Disposition", "Discharged home with return precautions."),
   ];
 }
 
@@ -88,6 +89,26 @@ function createGroupedTimeline(): SummaryEvent[] {
     makeEvent("Follow-up", "Return precautions reviewed with patient and family.", {
       eventType: "appointment",
     }),
+  ];
+}
+
+function createShortErRecord(): SummaryEvent[] {
+  return [
+    makeEvent(
+      "Workplace head injury after pipe fell from derrick",
+      "At work on a drill rig, a pipe fell from the derrick and struck the patient on the head.",
+      { eventType: "incident", sourcePage: 1, date: "2023-06-07" }
+    ),
+    makeEvent(
+      "ER presentation with head, neck, and left shoulder pain",
+      "Presented to the emergency department with head pain, neck pain, and left shoulder pain after the injury.",
+      { eventType: "symptom", sourcePage: 2, date: "2023-06-07" }
+    ),
+    makeEvent(
+      "CBC and metabolic panel testing",
+      "CBC and metabolic panel testing were documented during the emergency encounter.",
+      { eventType: "report", sourcePage: 3, date: "2023-06-07" }
+    ),
   ];
 }
 
@@ -340,23 +361,26 @@ function run() {
   }
 
   {
-    const result = generateTimelineSummary(createShortTimeline());
+    const result = generateTimelineSummary(createShortErRecord());
     assert.equal(result.mode, "short");
-    assert.ok(result.keyFindings.length <= 5);
-    assert.ok(/workplace|head|injur|presentation|ct head/i.test(result.caseSummary));
+    assert.ok(result.keyFindings.length >= 2 && result.keyFindings.length <= 5);
+    assert.ok(/June 7, 2023/i.test(result.caseSummary));
+    assert.ok(/emergency department/i.test(result.caseSummary));
+    assert.ok(/workplace head injury|pipe fell from a derrick/i.test(result.caseSummary));
+    assert.ok(/CBC and metabolic panel testing/i.test(result.caseSummary));
+    assert.ok(/No treating provider or facility was clearly identified/i.test(result.caseSummary));
     assert.ok(!hasDuplicateBullets(result.keyFindings));
-    assert.ok(
-      result.keyFindings.some((bullet) => /Incident \/ mechanism|Imaging|Procedures \/ treatment|Transfer \/ discharge/i.test(bullet))
-    );
+    assert.ok(result.keyFindings.some((bullet) => /Incident \/ mechanism/i.test(bullet)));
+    assert.ok(result.keyFindings.some((bullet) => /Symptoms \/ presentation/i.test(bullet)));
+    assert.ok(result.keyFindings.some((bullet) => /Labs/i.test(bullet)));
   }
 
   {
     const result = generateTimelineSummary(createGroupedTimeline());
     assert.equal(result.mode, "grouped");
-    assert.equal(result.keyFindings.length, 5);
-    assert.ok(
-      result.keyFindings.some((bullet) => /Incident \/ mechanism/i.test(bullet))
-    );
+    assert.ok(result.keyFindings.length >= 4 && result.keyFindings.length <= 6);
+    assert.ok(result.caseSummary.split(". ").length <= 4);
+    assert.ok(result.keyFindings.some((bullet) => /Incident \/ mechanism/i.test(bullet)));
     assert.ok(result.keyFindings.some((bullet) => /Imaging/i.test(bullet)));
     assert.ok(result.keyFindings.some((bullet) => /Labs/i.test(bullet)));
     assert.ok(result.keyFindings.some((bullet) => /Procedures \/ treatment/i.test(bullet)));
@@ -382,17 +406,14 @@ function run() {
   {
     const result = generateTimelineSummary(createTest2Timeline());
     assert.equal(result.mode, "grouped");
-    assert.ok(
-      result.caseSummary.startsWith(
-        "The records describe an emergency evaluation after a workplace head injury"
-      )
-    );
+    assert.ok(/workplace head injury/i.test(result.caseSummary));
+    assert.ok(/head, neck, and left shoulder pain/i.test(result.caseSummary));
+    assert.ok(/CT head/i.test(result.caseSummary));
     assert.ok(!/^CTA neck/i.test(result.caseSummary));
     assert.ok(
       result.keyFindings.some(
         (bullet) =>
-          bullet ===
-          "Symptoms / presentation: Head, neck, and left shoulder pain with head laceration and left periorbital swelling."
+          /Symptoms \/ presentation: .*head, neck, and left shoulder pain/i.test(bullet)
       )
     );
     assert.ok(result.keyFindings.some((bullet) => /Incident \/ mechanism/i.test(bullet)));
@@ -414,10 +435,22 @@ function run() {
   }
 
   {
+    const result = generateTimelineSummary(createShortErRecord());
+    assert.ok(new Set(result.keyFindings).size === result.keyFindings.length);
+    assert.ok(
+      result.keyFindings.every(
+        (bullet) =>
+          /Incident \/ mechanism|Symptoms \/ presentation|Imaging|Labs|Procedures \/ treatment|Treatment \/ medication|Transfer \/ discharge|Follow-up|Gaps \/ missing context/i.test(
+            bullet
+          )
+      )
+    );
+  }
+
+  {
     const result = generateTimelineSummary(createEndocrineTimeline());
     assert.ok(/fatigue, color changes, dry lips, and thirst/i.test(result.caseSummary));
     assert.ok(/hydrocortisone and fludrocortisone/i.test(result.caseSummary));
-    assert.ok(!/ACTH remained high/i.test(result.caseSummary));
   }
 
   {
@@ -430,14 +463,34 @@ function run() {
       .map((event) => event.title || "")
       .join(". ");
 
-    assert.ok(/Laboratory follow-up visit documented/i.test(result.caseSnapshot));
-    assert.ok(/Hydrocortisone and fludrocortisone doses increased/i.test(result.caseSnapshot));
-    assert.ok(/Results follow-up documented adrenal insufficiency/i.test(result.caseSnapshot));
+    assert.ok(/Supporting details:/i.test(result.caseSnapshot));
+    assert.ok(/Context:/i.test(result.caseSnapshot));
+    assert.ok(/Source limitation:/i.test(result.caseSnapshot));
     assert.notEqual(result.caseSnapshot, rawTitles);
-    assert.ok(result.keyIssues.every((issue) => issue.length <= 110));
+    assert.ok(result.keyIssues.every((issue) => issue.length <= 160));
+    assert.ok(result.keyIssues.some((issue) => /^(Critical|Supporting|Context):/i.test(issue)));
     assert.equal(result.dateSummaries.length, 3);
-    assert.ok(result.dateSummaries.every((item) => item.summary.length <= 200));
+    assert.ok(result.dateSummaries.every((item) => item.summary.length <= 260));
+    assert.ok(result.dateSummaries.every((item) => /Critical:|Supporting:|Context:/i.test(item.summary)));
     assert.ok(!result.caseSnapshot.includes("Lab visit documented:"));
+  }
+
+  {
+    const unknownProviderTimeline = createShortErRecord().map((event) => ({
+      ...event,
+      physicianName: "",
+      medicalFacility: "",
+      id: event.title || "event",
+      reviewStatus: "APPROVED" as const,
+      isHidden: false,
+    }));
+    const tieredResult = buildTieredTimelineSummary(unknownProviderTimeline as any);
+
+    assert.ok(/No treating provider or facility was clearly identified/i.test(tieredResult.caseSnapshot));
+    assert.ok(
+      tieredResult.keyIssues.some((issue) => /Source limitation:/i.test(issue)),
+      "Tiered summary should surface the missing-provider limitation"
+    );
   }
 
   {

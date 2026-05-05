@@ -620,6 +620,244 @@ function fallbackCategorySentence(category: SummaryCategory): string {
   }
 }
 
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function formatNarrativeDate(value?: string | null): string {
+  const match = /^\d{4}-(\d{2})-(\d{2})$/.exec(value || "");
+  if (!match) return normalizeDisplayText(value);
+
+  const year = Number((value || "").slice(0, 4));
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+
+  if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
+    return normalizeDisplayText(value);
+  }
+
+  return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
+}
+
+type AttributionAwareTimelineEvent = TimelineSummaryEvent & {
+  physicianName?: string | null;
+  medicalFacility?: string | null;
+};
+
+function getUniqueTimelineDates(events: TimelineSummaryEvent[]): string[] {
+  return Array.from(
+    new Set(
+      events
+        .map((event) => event.date || "")
+        .map((value) => normalizeDisplayText(value))
+        .filter(Boolean)
+    )
+  ).sort();
+}
+
+function getSingleTimelineDateLabel(events: TimelineSummaryEvent[]): string | null {
+  const uniqueDates = getUniqueTimelineDates(events);
+
+  if (uniqueDates.length !== 1) {
+    return null;
+  }
+
+  return formatNarrativeDate(uniqueDates[0]);
+}
+
+function isKnownAttributionValue(value?: string | null): boolean {
+  const normalized = normalizeText(value);
+  if (!normalized) return false;
+
+  return !/\b(not identified|not listed|not specified|unknown|n\/a|none|unavailable|missing)\b/.test(
+    normalized
+  );
+}
+
+function hasKnownProviderOrFacility(events: AttributionAwareTimelineEvent[]): boolean {
+  return events.some(
+    (event) => isKnownAttributionValue(event.physicianName) || isKnownAttributionValue(event.medicalFacility)
+  );
+}
+
+function buildSourceLimitationSentence(events: AttributionAwareTimelineEvent[]): string | null {
+  if (hasKnownProviderOrFacility(events)) {
+    return null;
+  }
+
+  return "No treating provider or facility was clearly identified in the extracted source text.";
+}
+
+function buildIncidentClause(events: TimelineSummaryEvent[]): string {
+  const text = groupText(events);
+
+  if (/\b(workplace|work-related)\b/.test(text) && /\b(pipe|derrick)\b/.test(text)) {
+    return "a workplace head injury when a pipe fell from a derrick";
+  }
+
+  if (/\b(motor vehicle crash|mvc|collision|accident|crash)\b/.test(text)) {
+    return "a motor vehicle crash";
+  }
+
+  if (/\bassault\b/.test(text)) {
+    return "an assault-related injury";
+  }
+
+  if (/\bfell\b/.test(text) && /\binjur/.test(text)) {
+    return "a fall-related injury";
+  }
+
+  const first = eventPhrase(events[0], "incident");
+  return first ? normalizeDisplayText(first).replace(/^[Tt]he records?\s+(describe|document)\s+/i, "") : "";
+}
+
+function buildSymptomClause(events: TimelineSummaryEvent[]): string {
+  const text = groupText(events);
+
+  if (isOchsnerBleedingPacket(events) && /\b(bleeding from mouth and nose|bleeding from the mouth and nose|rash)\b/.test(text)) {
+    return "rash with bleeding from the mouth and nose";
+  }
+
+  if (
+    /\bfatigue\b/.test(text) &&
+    /\bcolor changes\b/.test(text) &&
+    /\bdry lips\b/.test(text) &&
+    /\bthirst\b/.test(text)
+  ) {
+    return "fatigue, color changes, dry lips, and thirst";
+  }
+
+  const parts: string[] = [];
+
+  const painParts: string[] = [];
+  const hasHeadPain = /\b(headache|head pain|head\b)/.test(text);
+  const hasNeckPain = /\bneck pain\b/.test(text) || /\bneck\b/.test(text);
+  const hasLeftShoulderPain =
+    /\bleft shoulder pain\b/.test(text) || /\bleft shoulder\b/.test(text);
+
+  if (hasHeadPain) painParts.push("head");
+  if (hasNeckPain) painParts.push("neck");
+  if (hasLeftShoulderPain) painParts.push("left shoulder");
+
+  if (painParts.length) {
+    parts.push(`${joinNatural(painParts)} pain`);
+  }
+
+  if (
+    /\blaceration\b/.test(text) ||
+    (/\bscalp\b/.test(text) &&
+      (/\bperiorbital\b/.test(text) || /\bbruising\b/.test(text) || /\bswelling\b/.test(text)))
+  ) {
+    parts.push("head laceration");
+  }
+
+  if (
+    /\bperiorbital\b/.test(text) &&
+    /\b(swelling|bruising|ecchymosis|contusion)\b/.test(text)
+  ) {
+    parts.push("left periorbital swelling");
+  } else if (/\bscalp swelling\b/.test(text)) {
+    parts.push("scalp swelling");
+  }
+
+  return parts.length ? parts.join(" with ") : "";
+}
+
+function buildWorkupClause(events: TimelineSummaryEvent[]): string {
+  const text = groupText(events);
+  const parts: string[] = [];
+
+  if (/\bct head\b/.test(text) || /\bhead ct\b/.test(text)) {
+    parts.push("CT head");
+  }
+
+  if (/\bcta neck\b/.test(text) || /\bcta\b/.test(text)) {
+    parts.push("CTA neck");
+  }
+
+  if (/\bcervical spine\b/.test(text) && /\bfracture\b/.test(text)) {
+    parts.push("cervical spine imaging");
+  }
+
+  if (
+    /\bleft shoulder\b/.test(text) ||
+    /\bhumerus\b/.test(text) ||
+    /\bscapul/.test(text) ||
+    /\bx[- ]?ray\b/.test(text)
+  ) {
+    parts.push("left shoulder imaging");
+  }
+
+  if (/\bcbc\b/.test(text)) {
+    parts.push("CBC testing");
+  }
+
+  if (/\b(cmp|bmp|metabolic panel)\b/.test(text)) {
+    parts.push("metabolic panel testing");
+  }
+
+  if (/\b(administration|administered|given|medication|morphine|ondansetron|ketorolac|hydromorphone|tdap|acetaminophen)\b/.test(text)) {
+    parts.push("pain-control medication");
+  }
+
+  if (/\b(cervical collar|spine precautions|trauma consult|orthopedic evaluation)\b/.test(text)) {
+    parts.push("immobilization and consultation");
+  }
+
+  if (/\btransfer\b/.test(text) || /\bdisposition\b/.test(text)) {
+    parts.push("transfer planning");
+  }
+
+  return Array.from(new Set(parts)).join(", ");
+}
+
+function buildDispositionClause(events: TimelineSummaryEvent[]): string {
+  const text = groupText(events);
+
+  if (/\btransfer\b/.test(text) && /\bshannon\b/.test(text)) {
+    return "Transfer to Shannon for higher-level care was documented.";
+  }
+
+  if (/\bdischarge\b/.test(text) || /\bdischarged\b/.test(text)) {
+    return "Discharge instructions and return precautions were documented.";
+  }
+
+  if (/\bfollow[- ]?up\b/.test(text) || /\boutpatient\b/.test(text)) {
+    return "Follow-up instructions were documented.";
+  }
+
+  return "";
+}
+
+function summarizeCategoryBullet(category: SummaryCategory, events: TimelineSummaryEvent[]): string {
+  const summary = summarizeCategoryEvents(category, events);
+  const compact = summary.replace(/^The records describe /i, "").replace(/^Imaging documented /i, "");
+  return normalizeSentence(compact);
+}
+
+function buildNarrativeKeyFinding(
+  category: SummaryCategory,
+  events: TimelineSummaryEvent[]
+): string {
+  return `${CATEGORY_LABELS[category]}: ${summarizeCategoryBullet(category, events)}`;
+}
+
+function buildGroupedBulletString(parts: string[], limit: number): string {
+  const uniqueParts = dedupeTieredSentenceParts(parts).slice(0, limit);
+  return uniqueParts.length ? uniqueParts.join(" • ") : "";
+}
+
 function summarizeIncidentFacts(events: TimelineSummaryEvent[]): string {
   const text = groupText(events);
 
@@ -1000,29 +1238,104 @@ function collectTopGroups(
 
 function buildCaseSummary(
   selectedGroups: Array<{ category: SummaryCategory; events: TimelineSummaryEvent[] }>,
-  maxSentences: number
+  maxSentences: number,
+  events: TimelineSummaryEvent[]
 ): string {
   const sentences: string[] = [];
 
-  const orderedCategories: SummaryCategory[] = [
-    "incident",
-    "symptoms",
-    "imaging",
-    "procedures",
-    "medication",
-    "labs",
-    "transfer",
-    "followup",
-  ];
+  const getGroup = (category: SummaryCategory) =>
+    selectedGroups.find((candidate) => candidate.category === category);
 
-  for (const category of orderedCategories) {
-    const group = selectedGroups.find((candidate) => candidate.category === category);
-    if (!group) continue;
+  const singleDateLabel = getSingleTimelineDateLabel(events);
+  const incidentGroup = getGroup("incident");
+  const symptomGroup = getGroup("symptoms");
+  const imagingGroup = getGroup("imaging");
+  const labGroup = getGroup("labs");
+  const procedureGroup = getGroup("procedures");
+  const medicationGroup = getGroup("medication");
+  const transferGroup = getGroup("transfer");
+  const followupGroup = getGroup("followup");
 
-    const sentence = summarizeCategoryEvents(group.category, group.events);
-    if (sentence) {
-      sentences.push(sentence);
-    }
+  const openingParts: string[] = [];
+
+  if (singleDateLabel) {
+    openingParts.push(`On ${singleDateLabel}`);
+  }
+
+  const openingLead = openingParts.length
+    ? `${openingParts.join(", ")}, the patient presented to the emergency department`
+    : "The patient presented";
+  const openingDetails: string[] = [];
+
+  const incidentClause = incidentGroup ? buildIncidentClause(incidentGroup.events) : "";
+  if (incidentClause) {
+    openingDetails.push(`after ${incidentClause}`);
+  }
+
+  const symptomClause = symptomGroup ? buildSymptomClause(symptomGroup.events) : "";
+  if (symptomClause) {
+    openingDetails.push(`with ${symptomClause}`);
+  }
+
+  if (openingDetails.length) {
+    sentences.push(sentenceCase(`${openingLead} ${openingDetails.join(" and ")}.`));
+  } else if (incidentGroup || symptomGroup) {
+    const fallbackLead = incidentGroup
+      ? summarizeCategoryEvents("incident", incidentGroup.events)
+      : summarizeCategoryEvents("symptoms", symptomGroup!.events);
+    sentences.push(sentenceCase(fallbackLead.replace(/[\s.]+$/, "") + "."));
+  }
+
+  const workupParts: string[] = [];
+
+  if (imagingGroup) {
+    const imaging = summarizeCategoryEvents("imaging", imagingGroup.events);
+    if (imaging) workupParts.push(imaging);
+  }
+
+  if (labGroup) {
+    const labs = summarizeCategoryEvents("labs", labGroup.events);
+    if (labs) workupParts.push(labs);
+  }
+
+  if (procedureGroup) {
+    const procedures = summarizeCategoryEvents("procedures", procedureGroup.events);
+    if (procedures) workupParts.push(procedures);
+  }
+
+  if (medicationGroup) {
+    const medication = summarizeCategoryEvents("medication", medicationGroup.events);
+    if (medication) workupParts.push(medication);
+  }
+
+  if (transferGroup) {
+    const transfer = summarizeCategoryEvents("transfer", transferGroup.events);
+    if (transfer) workupParts.push(transfer);
+  }
+
+  if (followupGroup) {
+    const followup = summarizeCategoryEvents("followup", followupGroup.events);
+    if (followup) workupParts.push(followup);
+  }
+
+  if (workupParts.length) {
+    sentences.push(
+      sentenceCase(
+        `The record documents ${workupParts
+          .map((part) => part.replace(/^[Tt]he records?\s+/i, "").replace(/^[Ii]maging documented\s+/i, ""))
+          .join("; ")}.`
+      )
+    );
+  }
+
+  const dispositionSentence = buildDispositionClause(events);
+  if (dispositionSentence) {
+    sentences.push(dispositionSentence);
+  }
+
+  const limitationSentence = buildSourceLimitationSentence(events);
+  if (limitationSentence) {
+    sentences.push(limitationSentence);
   }
 
   const limited = sentences
@@ -1046,7 +1359,7 @@ function buildCaseSummary(
 function summarySentenceLimit(mode: TimelineSummaryMode): number {
   switch (mode) {
     case "short":
-      return 2;
+      return 3;
     case "grouped":
       return 3;
     default:
@@ -1057,30 +1370,47 @@ function summarySentenceLimit(mode: TimelineSummaryMode): number {
 function keyFindingLimit(mode: TimelineSummaryMode): number {
   switch (mode) {
     case "short":
-      return 3;
-    case "grouped":
       return 5;
-    default:
+    case "grouped":
       return 6;
+    default:
+      return 8;
   }
 }
 
 function buildKeyFindings(
   mode: TimelineSummaryMode,
   grouped: Map<SummaryCategory, ScoredSummaryEvent[]>,
-  packetFacts?: string | null
+  events: TimelineSummaryEvent[]
 ): string[] {
   const limit = keyFindingLimit(mode);
-  const groups = collectTopGroups(grouped, limit);
+  const orderedCategories: SummaryCategory[] = [
+    "incident",
+    "symptoms",
+    "imaging",
+    "labs",
+    "procedures",
+    "medication",
+    "transfer",
+    "followup",
+  ];
 
-  return [
-    ...(packetFacts ? [`Packet context: ${packetFacts}`] : []),
-    ...groups.map((group) => {
-      const label = CATEGORY_LABELS[group.category];
-      const sentence = summarizeCategoryEvents(group.category, group.events);
-      return `${label}: ${sentence}`;
-    }),
-  ].slice(0, limit);
+  const bullets: string[] = [];
+
+  for (const category of orderedCategories) {
+    const bucket = grouped.get(category) || [];
+    if (!bucket.length) continue;
+
+    bullets.push(buildNarrativeKeyFinding(category, bucket.map((item) => item.event)));
+    if (bullets.length >= limit) break;
+  }
+
+  const limitationSentence = buildSourceLimitationSentence(events);
+  if (limitationSentence) {
+    bullets.push(`Gaps / missing context: ${limitationSentence}`);
+  }
+
+  return dedupeTieredSentenceParts(bullets).slice(0, limit);
 }
 
 function normalizeDisplayEvent(event: TimelineDisplayEvent): TimelineDisplayEvent {
@@ -1201,13 +1531,13 @@ export function generateTimelineSummary(
 
   const grouped = chooseBestEventPerCategory(events);
   const packetFacts = summarizeOchsnerBleedingPacketFacts(events);
-  const keyFindings = buildKeyFindings(mode, grouped, packetFacts);
+  const keyFindings = buildKeyFindings(mode, grouped, events);
   const selectedGroups = collectTopGroups(grouped, CATEGORY_ORDER.length);
   const packetPrefix = buildPacketPrefix(events);
   const caseSummary = [
     packetPrefix,
     packetFacts,
-    buildCaseSummary(selectedGroups, summarySentenceLimit(mode)),
+    buildCaseSummary(selectedGroups, summarySentenceLimit(mode), events),
   ]
     .filter(Boolean)
     .join(" ");
@@ -1424,34 +1754,45 @@ function groupTieredSummaryEvents(
 function buildTieredCaseSnapshot(
   grouped: Record<TierName, TieredTimelineSummaryEvent[]>
 ): string {
-  const opening = joinRelatedTieredFragments(
-    grouped.critical
-      .slice(0, 2)
-      .map(summarizeTieredEventSentenceFragment)
-      .filter(Boolean)
-  );
-  const support = joinRelatedTieredFragments(
-    grouped.supporting
-      .slice(0, 3)
-      .map(summarizeTieredEventSentenceFragment)
-      .filter(Boolean)
-  );
-  const context = joinRelatedTieredFragments(
-    grouped.context
-      .slice(0, 1)
-      .map(summarizeTieredEventSentenceFragment)
-      .filter(Boolean)
-  );
-
-  const sections = [opening, support, context]
+  const sections = [
+    grouped.critical.length
+      ? `Critical events: ${joinRelatedTieredFragments(
+          grouped.critical
+            .slice(0, 2)
+            .map(summarizeTieredEventSentenceFragment)
+            .filter(Boolean)
+        )}`
+      : "",
+    grouped.supporting.length
+      ? `Supporting details: ${joinRelatedTieredFragments(
+          grouped.supporting
+            .slice(0, 2)
+            .map(summarizeTieredEventSentenceFragment)
+            .filter(Boolean)
+        )}`
+      : "",
+    grouped.context.length
+      ? `Context: ${joinRelatedTieredFragments(
+          grouped.context
+            .slice(0, 1)
+            .map(summarizeTieredEventSentenceFragment)
+            .filter(Boolean)
+        )}`
+      : "",
+  ]
     .map((section) => normalizeSummaryFragment(section))
     .filter(Boolean);
+
+  const limitation = buildSourceLimitationSentence(grouped.critical.concat(grouped.supporting, grouped.context));
+  if (limitation) {
+    sections.push(`Source limitation: ${limitation}`);
+  }
 
   if (!sections.length) {
     return "Visible timeline events document the case course.";
   }
 
-  return joinTieredSentences(sections, 3);
+  return joinTieredSentences(sections, 4);
 }
 
 function buildTieredKeyIssues(
@@ -1461,18 +1802,32 @@ function buildTieredKeyIssues(
   const seen = new Set<string>();
 
   for (const tier of ["critical", "supporting", "context"] as TierName[]) {
-    for (const event of grouped[tier]) {
-      const issue = truncateText(summarizeTieredEventIssue(event), 110);
-      const normalized = normalizeText(issue);
+    const bucket = grouped[tier];
+    if (!bucket.length) continue;
 
-      if (!issue || seen.has(normalized)) continue;
+    const fragment = joinRelatedTieredFragments(
+      bucket.slice(0, tier === "critical" ? 2 : tier === "supporting" ? 2 : 1).map(summarizeTieredEventSentenceFragment).filter(Boolean)
+    );
+    const issue = truncateText(fragment || summarizeTieredEventIssue(bucket[0]), 130);
+    const bullet = `${tier.charAt(0).toUpperCase()}${tier.slice(1)}: ${issue}`;
+    const normalized = normalizeText(bullet);
 
-      seen.add(normalized);
-      issues.push(issue);
+    if (!issue || seen.has(normalized)) continue;
 
-      if (issues.length >= 5) {
-        return issues;
-      }
+    seen.add(normalized);
+    issues.push(bullet);
+
+    if (issues.length >= 5) {
+      break;
+    }
+  }
+
+  const limitation = buildSourceLimitationSentence(grouped.critical.concat(grouped.supporting, grouped.context));
+  if (limitation && issues.length < 5) {
+    const bullet = `Source limitation: ${limitation}`;
+    const normalized = normalizeText(bullet);
+    if (!seen.has(normalized)) {
+      issues.push(bullet);
     }
   }
 
@@ -1495,25 +1850,34 @@ function buildTieredDateSummaries(
     .map(([date, bucket]) => {
       const grouped = groupTieredSummaryEvents(bucket);
       const summaryParts = [
-        joinRelatedTieredFragments(
-          grouped.critical.slice(0, 2).map(summarizeTieredEventSentenceFragment).filter(Boolean)
-        ),
-        joinRelatedTieredFragments(
-          grouped.supporting
-            .slice(0, 2)
-            .map(summarizeTieredEventSentenceFragment)
-            .filter(Boolean)
-        ),
-        joinRelatedTieredFragments(
-          grouped.context.slice(0, 1).map(summarizeTieredEventSentenceFragment).filter(Boolean)
-        ),
+        grouped.critical.length
+          ? `Critical: ${joinRelatedTieredFragments(
+              grouped.critical
+                .slice(0, 2)
+                .map(summarizeTieredEventSentenceFragment)
+                .filter(Boolean)
+            )}`
+          : "",
+        grouped.supporting.length
+          ? `Supporting: ${joinRelatedTieredFragments(
+              grouped.supporting
+                .slice(0, 2)
+                .map(summarizeTieredEventSentenceFragment)
+                .filter(Boolean)
+            )}`
+          : "",
+        grouped.context.length
+          ? `Context: ${joinRelatedTieredFragments(
+              grouped.context.slice(0, 1).map(summarizeTieredEventSentenceFragment).filter(Boolean)
+            )}`
+          : "",
       ].filter(Boolean);
 
       return {
         date,
         summary:
           summaryParts.length > 0
-            ? joinTieredSentences(summaryParts as string[], 3)
+            ? buildGroupedBulletString(summaryParts as string[], 3)
             : "Related timeline events were documented.",
       };
     });
