@@ -181,6 +181,36 @@ function createEndocrineTimeline(): SummaryEvent[] {
   ];
 }
 
+function createEndocrineFollowupFiveEventTimeline(): SummaryEvent[] {
+  return [
+    makeEvent(
+      "Lab visit documented",
+      "Laboratory follow-up visit documented.",
+      { eventType: "appointment", sourcePage: 23, date: "2025-07-18" }
+    ),
+    makeEvent(
+      "Endocrinology results follow-up",
+      "Results follow-up documented adrenal insufficiency, ALD/adrenoleukodystrophy, status post allogeneic bone marrow transplant, and X-linked adrenoleukodystrophy.",
+      { eventType: "appointment", sourcePage: 15, date: "2025-07-21" }
+    ),
+    makeEvent(
+      "ACTH remained high and renin elevated",
+      "ACTH remained high after stress dosing and renin was elevated.",
+      { eventType: "report", sourcePage: 16, date: "2025-07-22" }
+    ),
+    makeEvent(
+      "Hydrocortisone and fludrocortisone doses increased",
+      "Hydrocortisone and fludrocortisone doses were increased.",
+      { eventType: "treatment", sourcePage: 16, date: "2025-07-22" }
+    ),
+    makeEvent(
+      "Family reported fatigue, color changes, dry lips, and thirst",
+      "Parent reported fatigue, color changes, dry lips, and thirst.",
+      { eventType: "communication", sourcePage: 17, date: "2025-07-22" }
+    ),
+  ];
+}
+
 function createDavidWeirCleanupTimeline(): SummaryEvent[] {
   return [
     makeEvent(
@@ -397,6 +427,29 @@ function run() {
     assert.ok(/hydrocortisone and fludrocortisone/i.test(result.caseSummary));
     assert.ok(/fatigue, color changes, dry lips, and thirst/i.test(result.caseSummary));
     assert.ok(/BMT team/i.test(result.caseSummary) || /ER/i.test(result.caseSummary));
+  }
+
+  {
+    const result = generateTimelineSummary(createEndocrineFollowupFiveEventTimeline());
+    const rawTitles = createEndocrineFollowupFiveEventTimeline()
+      .map((event) => event.title || "")
+      .join(". ");
+
+    assert.ok(/adrenal insufficiency/i.test(result.caseSummary));
+    assert.ok(/ACTH remained high/i.test(result.caseSummary));
+    assert.ok(/hydrocortisone and fludrocortisone/i.test(result.caseSummary));
+    assert.ok(/fatigue, color changes, dry lips, and thirst/i.test(result.caseSummary));
+    assert.notEqual(result.caseSummary, rawTitles);
+    assert.ok(!/Lab visit documented:\s*Laboratory follow-up visit documented/i.test(result.caseSummary));
+    assert.ok(
+      !/Endocrinology results follow-up:\s*Results follow-up documented/i.test(
+        result.caseSummary
+      )
+    );
+    assert.ok(result.keyFindings.every((issue) => issue.length <= 110));
+    assert.ok(
+      result.dateSummaries.every((item) => item.summary.length <= 200)
+    );
   }
 
   {

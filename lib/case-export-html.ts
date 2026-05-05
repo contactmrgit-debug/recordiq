@@ -1,5 +1,38 @@
 import type { TimelineDisplayDateGroup } from "@/lib/timeline-summary";
-import { isPlaceholderPatientName } from "@/lib/patient-name";
+
+function isPlaceholderPatientName(value?: string | null): boolean {
+  const normalized = (value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  return (
+    !normalized ||
+    normalized === "unnamed patient" ||
+    normalized === "unnamed case" ||
+    normalized === "payer-returned name" ||
+    normalized === "payer returned name" ||
+    normalized === "subscriber name" ||
+    normalized === "guarantor information" ||
+    normalized === "patient contacts" ||
+    normalized === "provider information" ||
+    normalized === "our client" ||
+    normalized === "the client" ||
+    normalized === "client" ||
+    normalized === "unknown patient" ||
+    normalized === "patient" ||
+    normalized === "the patient" ||
+    normalized === "new patient" ||
+    normalized === "claimant" ||
+    normalized === "the claimant" ||
+    normalized === "member" ||
+    normalized === "insured" ||
+    normalized === "subscriber" ||
+    normalized === "your patient" ||
+    normalized === "your client" ||
+    normalized === "not specified" ||
+    normalized === "unknown" ||
+    normalized === "n/a" ||
+    normalized === "na" ||
+    normalized === "none"
+  );
+}
 
 type ExportCaseData = {
   title?: string | null;

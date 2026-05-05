@@ -6,8 +6,12 @@ import {
   repairPersistedTimelineEvent,
   repairPersistedTimelineEvents,
 } from "../lib/document-processing";
+import { detectMedicalFacilityFromText } from "../lib/medical-facility";
 import { cleanTimelineEvents } from "../lib/timeline-cleanup";
-import { generateTimelineSummary } from "../lib/timeline-summary";
+import {
+  buildTieredTimelineSummary,
+  generateTimelineSummary,
+} from "../lib/timeline-summary";
 
 type PageText = {
   page: number;
@@ -566,6 +570,92 @@ assert.ok(
     `${ochsnerSummary.caseSummary} ${ochsnerSummary.keyFindings.join(" ")}`
   ),
   "Ochsner summary should not include Reagan trauma contamination"
+);
+
+const dallasFacilityText =
+  "Children's Health DALLAS 1935 Medical District Drive Dallas TX 75235 HussainKhail, Imran Ahmad. Visit date: 7/21/2025. Results Follow-Up in Dallas Endocrinology. Dallas Laboratory.";
+const dallasFacility = detectMedicalFacilityFromText(dallasFacilityText);
+assert.ok(
+  dallasFacility === "Children's Health" ||
+    dallasFacility === "Dallas Endocrinology" ||
+    dallasFacility === "Dallas Laboratory" ||
+    dallasFacility === "Dallas / 1935 Medical District Drive"
+);
+assert.notEqual(dallasFacility, "Reagan Memorial Hospital");
+assert.equal(detectMedicalFacilityFromText("Follow-up note with no facility"), null);
+assert.equal(
+  detectMedicalFacilityFromText("Reagan Memorial Hospital - Medical"),
+  "Reagan Memorial Hospital"
+);
+
+const tieredSummary = buildTieredTimelineSummary([
+  {
+    id: "event-critical",
+    date: "2024-01-01",
+    title: "ER presentation with headache and neck pain",
+    description: "Presented to the emergency department with headache and neck pain.",
+    eventType: "symptom",
+    sourcePage: 2,
+    documentId: "doc-1",
+    physicianName: "A. Doctor",
+    medicalFacility: "Shannon ER",
+    reviewStatus: "APPROVED",
+    isHidden: false,
+  },
+  {
+    id: "event-supporting",
+    date: "2024-01-01",
+    title: "CBC showed mild leukocytosis",
+    description: "CBC showed mild leukocytosis.",
+    eventType: "report",
+    sourcePage: 3,
+    documentId: "doc-1",
+    physicianName: "A. Doctor",
+    medicalFacility: "Shannon ER",
+    reviewStatus: "PENDING",
+    isHidden: false,
+  },
+  {
+    id: "event-hidden",
+    date: "2024-01-01",
+    title: "Hidden follow-up note",
+    description: "This event should not appear in the summary.",
+    eventType: "other",
+    sourcePage: 4,
+    documentId: "doc-1",
+    physicianName: "A. Doctor",
+    medicalFacility: "Shannon ER",
+    reviewStatus: "APPROVED",
+    isHidden: true,
+  },
+  {
+    id: "event-rejected",
+    date: "2024-01-01",
+    title: "Rejected event",
+    description: "This event should not appear in the summary.",
+    eventType: "other",
+    sourcePage: 5,
+    documentId: "doc-1",
+    physicianName: "A. Doctor",
+    medicalFacility: "Shannon ER",
+    reviewStatus: "REJECTED",
+    isHidden: false,
+  },
+]);
+
+assert.equal(tieredSummary.tieredEvents.critical.length, 1);
+assert.equal(tieredSummary.tieredEvents.supporting.length, 1);
+assert.equal(tieredSummary.tieredEvents.context.length, 0);
+assert.deepEqual(
+  tieredSummary.dateSummaries.map((item) => item.date),
+  ["2024-01-01"]
+);
+assert.match(tieredSummary.caseSnapshot, /emergency department with headache and neck pain/i);
+assert.match(tieredSummary.caseSnapshot, /CBC showed mild leukocytosis/i);
+assert.ok(
+  tieredSummary.keyIssues.some((issue) =>
+    /emergency department with headache and neck pain/i.test(issue)
+  )
 );
 
 console.log("final-insert-guardrail test passed");

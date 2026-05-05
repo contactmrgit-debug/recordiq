@@ -40,10 +40,16 @@ function run() {
     groupedEvents: [
       {
         date: "2019-02-02",
-        items: [
+        groups: [
           {
-            ...makeEvent("Workplace injury", "Pipe struck the head at work."),
-            medicalFacility: "Reagan Memorial Hospital",
+            category: "incident",
+            categoryLabel: "Incident / mechanism",
+            items: [
+              {
+                ...makeEvent("Workplace injury", "Pipe struck the head at work."),
+                medicalFacility: "Reagan Memorial Hospital",
+              },
+            ],
           },
         ],
       },
@@ -70,7 +76,13 @@ function run() {
     groupedEvents: [
       {
         date: "2019-02-02",
-        items: [makeEvent("Workplace injury", "Pipe struck the head at work.")],
+        groups: [
+          {
+            category: "incident",
+            categoryLabel: "Incident / mechanism",
+            items: [makeEvent("Workplace injury", "Pipe struck the head at work.")],
+          },
+        ],
       },
     ],
     summary: {

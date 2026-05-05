@@ -254,6 +254,64 @@ function normalizeDisplayText(value?: string | null): string {
   return (value || "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeSummaryFragment(value: string): string {
+  return value
+    .replace(/^[\s:;,-]+/, "")
+    .replace(/[\s:;,-]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isGenericTieredLabel(value: string): boolean {
+  const text = normalizeText(value);
+  if (!text) return false;
+
+  return (
+    /\b(lab|labs|laboratory|follow[- ]?up|results follow[- ]?up|medication|medications|meds|procedure|procedures|treatment|visit|note|encounter|consult|assessment|plan|disposition|transfer|discharge)\b/.test(
+      text
+    ) &&
+    text.length <= 64
+  );
+}
+
+function buildTieredEventNarrative(event: TieredSummarySourceEvent): string {
+  const title = normalizeSummaryFragment(normalizeDisplayText(event.title));
+  const description = normalizeSummaryFragment(normalizeDisplayText(event.description));
+
+  if (title && description) {
+    const normalizedTitle = normalizeText(title);
+    const normalizedDescription = normalizeText(description);
+
+    if (normalizedDescription.startsWith(normalizedTitle)) {
+      return description;
+    }
+
+    if (normalizedTitle.startsWith(normalizedDescription)) {
+      return title;
+    }
+
+    if (isGenericTieredLabel(title) && !isGenericTieredLabel(description)) {
+      return description;
+    }
+
+    if (isGenericTieredLabel(description) && !isGenericTieredLabel(title)) {
+      return title;
+    }
+
+    if (description.length >= title.length + 18) {
+      return description;
+    }
+
+    if (title.length >= description.length + 18) {
+      return title;
+    }
+
+    return `${title}; ${description}`;
+  }
+
+  return title || description;
+}
+
 function stripLeadingBoilerplate(value: string): string {
   return value
     .replace(/^[-*\s]+/, "")
@@ -1187,20 +1245,7 @@ function normalizeTieredSummaryDate(
 }
 
 function summarizeTieredEventText(event: TieredSummarySourceEvent): string {
-  const title = normalizeDisplayText(event.title);
-  const description = normalizeDisplayText(event.description);
-  const cleanTitle = title.replace(/\s+/g, " ").trim();
-  const cleanDescription = description.replace(/\s+/g, " ").trim();
-
-  if (cleanTitle && cleanDescription) {
-    if (cleanDescription.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
-      return truncateText(cleanDescription, 180);
-    }
-
-    return truncateText(`${cleanTitle}: ${cleanDescription}`, 180);
-  }
-
-  return truncateText(cleanTitle || cleanDescription, 180);
+  return truncateText(buildTieredEventNarrative(event), 180);
 }
 
 function summarizeTieredEventIssue(event: TieredSummarySourceEvent): string {
@@ -1216,6 +1261,52 @@ function summarizeTieredEventSentence(event: TieredSummarySourceEvent): string {
 
   const sentence = text.endsWith(".") ? text : `${text}.`;
   return sentenceCase(normalizeSentence(sentence));
+}
+
+function summarizeTieredEventSentenceFragment(event: TieredSummarySourceEvent): string {
+  const text = summarizeTieredEventText(event);
+  return text ? sentenceCase(normalizeSentence(text)) : "";
+}
+
+function dedupeTieredSentenceParts(parts: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const part of parts) {
+    const normalized = normalizeText(part);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(part);
+  }
+
+  return result;
+}
+
+function joinTieredSentences(parts: string[], limit = 3): string {
+  const deduped = dedupeTieredSentenceParts(parts).slice(0, limit);
+  if (!deduped.length) {
+    return "";
+  }
+
+  if (deduped.length === 1) {
+    return deduped[0].endsWith(".") ? deduped[0] : `${deduped[0]}.`;
+  }
+
+  const paragraph = deduped
+    .map((part) => part.replace(/[.;\s]+$/, "").trim())
+    .filter(Boolean)
+    .join(" ");
+
+  return paragraph.endsWith(".") ? paragraph : `${paragraph}.`;
+}
+
+function joinRelatedTieredFragments(parts: string[]): string {
+  const deduped = dedupeTieredSentenceParts(parts);
+  if (!deduped.length) return "";
+  if (deduped.length === 1) return deduped[0];
+
+  const shortParagraph = deduped.map((part) => part.replace(/[.;\s]+$/, "").trim()).join("; ");
+  return truncateText(shortParagraph, 260);
 }
 
 function isAdministrativeContextText(text: string): boolean {
@@ -1333,22 +1424,34 @@ function groupTieredSummaryEvents(
 function buildTieredCaseSnapshot(
   grouped: Record<TierName, TieredTimelineSummaryEvent[]>
 ): string {
-  const sections = [
-    grouped.critical[0],
-    grouped.critical[1],
-    grouped.supporting[0],
-    grouped.context[0],
-  ]
-    .filter((event): event is TieredTimelineSummaryEvent => Boolean(event))
-    .map(summarizeTieredEventSentence)
-    .filter(Boolean)
-    .slice(0, 3);
+  const opening = joinRelatedTieredFragments(
+    grouped.critical
+      .slice(0, 2)
+      .map(summarizeTieredEventSentenceFragment)
+      .filter(Boolean)
+  );
+  const support = joinRelatedTieredFragments(
+    grouped.supporting
+      .slice(0, 3)
+      .map(summarizeTieredEventSentenceFragment)
+      .filter(Boolean)
+  );
+  const context = joinRelatedTieredFragments(
+    grouped.context
+      .slice(0, 1)
+      .map(summarizeTieredEventSentenceFragment)
+      .filter(Boolean)
+  );
+
+  const sections = [opening, support, context]
+    .map((section) => normalizeSummaryFragment(section))
+    .filter(Boolean);
 
   if (!sections.length) {
     return "Visible timeline events document the case course.";
   }
 
-  return sections.join(" ");
+  return joinTieredSentences(sections, 3);
 }
 
 function buildTieredKeyIssues(
@@ -1359,7 +1462,7 @@ function buildTieredKeyIssues(
 
   for (const tier of ["critical", "supporting", "context"] as TierName[]) {
     for (const event of grouped[tier]) {
-      const issue = summarizeTieredEventIssue(event);
+      const issue = truncateText(summarizeTieredEventIssue(event), 110);
       const normalized = normalizeText(issue);
 
       if (!issue || seen.has(normalized)) continue;
@@ -1391,21 +1494,26 @@ function buildTieredDateSummaries(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, bucket]) => {
       const grouped = groupTieredSummaryEvents(bucket);
-      const dateEvents = [
-        ...grouped.critical.slice(0, 2),
-        ...grouped.supporting.slice(0, 1),
-        ...grouped.context.slice(0, 1),
-      ];
-
-      const summaryParts = dateEvents.length
-        ? dateEvents.map(summarizeTieredEventSentence).filter(Boolean)
-        : bucket.map(summarizeTieredEventSentence).filter(Boolean);
+      const summaryParts = [
+        joinRelatedTieredFragments(
+          grouped.critical.slice(0, 2).map(summarizeTieredEventSentenceFragment).filter(Boolean)
+        ),
+        joinRelatedTieredFragments(
+          grouped.supporting
+            .slice(0, 2)
+            .map(summarizeTieredEventSentenceFragment)
+            .filter(Boolean)
+        ),
+        joinRelatedTieredFragments(
+          grouped.context.slice(0, 1).map(summarizeTieredEventSentenceFragment).filter(Boolean)
+        ),
+      ].filter(Boolean);
 
       return {
         date,
         summary:
           summaryParts.length > 0
-            ? summaryParts.join(" ")
+            ? joinTieredSentences(summaryParts as string[], 3)
             : "Related timeline events were documented.",
       };
     });
