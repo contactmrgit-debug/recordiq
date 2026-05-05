@@ -8,6 +8,34 @@ export type TimelineSummaryResult = {
   mode: TimelineSummaryMode;
 };
 
+export type TieredTimelineSummaryEvent = {
+  id: string;
+  date: string;
+  title: string;
+  description?: string | null;
+  eventType?: string | null;
+  sourcePage?: number | null;
+  documentId?: string | null;
+  physicianName?: string | null;
+  medicalFacility?: string | null;
+  reviewStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
+  isHidden?: boolean | null;
+};
+
+export type TieredTimelineSummary = {
+  caseSnapshot: string;
+  keyIssues: string[];
+  dateSummaries: {
+    date: string;
+    summary: string;
+  }[];
+  tieredEvents: {
+    critical: TieredTimelineSummaryEvent[];
+    supporting: TieredTimelineSummaryEvent[];
+    context: TieredTimelineSummaryEvent[];
+  };
+};
+
 export type TimelineDisplayEvent = TimelineSummaryEvent & {
   id?: string | null;
   eventDate?: string | Date | null;
@@ -1130,5 +1158,297 @@ export function generateTimelineSummary(
     caseSummary,
     keyFindings,
     mode,
+  };
+}
+
+type TieredSummarySourceEvent = Pick<
+  TieredTimelineSummaryEvent,
+  | "id"
+  | "date"
+  | "title"
+  | "description"
+  | "eventType"
+  | "sourcePage"
+  | "documentId"
+  | "physicianName"
+  | "medicalFacility"
+  | "reviewStatus"
+  | "isHidden"
+> & {
+  eventDate?: string | Date | null;
+};
+
+type TierName = "critical" | "supporting" | "context";
+
+function normalizeTieredSummaryDate(
+  value?: string | Date | null
+): string {
+  return formatTimelineDateValue(value);
+}
+
+function summarizeTieredEventText(event: TieredSummarySourceEvent): string {
+  const title = normalizeDisplayText(event.title);
+  const description = normalizeDisplayText(event.description);
+  const cleanTitle = title.replace(/\s+/g, " ").trim();
+  const cleanDescription = description.replace(/\s+/g, " ").trim();
+
+  if (cleanTitle && cleanDescription) {
+    if (cleanDescription.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
+      return truncateText(cleanDescription, 180);
+    }
+
+    return truncateText(`${cleanTitle}: ${cleanDescription}`, 180);
+  }
+
+  return truncateText(cleanTitle || cleanDescription, 180);
+}
+
+function summarizeTieredEventIssue(event: TieredSummarySourceEvent): string {
+  const candidate = summarizeTieredEventText(event);
+  if (candidate) return candidate;
+
+  return truncateText(normalizeDisplayText(event.eventType || "Related event"), 120);
+}
+
+function summarizeTieredEventSentence(event: TieredSummarySourceEvent): string {
+  const text = summarizeTieredEventText(event);
+  if (!text) return "";
+
+  const sentence = text.endsWith(".") ? text : `${text}.`;
+  return sentenceCase(normalizeSentence(sentence));
+}
+
+function isAdministrativeContextText(text: string): boolean {
+  return /\b(follow[- ]?up|return precautions|outpatient|appointment|recheck|instructions?|administrative|chart reviewed|documented|summary|packet|paperwork|insurance|demographics?|registration)\b/.test(
+    text
+  );
+}
+
+function classifyTieredSummaryEvent(event: TieredSummarySourceEvent): TierName {
+  const text = normalizeText(
+    `${event.title || ""} ${event.description || ""} ${event.eventType || ""}`
+  );
+  const eventType = normalizeText(event.eventType || "");
+
+  if (!text) {
+    return "context";
+  }
+
+  if (
+    /\b(incident|diagnosis|dx|er|emergency room|emergency department|presented|presentation|arrived|admitted|hospital|transfer|transferred|discharged|disposition|procedure|procedures|surgery|operation)\b/.test(
+      text
+    ) ||
+    /\b(fracture|hemorrhage|dissection|dislocation|abnormal|critical|major abnormal|positive finding)\b/.test(
+      text
+    ) ||
+    /\b(ct|cta|mri|x\s?ray|xray|ultrasound|radiology|imaging|scan)\b/.test(text)
+  ) {
+    return "critical";
+  }
+
+  if (
+    /\b(lab|labs|laboratory|cbc|cmp|bmp|wbc|rbc|hgb|hct|platelet|sodium|potassium|creatinine|glucose|lactate|troponin|urinalysis|ua|bnp|anion gap|bilirubin|alt|ast)\b/.test(
+      text
+    ) ||
+    /\b(medication|medications|meds|given|administered|started|prescribed|dose|doses|dosage|treatment response|improved|worsened|better|worse|consult|consultation|symptom change|pain improved|symptoms improved)\b/.test(
+      text
+    )
+  ) {
+    return "supporting";
+  }
+
+  if (isAdministrativeContextText(text)) {
+    return "context";
+  }
+
+  return "context";
+}
+
+function sortTieredSummaryEvents(
+  a: TieredTimelineSummaryEvent,
+  b: TieredTimelineSummaryEvent
+): number {
+  if (a.date !== b.date) return a.date.localeCompare(b.date);
+
+  const aPage = a.sourcePage ?? Number.MAX_SAFE_INTEGER;
+  const bPage = b.sourcePage ?? Number.MAX_SAFE_INTEGER;
+  if (aPage !== bPage) return aPage - bPage;
+
+  const aTitle = normalizeText(a.title || "");
+  const bTitle = normalizeText(b.title || "");
+  if (aTitle !== bTitle) return aTitle.localeCompare(bTitle);
+
+  return a.id.localeCompare(b.id);
+}
+
+function normalizeTieredSummaryEvent(
+  event: TieredSummarySourceEvent
+): TieredTimelineSummaryEvent | null {
+  if (!event.id) return null;
+
+  const date = normalizeTieredSummaryDate(event.date ?? event.eventDate);
+  if (!date || date === "UNKNOWN") {
+    return null;
+  }
+
+  return {
+    id: event.id,
+    date,
+    title: normalizeDisplayText(event.title),
+    description:
+      typeof event.description === "string"
+        ? normalizeDisplayText(event.description) || null
+        : event.description ?? null,
+    eventType: event.eventType || null,
+    sourcePage: event.sourcePage ?? null,
+    documentId: event.documentId ?? null,
+    physicianName: event.physicianName ?? null,
+    medicalFacility: event.medicalFacility ?? null,
+    reviewStatus: event.reviewStatus ?? null,
+    isHidden: event.isHidden ?? null,
+  };
+}
+
+function groupTieredSummaryEvents(
+  events: TieredTimelineSummaryEvent[]
+): Record<TierName, TieredTimelineSummaryEvent[]> {
+  const grouped: Record<TierName, TieredTimelineSummaryEvent[]> = {
+    critical: [],
+    supporting: [],
+    context: [],
+  };
+
+  for (const event of events) {
+    const tier = classifyTieredSummaryEvent(event);
+    grouped[tier].push(event);
+  }
+
+  for (const tier of Object.keys(grouped) as TierName[]) {
+    grouped[tier].sort(sortTieredSummaryEvents);
+  }
+
+  return grouped;
+}
+
+function buildTieredCaseSnapshot(
+  grouped: Record<TierName, TieredTimelineSummaryEvent[]>
+): string {
+  const sections = [
+    grouped.critical[0],
+    grouped.critical[1],
+    grouped.supporting[0],
+    grouped.context[0],
+  ]
+    .filter((event): event is TieredTimelineSummaryEvent => Boolean(event))
+    .map(summarizeTieredEventSentence)
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (!sections.length) {
+    return "Visible timeline events document the case course.";
+  }
+
+  return sections.join(" ");
+}
+
+function buildTieredKeyIssues(
+  grouped: Record<TierName, TieredTimelineSummaryEvent[]>
+): string[] {
+  const issues: string[] = [];
+  const seen = new Set<string>();
+
+  for (const tier of ["critical", "supporting", "context"] as TierName[]) {
+    for (const event of grouped[tier]) {
+      const issue = summarizeTieredEventIssue(event);
+      const normalized = normalizeText(issue);
+
+      if (!issue || seen.has(normalized)) continue;
+
+      seen.add(normalized);
+      issues.push(issue);
+
+      if (issues.length >= 5) {
+        return issues;
+      }
+    }
+  }
+
+  return issues;
+}
+
+function buildTieredDateSummaries(
+  events: TieredTimelineSummaryEvent[]
+): TieredTimelineSummary["dateSummaries"] {
+  const byDate = new Map<string, TieredTimelineSummaryEvent[]>();
+
+  for (const event of events) {
+    const bucket = byDate.get(event.date) || [];
+    bucket.push(event);
+    byDate.set(event.date, bucket);
+  }
+
+  return Array.from(byDate.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, bucket]) => {
+      const grouped = groupTieredSummaryEvents(bucket);
+      const dateEvents = [
+        ...grouped.critical.slice(0, 2),
+        ...grouped.supporting.slice(0, 1),
+        ...grouped.context.slice(0, 1),
+      ];
+
+      const summaryParts = dateEvents.length
+        ? dateEvents.map(summarizeTieredEventSentence).filter(Boolean)
+        : bucket.map(summarizeTieredEventSentence).filter(Boolean);
+
+      return {
+        date,
+        summary:
+          summaryParts.length > 0
+            ? summaryParts.join(" ")
+            : "Related timeline events were documented.",
+      };
+    });
+}
+
+export function buildTieredTimelineSummary(
+  events: TieredSummarySourceEvent[]
+): TieredTimelineSummary {
+  const normalized = events
+    .map(normalizeTieredSummaryEvent)
+    .filter(
+      (
+        event
+      ): event is TieredTimelineSummaryEvent =>
+        Boolean(
+          event &&
+            (event.reviewStatus === "APPROVED" ||
+              event.reviewStatus === "PENDING" ||
+              event.reviewStatus == null) &&
+            !event.isHidden
+        )
+    )
+    .sort(sortTieredSummaryEvents);
+
+  if (!normalized.length) {
+    return {
+      caseSnapshot: "No approved or pending visible timeline events are available yet.",
+      keyIssues: [],
+      dateSummaries: [],
+      tieredEvents: {
+        critical: [],
+        supporting: [],
+        context: [],
+      },
+    };
+  }
+
+  const grouped = groupTieredSummaryEvents(normalized);
+
+  return {
+    caseSnapshot: buildTieredCaseSnapshot(grouped),
+    keyIssues: buildTieredKeyIssues(grouped),
+    dateSummaries: buildTieredDateSummaries(normalized),
+    tieredEvents: grouped,
   };
 }

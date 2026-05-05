@@ -6,6 +6,8 @@ import Image from "next/image";
 import {
   buildTimelineDisplayGroups,
   generateTimelineSummary,
+  type TieredTimelineSummary,
+  type TieredTimelineSummaryEvent,
   type TimelineDisplayDateGroup,
 } from "@/lib/timeline-summary";
 import { buildCaseExportHtml } from "@/lib/case-export-html";
@@ -22,6 +24,7 @@ type CaseData = {
   caseType?: string | null;
   patientName?: string | null;
   subjectName?: string | null;
+  summary?: TieredTimelineSummary | null;
 };
 
 export type DocumentItem = {
@@ -66,11 +69,29 @@ type TimelineEvent = {
 };
 export type TimelineEventItem = TimelineEvent;
 
-type TimelineSummary = {
-  caseSummary: string;
-  keyFindings: string[];
-  mode: "short" | "grouped" | "highlights";
-};
+function isTieredTimelineSummary(value: unknown): value is TieredTimelineSummary {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Partial<TieredTimelineSummary>;
+  const tieredEvents = candidate.tieredEvents as TieredTimelineSummary["tieredEvents"] | undefined;
+
+  return (
+    typeof candidate.caseSnapshot === "string" &&
+    Array.isArray(candidate.keyIssues) &&
+    candidate.keyIssues.every((item) => typeof item === "string") &&
+    Array.isArray(candidate.dateSummaries) &&
+    candidate.dateSummaries.every(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        typeof item.date === "string" &&
+        typeof item.summary === "string"
+    ) &&
+    Array.isArray(tieredEvents?.critical) &&
+    Array.isArray(tieredEvents?.supporting) &&
+    Array.isArray(tieredEvents?.context)
+  );
+}
 
 type ExtractedCode = {
   code: string;
@@ -321,22 +342,6 @@ function fileIsPdf(documentItem?: DocumentItem | null) {
   );
 }
 
-function isTimelineSummary(value: unknown): value is TimelineSummary {
-  if (!value || typeof value !== "object") return false;
-
-  const candidate = value as Partial<TimelineSummary>;
-
-  return (
-    typeof candidate.caseSummary === "string" &&
-    Array.isArray(candidate.keyFindings) &&
-    candidate.keyFindings.every((item) => typeof item === "string") &&
-    (candidate.mode === "short" ||
-      candidate.mode === "grouped" ||
-      candidate.mode === "highlights")
-  );
-}
-
-
 export default function CasePage() {
   const params = useParams();
   const caseId = typeof params?.id === "string" ? params.id : "";
@@ -344,7 +349,7 @@ export default function CasePage() {
   const [caseData, setCaseData] = useState<CaseData | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [events, setEvents] = useState<TimelineEvent[]>([]);
-  const [timelineSummary, setTimelineSummary] = useState<TimelineSummary | null>(null);
+  const [summary, setSummary] = useState<TieredTimelineSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadWarning, setLoadWarning] = useState<string | null>(null);
@@ -719,13 +724,126 @@ function getSourcePage(event?: TimelineEvent | null) {
     : null;
 }
 
+function getTieredSummaryCardToneClasses(tone: "critical" | "supporting") {
+  return tone === "critical"
+    ? {
+        shell: "border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white",
+        eyebrow: "text-rose-700",
+        title: "text-rose-950",
+        body: "text-rose-950",
+        button:
+          "border border-rose-300 bg-white text-rose-700 hover:bg-rose-50",
+      }
+    : {
+        shell: "border-sky-200 bg-gradient-to-br from-sky-50 via-white to-white",
+        eyebrow: "text-sky-700",
+        title: "text-sky-950",
+        body: "text-sky-950",
+        button:
+          "border border-sky-300 bg-white text-sky-700 hover:bg-sky-50",
+      };
+}
+
+function renderTieredSummaryEventCard(
+  event: TieredTimelineSummaryEvent,
+  tone: "critical" | "supporting",
+  selectedEventId: string | null,
+  selectedDocumentId: string | null,
+  onSelect: (event: TimelineEvent) => void,
+  onOpenSource: (event: TimelineEvent) => void
+) {
+  const classes = getTieredSummaryCardToneClasses(tone);
+  const asTimelineEvent = event as unknown as TimelineEvent;
+  const isSelected = selectedEventId === event.id;
+  const isSourceActive = Boolean(
+    isSelected && selectedDocumentId && event.documentId === selectedDocumentId
+  );
+
+  return (
+    <div
+      key={event.id}
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(asTimelineEvent)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(asTimelineEvent);
+        }
+      }}
+      className={`cursor-pointer rounded-3xl border p-4 transition ${
+        classes.shell
+      } ${
+        isSelected ? "ring-2 ring-blue-300 ring-offset-1" : ""
+      } ${isSourceActive ? "shadow-sm" : ""}`}
+    >
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
+          {formatDate(event.date)}
+        </span>
+        <span
+          className={`rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold ${
+            classes.eyebrow
+          } ring-1 ring-slate-200`}
+        >
+          {tone === "critical" ? "Critical" : "Supporting"}
+        </span>
+        {event.eventType ? (
+          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
+            {event.eventType}
+          </span>
+        ) : null}
+        {event.documentId ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenSource(asTimelineEvent);
+            }}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${classes.button}`}
+          >
+            Source
+          </button>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
+            No source available
+          </span>
+        )}
+      </div>
+
+      <div className={`text-sm font-semibold leading-6 ${classes.title}`}>
+        {event.title || "Untitled event"}
+      </div>
+
+      {event.description ? (
+        <p className={`mt-2 text-sm leading-6 ${classes.body}`}>
+          {event.description}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-medium text-slate-600">
+        {event.physicianName ? (
+          <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+            {event.physicianName}
+          </span>
+        ) : null}
+        {event.medicalFacility ? (
+          <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+            {event.medicalFacility}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
   const loadCase = useCallback(async () => {
     if (!caseId) return;
 
     try {
       setLoading(true);
       setError(null);
-      setTimelineSummary(null);
+      setSummary(null);
 
       const fetchJson = async (url: string, label: string) => {
         try {
@@ -790,24 +908,32 @@ function getSourcePage(event?: TimelineEvent | null) {
         console.error("Documents load warning:", message);
       }
 
+      const nextSummary = isTieredTimelineSummary(caseResult.data.summary)
+        ? caseResult.data.summary
+        : null;
+
       const nextEvents = Array.isArray(eventsResult.data?.timelineEvents)
         ? eventsResult.data.timelineEvents.map((event: TimelineEvent) =>
             normalizeTimelineEvent(event)
           )
         : [];
-      const nextSummary = isTimelineSummary(eventsResult.data?.summary)
-        ? eventsResult.data.summary
-        : null;
       if (!eventsResult.ok || !eventsResult.data?.success) {
         const message = eventsResult.data?.error || eventsResult.error || "Failed to load timeline events";
         warnings.push(message);
         console.error("Timeline load warning:", message);
       }
 
-      setCaseData(nextCase);
+      setCaseData(
+        nextCase
+          ? {
+              ...nextCase,
+              summary: nextSummary,
+            }
+          : null
+      );
       setDocuments(nextDocs);
       setEvents(nextEvents);
-      setTimelineSummary(nextSummary);
+      setSummary(nextSummary);
       setLoadWarning(warnings.length ? warnings.join(" | ") : null);
 
       const currentSelectedEventId = selectedEventIdRef.current;
@@ -1167,7 +1293,7 @@ Status: ${event.reviewStatus || "PENDING"}
       return;
     }
 
-    const exportSummary = timelineSummary ?? generateTimelineSummary(filteredEvents);
+    const exportSummary = generateTimelineSummary(filteredEvents);
     const summary = exportSummary;
     const html = buildCaseExportHtml({
       caseData,
@@ -1470,52 +1596,125 @@ Status: ${event.reviewStatus || "PENDING"}
     <div className="border-b border-slate-200 px-5 py-4">
       <div>
         <h2 className="text-lg font-semibold text-slate-950">
-          Chronological summaries
+          Case Overview
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Scroll the story on the left. Evidence lives on the right.
+          Tiered summary up top. Full source-backed timeline below.
         </p>
       </div>
     </div>
 
     <div className="h-[calc(100vh-245px)] overflow-y-auto px-4 py-4">
-      {timelineSummary ? (
-        <div className="mb-4 overflow-hidden rounded-[28px] border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white px-5 py-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
-                Summary Layer
-              </div>
-              <h3 className="mt-1 text-base font-semibold text-amber-950">
-                Case Summary
-              </h3>
+      {summary ? (
+        <div className="mb-5 space-y-4">
+          <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white px-5 py-5 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+              Case Snapshot
             </div>
-            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
-              {timelineSummary.mode}
-            </span>
-          </div>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-900">
+              {summary.caseSnapshot}
+            </p>
+          </section>
 
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-amber-950">
-            {timelineSummary.caseSummary}
-          </p>
-
-          {timelineSummary.keyFindings.length ? (
-            <div className="mt-5 border-t border-amber-200/70 pt-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-800">
-                Key Findings
-              </div>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-amber-950">
-                {timelineSummary.keyFindings.map((finding) => (
-                  <li key={finding} className="flex gap-2">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                    <span>{finding}</span>
+          <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white px-5 py-5 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+              Key Issues
+            </div>
+            {summary.keyIssues.length ? (
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-900">
+                {summary.keyIssues.map((issue) => (
+                  <li key={issue} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-500" />
+                    <span>{issue}</span>
                   </li>
                 ))}
               </ul>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                No key issues were identified from the visible approved or pending events.
+              </p>
+            )}
+          </section>
+
+          <section className="overflow-hidden rounded-[28px] border border-rose-200 bg-white px-5 py-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+                  Critical Events
+                </div>
+                <p className="mt-1 text-sm text-rose-900">
+                  Incidents, diagnoses, ED/hospital presentations, imaging findings, procedures, transfers, discharge, and major abnormal results.
+                </p>
+              </div>
+              <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-700 ring-1 ring-rose-200">
+                {summary.tieredEvents.critical.length} events
+              </span>
             </div>
-          ) : null}
+            <div className="mt-4 space-y-3">
+              {summary.tieredEvents.critical.length ? (
+                summary.tieredEvents.critical.map((event) =>
+                  renderTieredSummaryEventCard(
+                    event,
+                    "critical",
+                    selectedEventId,
+                    selectedDocumentId,
+                    handleSelectEvent,
+                    openSourceDocument
+                  )
+                )
+              ) : (
+                <p className="text-sm leading-6 text-slate-500">
+                  No critical events were available in the visible approved or pending set.
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-[28px] border border-sky-200 bg-white px-5 py-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+                  Supporting Events
+                </div>
+                <p className="mt-1 text-sm text-sky-900">
+                  Labs, medications, consultations, treatment response, and symptom changes.
+                </p>
+              </div>
+              <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700 ring-1 ring-sky-200">
+                {summary.tieredEvents.supporting.length} events
+              </span>
+            </div>
+            <div className="mt-4 space-y-3">
+              {summary.tieredEvents.supporting.length ? (
+                summary.tieredEvents.supporting.map((event) =>
+                  renderTieredSummaryEventCard(
+                    event,
+                    "supporting",
+                    selectedEventId,
+                    selectedDocumentId,
+                    handleSelectEvent,
+                    openSourceDocument
+                  )
+                )
+              ) : (
+                <p className="text-sm leading-6 text-slate-500">
+                  No supporting events were available in the visible approved or pending set.
+                </p>
+              )}
+            </div>
+          </section>
+
         </div>
       ) : null}
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="text-base font-semibold text-slate-950">Full Timeline</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Scroll the story on the left. Evidence lives on the right.
+          </p>
+        </div>
+      </div>
 
       {groupedEvents.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
