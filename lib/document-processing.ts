@@ -18,6 +18,7 @@ import {
   detectPatientNameFromText,
   shouldReplaceSubjectName,
 } from "@/lib/patient-name";
+import { detectMedicalFacilityFromText } from "@/lib/medical-facility";
 import { prisma } from "@/lib/prisma";
 
 export type ProcessingJobStatus =
@@ -1334,11 +1335,9 @@ function polishFinalCandidateEvents(events: RawTimelineEvent[]): RawTimelineEven
     "transfer-to-shannon",
   ];
 
-   return Array.from(bestByKey.entries())
+  return Array.from(bestByKey.entries())
     .map(([key, event]) => {
-      const facility = options?.isOchsnerPacket
-        ? event.medicalFacility || null
-        : event.medicalFacility || "Reagan Memorial Hospital";
+      const facility = event.medicalFacility || null;
 
       const physicianName =
         event.physicianName ||
@@ -2735,6 +2734,21 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
   const providerBackfilledFinalCandidateEvents = repairedFinalCandidateEvents.map((event) => {
     const title = `${event.title || ""} ${event.description || ""}`.toLowerCase();
     const shouldBackfillTraumaMetadata = !isEnvisionPacket && !isOchsnerPacketContext;
+    const exactPageText =
+      typeof event.sourcePage === "number"
+        ? allPageTexts.find((pageText) => pageText.page === event.sourcePage)?.text || null
+        : null;
+    const facilitySupportText = [
+      event.title || "",
+      event.description || "",
+      event.sourceExcerpt || "",
+      exactPageText || "",
+      event.medicalFacility || "",
+      document.fileName || "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const detectedMedicalFacility = detectMedicalFacilityFromText(facilitySupportText);
 
     const physicianName =
       shouldBackfillTraumaMetadata &&
@@ -2756,8 +2770,7 @@ const normalizedFinalCandidateEvents = finalCandidateEvents.map((event) => {
       ...event,
       physicianName,
       providerName: physicianName,
-      medicalFacility:
-        event.medicalFacility || (shouldBackfillTraumaMetadata ? "Reagan Memorial Hospital" : null),
+      medicalFacility: event.medicalFacility || detectedMedicalFacility || null,
     };
   });
 

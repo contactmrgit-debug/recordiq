@@ -9,6 +9,7 @@ type ExportEvent = {
   sourcePage?: number | null;
   reviewStatus?: string | null;
   documentId?: string | null;
+  medicalFacility?: string | null;
 };
 
 function makeEvent(
@@ -33,12 +34,18 @@ function run() {
     caseData: {
       title: "Untitled Case",
       caseType: "MEDICAL",
+      patientName: "HussainKhail, Imran Ahmad",
       subjectName: "",
     },
     groupedEvents: [
       {
         date: "2019-02-02",
-        items: [makeEvent("Workplace injury", "Pipe struck the head at work.")],
+        items: [
+          {
+            ...makeEvent("Workplace injury", "Pipe struck the head at work."),
+            medicalFacility: "Reagan Memorial Hospital",
+          },
+        ],
       },
     ],
     summary: {
@@ -57,6 +64,7 @@ function run() {
     caseData: {
       title: "Untitled Case",
       caseType: "MEDICAL",
+      patientName: "HussainKhail, Imran Ahmad",
       subjectName: "",
     },
     groupedEvents: [
@@ -86,6 +94,9 @@ function run() {
   assert.ok(summaryIndex < timelineIndex);
   assert.ok(timelineIndex < dateIndex);
   assert.ok(keyFindingsIndex > summaryIndex);
+  assert.ok(!htmlWithBullets.includes("Untitled Case"));
+  assert.ok(htmlWithBullets.includes("HussainKhail, Imran Ahmad"));
+  assert.ok(!htmlWithBullets.includes("Reagan Memorial Hospital"));
 
   assert.ok(htmlWithoutBullets.includes("Case Summary"));
   assert.ok(!htmlWithoutBullets.includes("Key Findings"));

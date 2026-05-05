@@ -11,7 +11,9 @@ import {
   type TimelineDisplayDateGroup,
 } from "@/lib/timeline-summary";
 import { buildCaseExportHtml } from "@/lib/case-export-html";
+import { resolveDisplayedMedicalFacility } from "@/lib/medical-facility";
 import { formatTimelineDateValue } from "@/lib/timeline-date";
+import { isPlaceholderPatientName } from "@/lib/patient-name";
 
 
 type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -291,6 +293,18 @@ function extractMedicalCodes(text: string): ExtractedCode[] {
   return Array.from(found.values()).slice(0, 6);
 }
 
+function isPlaceholderCaseTitle(value?: string | null): boolean {
+  const normalized = (value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  return (
+    !normalized ||
+    normalized === "untitled case" ||
+    normalized === "untitled" ||
+    normalized === "case chronology" ||
+    normalized === "unknown case" ||
+    normalized === "unnamed case"
+  );
+}
+
 function buildExportRows(
   events: TimelineEvent[],
   caseData: CaseData | null,
@@ -298,10 +312,20 @@ function buildExportRows(
   getProviderName: (event: TimelineEvent) => string,
   getProviderRole: (event: TimelineEvent) => string | null
 ) {
+  const patientName =
+    !isPlaceholderPatientName(caseData?.patientName)
+      ? caseData?.patientName?.trim() || ""
+      : !isPlaceholderPatientName(caseData?.subjectName)
+        ? caseData?.subjectName?.trim() || ""
+        : "";
+  const caseTitle = isPlaceholderCaseTitle(caseData?.title)
+    ? patientName || "Case Chronology"
+    : caseData?.title?.trim() || patientName || "Case Chronology";
+
   return events.map((event) => ({
-    caseTitle: caseData?.title || "",
+    caseTitle,
     caseType: caseData?.caseType || "",
-    subjectName: caseData?.subjectName || "",
+    subjectName: patientName,
     date: normalizeTimelineEventDate(event),
     provider: getProviderName(event) || "",
     providerRole: getProviderRole(event) || "",
@@ -602,8 +626,16 @@ function getProviderRole(event: TimelineEvent) {
   return event.providerRole?.trim() || event.physicianRole?.trim() || null;
 }
 
-function getMedicalFacility(event: TimelineEvent) {
-  return event.medicalFacility?.trim() || null;
+function getMedicalFacility(event: {
+  medicalFacility?: string | null;
+  title?: string | null;
+  description?: string | null;
+}) {
+  return resolveDisplayedMedicalFacility({
+    medicalFacility: event.medicalFacility,
+    title: event.title,
+    description: event.description,
+  });
 }
 
 function getNormalizedSourcePacketName(event: TimelineEvent) {
@@ -827,9 +859,9 @@ function renderTieredSummaryEventCard(
             {event.physicianName}
           </span>
         ) : null}
-        {event.medicalFacility ? (
+        {getMedicalFacility(event) ? (
           <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
-            {event.medicalFacility}
+            {getMedicalFacility(event)}
           </span>
         ) : null}
       </div>
@@ -1214,19 +1246,34 @@ const activeDocument = useMemo(() => {
   }, [events]);
 
   const displayedPatientName =
-    caseData?.patientName?.trim() || caseData?.subjectName?.trim() || "Unnamed Patient";
-  const displayedCaseTitle = caseData?.title?.trim() || "Untitled Case";
+    (!isPlaceholderPatientName(caseData?.patientName)
+      ? caseData?.patientName?.trim()
+      : null) ||
+    (!isPlaceholderPatientName(caseData?.subjectName)
+      ? caseData?.subjectName?.trim()
+      : null) ||
+    "Unnamed Patient";
+  const displayedCaseTitle = isPlaceholderCaseTitle(caseData?.title)
+    ? displayedPatientName
+    : caseData?.title?.trim() || displayedPatientName || "Untitled Case";
 
   function handleExport(format: "pdf" | "word" | "excel" | "zip") {
     setDownloadOpen(false);
 
- const rows = buildExportRows(
-  filteredEvents,
-  caseData,
-  getDocumentName,
-  (event) => getProviderName(event) || "",
-  getProviderRole
-);
+    const exportEvents = filteredEvents.map((event) => ({
+      ...event,
+      medicalFacility: getMedicalFacility(event),
+    }));
+
+    const exportRows = buildExportRows(
+      exportEvents,
+      caseData,
+      getDocumentName,
+      (event) => getProviderName(event) || "",
+      getProviderRole
+    );
+    const exportGroupedEvents = buildTimelineDisplayGroups(exportEvents);
+    const exportSummary = generateTimelineSummary(exportEvents);
 
     const safeTitle = (caseData?.title || "verachron-case")
       .toLowerCase()
@@ -1234,13 +1281,13 @@ const activeDocument = useMemo(() => {
       .replace(/^-+|-+$/g, "");
 
     if (format === "excel") {
-      const csv = rowsToCsv(rows);
+      const csv = rowsToCsv(exportRows);
       downloadBlob(csv, `${safeTitle}-chronology.csv`, "text/csv;charset=utf-8;");
       return;
     }
 
     if (format === "word") {
-      const content = groupedEvents
+      const content = exportGroupedEvents
         .map(
           (group) => `
 ${formatDate(group.date)}
@@ -1279,7 +1326,7 @@ Status: ${event.reviewStatus || "PENDING"}
         {
           case: caseData,
           documents,
-          chronology: rows,
+          chronology: exportRows,
         },
         null,
         2
@@ -1293,11 +1340,10 @@ Status: ${event.reviewStatus || "PENDING"}
       return;
     }
 
-    const exportSummary = generateTimelineSummary(filteredEvents);
     const summary = exportSummary;
     const html = buildCaseExportHtml({
       caseData,
-      groupedEvents,
+      groupedEvents: exportGroupedEvents,
       summary: exportSummary,
       getAttributionLine: (event) => getAttributionLine(event as TimelineEvent),
       getDocumentName,

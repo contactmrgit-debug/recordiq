@@ -1,8 +1,10 @@
 import type { TimelineDisplayDateGroup } from "@/lib/timeline-summary";
+import { isPlaceholderPatientName } from "@/lib/patient-name";
 
 type ExportCaseData = {
   title?: string | null;
   caseType?: string | null;
+  patientName?: string | null;
   subjectName?: string | null;
 };
 
@@ -15,6 +17,8 @@ type ExportEvent = {
   sourcePage?: number | null;
   reviewStatus?: string | null;
   documentId?: string | null;
+  sourceExcerpt?: string | null;
+  medicalFacility?: string | null;
 };
 
 type ExportSummary = {
@@ -38,6 +42,18 @@ function escapeHtml(value: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function isPlaceholderCaseTitle(value?: string | null): boolean {
+  const normalized = (value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  return (
+    !normalized ||
+    normalized === "untitled case" ||
+    normalized === "untitled" ||
+    normalized === "case chronology" ||
+    normalized === "unknown case" ||
+    normalized === "unnamed case"
+  );
 }
 
 function renderSummary(summary: ExportSummary): string {
@@ -90,7 +106,7 @@ function renderGroupedEvents(
                         }
                         <div class="title">${escapeHtml(event.title || "")}</div>
                         <div>${escapeHtml(event.description || "")}</div>
-                                                <div class="details">
+                        <div class="details">
                           ${escapeHtml(event.eventType || "other")} | 
                           Page ${escapeHtml(String(event.sourcePage ?? "-"))} | 
                           ${escapeHtml(getDocumentName(event.documentId))} | 
@@ -116,10 +132,22 @@ export function buildCaseExportHtml({
   getAttributionLine,
   getDocumentName,
 }: ExportHtmlArgs): string {
+  const displayPatientName =
+    (!isPlaceholderPatientName(caseData?.patientName)
+      ? caseData?.patientName?.trim()
+      : null) ||
+    (!isPlaceholderPatientName(caseData?.subjectName)
+      ? caseData?.subjectName?.trim()
+      : null) ||
+    "";
+  const displayTitle = isPlaceholderCaseTitle(caseData?.title)
+    ? displayPatientName || "Case Chronology"
+    : caseData?.title?.trim() || displayPatientName || "Case Chronology";
+
   return `
     <html>
       <head>
-        <title>${escapeHtml(caseData?.title || "Case Chronology")}</title>
+        <title>${escapeHtml(displayTitle)}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
           h1 { margin-bottom: 8px; }
@@ -142,10 +170,10 @@ export function buildCaseExportHtml({
         </style>
       </head>
       <body>
-        <h1>${escapeHtml(caseData?.title || "Case Chronology")}</h1>
+        <h1>${escapeHtml(displayTitle)}</h1>
         <div class="meta">
           ${escapeHtml(caseData?.caseType || "")}
-          ${caseData?.subjectName ? ` | ${escapeHtml(caseData.subjectName)}` : ""}
+          ${displayPatientName ? ` | ${escapeHtml(displayPatientName)}` : ""}
         </div>
         ${renderSummary(summary)}
         <div class="timeline-heading">Timeline</div>

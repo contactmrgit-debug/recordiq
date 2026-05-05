@@ -1,6 +1,8 @@
 const PATIENT_NAME_SEARCH_LIMIT = 12000;
 
 const NAME_BODY = "([A-Za-z][A-Za-z'.-]*(?:\\s+[A-Za-z][A-Za-z'.-]*){1,5})";
+const COMMA_NAME_BODY =
+  "([A-Za-z][A-Za-z'.-]*(?:\\s+[A-Za-z][A-Za-z'.-]*)*,\\s*[A-Za-z][A-Za-z'.-]*(?:\\s+[A-Za-z][A-Za-z'.-]*){0,3})";
 
 type PatientNamePattern = {
   pattern: RegExp;
@@ -8,6 +10,27 @@ type PatientNamePattern = {
 };
 
 const PATIENT_NAME_PATTERNS: PatientNamePattern[] = [
+  {
+    pattern: new RegExp(
+      String.raw`(?:^|[\s\(\[\{>])${COMMA_NAME_BODY}\s*(?:,)?\s*(?:mrn|dob|date of birth)\b`,
+      "i"
+    ),
+    priority: 6,
+  },
+  {
+    pattern: new RegExp(
+      String.raw`(?:^|[\s\(\[\{>])${NAME_BODY}\s*(?:,)?\s*(?:mrn|dob|date of birth)\b`,
+      "i"
+    ),
+    priority: 5,
+  },
+  {
+    pattern: new RegExp(
+      String.raw`(?:^|[\s\(\[\{>])(?:patient name)\s*:\s*${COMMA_NAME_BODY}`,
+      "i"
+    ),
+    priority: 6,
+  },
   {
     pattern: new RegExp(
       String.raw`(?:^|[\s\(\[\{>])(?:patient name)\s*:\s*${NAME_BODY}`,
@@ -32,6 +55,13 @@ const PATIENT_NAME_PATTERNS: PatientNamePattern[] = [
   {
     pattern: new RegExp(
       String.raw`(?:^|[\s\(\[\{>])(?:patient)\s*-\s*${NAME_BODY}`,
+      "i"
+    ),
+    priority: 3,
+  },
+  {
+    pattern: new RegExp(
+      String.raw`(?:^|[\s\(\[\{>])(?:name)\s*:\s*${COMMA_NAME_BODY}`,
       "i"
     ),
     priority: 3,
@@ -106,6 +136,12 @@ const PATIENT_NAME_STOP_PATTERNS = [
 const PLACEHOLDER_PATIENT_NAMES = new Set([
   "unnamed patient",
   "unnamed case",
+  "payer-returned name",
+  "payer returned name",
+  "subscriber name",
+  "guarantor information",
+  "patient contacts",
+  "provider information",
   "our client",
   "the client",
   "client",
@@ -128,6 +164,12 @@ const PLACEHOLDER_PATIENT_NAMES = new Set([
 ]);
 
 const DISALLOWED_PATIENT_NAME_PHRASES = [
+  "payer-returned name",
+  "payer returned name",
+  "subscriber name",
+  "guarantor information",
+  "patient contacts",
+  "provider information",
   "our client",
   "the client",
   "client",
@@ -206,6 +248,14 @@ function normalizeCandidateName(value: string): string | null {
   if (
     DISALLOWED_PATIENT_NAME_PHRASES.some(
       (phrase) => lowerCandidate === phrase || lowerCandidate.includes(phrase)
+    )
+  ) {
+    return null;
+  }
+
+  if (
+    /^(?:payer[-\s]?returned|subscriber|guarantor|patient contacts|provider information)\b/i.test(
+      candidate
     )
   ) {
     return null;
