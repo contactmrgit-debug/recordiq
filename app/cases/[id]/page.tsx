@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import {
   buildTimelineDisplayGroups,
-  generateTimelineSummary,
   type TieredTimelineSummary,
   type TieredTimelineSummaryEvent,
   type TimelineDisplayDateGroup,
@@ -1273,7 +1272,7 @@ const activeDocument = useMemo(() => {
       getProviderRole
     );
     const exportGroupedEvents = buildTimelineDisplayGroups(exportEvents);
-    const exportSummary = generateTimelineSummary(exportEvents);
+    const exportSummary = caseData?.summary || summary;
 
     const safeTitle = (caseData?.title || "verachron-case")
       .toLowerCase()
@@ -1340,7 +1339,6 @@ Status: ${event.reviewStatus || "PENDING"}
       return;
     }
 
-    const summary = exportSummary;
     const html = buildCaseExportHtml({
       caseData,
       groupedEvents: exportGroupedEvents,
@@ -1349,9 +1347,9 @@ Status: ${event.reviewStatus || "PENDING"}
       getDocumentName,
     });
     console.log("EXPORT SUMMARY CHECK", {
-      hasSummary: Boolean(summary),
-      mode: summary?.mode,
-      keyFindingsCount: summary?.keyFindings?.length,
+      hasSummary: Boolean(exportSummary),
+      caseSnapshot: exportSummary?.caseSnapshot,
+      keyIssuesCount: exportSummary?.keyIssues?.length,
     });
     console.log("EXPORT HTML HAS CASE SUMMARY", html.includes("Case Summary"));
 

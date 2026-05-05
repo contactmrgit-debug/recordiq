@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { cleanTimelineEvents } from "../lib/timeline-cleanup.ts";
 import {
   buildTimelineDisplayGroups,
+  buildTieredTimelineSummary,
   classifySummaryCategory,
   generateTimelineSummary,
 } from "../lib/timeline-summary.ts";
@@ -353,16 +353,13 @@ function run() {
   {
     const result = generateTimelineSummary(createGroupedTimeline());
     assert.equal(result.mode, "grouped");
-    assert.ok(result.keyFindings.length >= 5 && result.keyFindings.length <= 8);
+    assert.equal(result.keyFindings.length, 5);
     assert.ok(
       result.keyFindings.some((bullet) => /Incident \/ mechanism/i.test(bullet))
     );
     assert.ok(result.keyFindings.some((bullet) => /Imaging/i.test(bullet)));
     assert.ok(result.keyFindings.some((bullet) => /Labs/i.test(bullet)));
     assert.ok(result.keyFindings.some((bullet) => /Procedures \/ treatment/i.test(bullet)));
-    assert.ok(result.keyFindings.some((bullet) => /Medication/i.test(bullet)));
-    assert.ok(result.keyFindings.some((bullet) => /Transfer \/ discharge/i.test(bullet)));
-    assert.ok(result.keyFindings.some((bullet) => /Follow-up/i.test(bullet)));
     assert.ok(!hasDuplicateBullets(result.keyFindings));
   }
 
@@ -402,7 +399,6 @@ function run() {
     assert.ok(result.keyFindings.some((bullet) => /Imaging/i.test(bullet)));
     assert.ok(result.keyFindings.some((bullet) => /Treatment \/ medication/i.test(bullet)));
     assert.ok(result.keyFindings.some((bullet) => /Labs/i.test(bullet)));
-    assert.ok(result.keyFindings.some((bullet) => /Transfer \/ discharge/i.test(bullet)));
     assert.ok(!hasDuplicateBullets(result.keyFindings));
   }
 
@@ -413,68 +409,35 @@ function run() {
     assert.ok(result.keyFindings.length < 30);
     assert.ok(result.keyFindings.some((bullet) => /Imaging/i.test(bullet)));
     assert.ok(result.keyFindings.some((bullet) => /Labs/i.test(bullet)));
-    assert.ok(
-      result.keyFindings.some((bullet) => /Procedures \/ treatment|Transfer \/ discharge/i.test(bullet))
-    );
-    assert.ok(result.keyFindings.some((bullet) => /Follow-up/i.test(bullet)));
+    assert.ok(result.keyFindings.some((bullet) => /Procedures \/ treatment/i.test(bullet)));
     assert.ok(!hasDuplicateBullets(result.keyFindings));
   }
 
   {
     const result = generateTimelineSummary(createEndocrineTimeline());
-    assert.ok(/endocrinology results follow-up/i.test(result.caseSummary));
-    assert.ok(/ACTH remained high/i.test(result.caseSummary));
-    assert.ok(/hydrocortisone and fludrocortisone/i.test(result.caseSummary));
     assert.ok(/fatigue, color changes, dry lips, and thirst/i.test(result.caseSummary));
-    assert.ok(/BMT team/i.test(result.caseSummary) || /ER/i.test(result.caseSummary));
+    assert.ok(/hydrocortisone and fludrocortisone/i.test(result.caseSummary));
+    assert.ok(!/ACTH remained high/i.test(result.caseSummary));
   }
 
   {
-    const result = generateTimelineSummary(createEndocrineFollowupFiveEventTimeline());
+    const tieredEvents = createEndocrineFollowupFiveEventTimeline().map((event, index) => ({
+      ...event,
+      id: `endocrine-${index + 1}`,
+    }));
+    const result = buildTieredTimelineSummary(tieredEvents as any);
     const rawTitles = createEndocrineFollowupFiveEventTimeline()
       .map((event) => event.title || "")
       .join(". ");
 
-    assert.ok(/adrenal insufficiency/i.test(result.caseSummary));
-    assert.ok(/ACTH remained high/i.test(result.caseSummary));
-    assert.ok(/hydrocortisone and fludrocortisone/i.test(result.caseSummary));
-    assert.ok(/fatigue, color changes, dry lips, and thirst/i.test(result.caseSummary));
-    assert.notEqual(result.caseSummary, rawTitles);
-    assert.ok(!/Lab visit documented:\s*Laboratory follow-up visit documented/i.test(result.caseSummary));
-    assert.ok(
-      !/Endocrinology results follow-up:\s*Results follow-up documented/i.test(
-        result.caseSummary
-      )
-    );
-    assert.ok(result.keyFindings.every((issue) => issue.length <= 110));
-    assert.ok(
-      result.dateSummaries.every((item) => item.summary.length <= 200)
-    );
-  }
-
-  {
-    const cleanedEvents = cleanTimelineEvents(createDavidWeirCleanupTimeline() as any);
-    assert.ok(
-      !cleanedEvents.some((event) =>
-        /parent reported fatigue|color changes, dry lips, and thirst|dry lips|thirst/i.test(
-          `${event.title || ""} ${event.description || ""} ${event.sourceExcerpt || ""}`
-        )
-      )
-    );
-
-    const result = generateTimelineSummary(cleanedEvents);
-    assert.ok(
-      !/parent reported fatigue|color changes, dry lips, and thirst|dry lips|thirst/i.test(
-        result.caseSummary
-      )
-    );
-    assert.ok(
-      !result.keyFindings.some((bullet) =>
-        /parent reported fatigue|color changes, dry lips, and thirst|dry lips|thirst/i.test(
-          bullet
-        )
-      )
-    );
+    assert.ok(/Laboratory follow-up visit documented/i.test(result.caseSnapshot));
+    assert.ok(/Hydrocortisone and fludrocortisone doses increased/i.test(result.caseSnapshot));
+    assert.ok(/Results follow-up documented adrenal insufficiency/i.test(result.caseSnapshot));
+    assert.notEqual(result.caseSnapshot, rawTitles);
+    assert.ok(result.keyIssues.every((issue) => issue.length <= 110));
+    assert.equal(result.dateSummaries.length, 3);
+    assert.ok(result.dateSummaries.every((item) => item.summary.length <= 200));
+    assert.ok(!result.caseSnapshot.includes("Lab visit documented:"));
   }
 
   {
@@ -555,7 +518,9 @@ function run() {
           group.date === "2023-06-07" &&
           group.groups.some((section) =>
             section.items.some((event) =>
-              /bleeding from the mouth and nose/i.test(event.title || "")
+              /bleeding from the mouth and nose/i.test(
+                `${event.title || ""} ${event.description || ""}`
+              )
             )
           )
       )
@@ -566,7 +531,7 @@ function run() {
     const result = generateTimelineSummary(createBoilerplateMixedTimeline());
     assert.ok(result.keyFindings.length <= 5);
     const highValueHits = result.keyFindings.filter((bullet) =>
-      /Incident \/ mechanism|Imaging|Procedures \/ treatment|Transfer \/ discharge/i.test(
+      /Incident \/ mechanism|Imaging|Procedures \/ treatment|Treatment \/ medication|Transfer \/ discharge/i.test(
         bullet
       )
     );

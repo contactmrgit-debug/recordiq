@@ -55,12 +55,23 @@ function run() {
       },
     ],
     summary: {
-      caseSummary: "Workplace injury with head trauma and transfer.",
-      keyFindings: [
-        "Incident / mechanism: Pipe struck the patient at work.",
-        "Transfer / discharge: Accepted to Shannon for higher-level care.",
+      caseSnapshot:
+        "Workplace injury with head trauma. Emergency evaluation documented headache, scalp swelling, and bruising.",
+      keyIssues: [
+        "Workplace injury after a pipe struck the patient at work.",
+        "Transfer to Shannon for higher-level care.",
       ],
-      mode: "short",
+      dateSummaries: [
+        {
+          date: "2019-02-02",
+          summary: "Workplace injury, emergency evaluation, and transfer were documented.",
+        },
+      ],
+      tieredEvents: {
+        critical: [],
+        supporting: [],
+        context: [],
+      },
     },
     getAttributionLine: () => "Dr. Example • ER",
     getDocumentName: () => "Source.pdf",
@@ -86,16 +97,21 @@ function run() {
       },
     ],
     summary: {
-      caseSummary: "Brief case summary only.",
-      keyFindings: [],
-      mode: "short",
+      caseSnapshot: "Brief case summary only.",
+      keyIssues: [],
+      dateSummaries: [],
+      tieredEvents: {
+        critical: [],
+        supporting: [],
+        context: [],
+      },
     },
     getAttributionLine: () => "",
     getDocumentName: () => "Source.pdf",
   });
 
   const summaryIndex = htmlWithBullets.indexOf("Case Summary");
-  const keyFindingsIndex = htmlWithBullets.indexOf("Key Findings");
+  const keyFindingsIndex = htmlWithBullets.indexOf("Key Issues");
   const timelineIndex = htmlWithBullets.indexOf("Timeline");
   const dateIndex = htmlWithBullets.indexOf("2019-02-02");
 
@@ -104,10 +120,16 @@ function run() {
   assert.ok(timelineIndex !== -1);
   assert.ok(dateIndex !== -1);
   assert.ok(summaryIndex < timelineIndex);
-  assert.ok(timelineIndex < dateIndex);
+  assert.ok(summaryIndex < dateIndex);
+  assert.ok(dateIndex < timelineIndex);
   assert.ok(keyFindingsIndex > summaryIndex);
   assert.ok(!htmlWithBullets.includes("Untitled Case"));
   assert.ok(htmlWithBullets.includes("HussainKhail, Imran Ahmad"));
+  assert.ok(
+    htmlWithBullets.includes(
+      "Workplace injury with head trauma. Emergency evaluation documented headache, scalp swelling, and bruising."
+    )
+  );
   assert.ok(!htmlWithBullets.includes("Reagan Memorial Hospital"));
 
   assert.ok(htmlWithoutBullets.includes("Case Summary"));

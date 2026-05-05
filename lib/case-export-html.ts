@@ -55,15 +55,21 @@ type ExportEvent = {
 };
 
 type ExportSummary = {
-  caseSummary: string;
-  keyFindings: string[];
-  mode: "short" | "grouped" | "highlights";
+  caseSummary?: string;
+  keyFindings?: string[];
+  mode?: "short" | "grouped" | "highlights";
+  caseSnapshot?: string;
+  keyIssues?: string[];
+  dateSummaries?: {
+    date: string;
+    summary: string;
+  }[];
 };
 
 type ExportHtmlArgs = {
   caseData: ExportCaseData | null;
   groupedEvents: TimelineDisplayDateGroup[];
-  summary: ExportSummary;
+  summary: ExportSummary | null;
   getAttributionLine: (event: ExportEvent) => string;
   getDocumentName: (documentId?: string | null) => string;
 };
@@ -89,21 +95,61 @@ function isPlaceholderCaseTitle(value?: string | null): boolean {
   );
 }
 
-function renderSummary(summary: ExportSummary): string {
-  const findings = summary.keyFindings
+function hasTieredSummaryShape(
+  summary: ExportSummary | null
+): summary is ExportSummary & {
+  caseSnapshot: string;
+  keyIssues: string[];
+  dateSummaries: { date: string; summary: string }[];
+} {
+  return Boolean(summary && summary.caseSnapshot && Array.isArray(summary.keyIssues));
+}
+
+function renderSummary(summary: ExportSummary | null): string {
+  if (!summary) {
+    return `
+      <div class="summary-card">
+        <div class="summary-title">Case Summary</div>
+        <p class="summary-paragraph">Case summary unavailable.</p>
+      </div>
+    `;
+  }
+
+  const caseSnapshot = summary.caseSnapshot || summary.caseSummary || "Case summary unavailable.";
+  const keyIssues = summary.keyIssues || summary.keyFindings || [];
+  const dateSummaries = summary.dateSummaries || [];
+
+  const findings = keyIssues
     .map((finding) => `<li>${escapeHtml(finding)}</li>`)
+    .join("");
+  const dateSummaryItems = dateSummaries
+    .map(
+      (item) => `
+        <li><strong>${escapeHtml(item.date)}:</strong> ${escapeHtml(item.summary)}</li>
+      `
+    )
     .join("");
 
   return `
     <div class="summary-card">
       <div class="summary-title">Case Summary</div>
-      <p class="summary-paragraph">${escapeHtml(summary.caseSummary)}</p>
+      <p class="summary-paragraph">${escapeHtml(caseSnapshot)}</p>
       ${
-        summary.keyFindings.length
+        keyIssues.length
           ? `
-            <div class="summary-subtitle">Key Findings</div>
+            <div class="summary-subtitle">Key Issues</div>
             <ul class="summary-list">
               ${findings}
+            </ul>
+          `
+          : ""
+      }
+      ${
+        dateSummaryItems
+          ? `
+            <div class="summary-subtitle">Date Summaries</div>
+            <ul class="summary-list">
+              ${dateSummaryItems}
             </ul>
           `
           : ""
@@ -165,6 +211,7 @@ export function buildCaseExportHtml({
   getAttributionLine,
   getDocumentName,
 }: ExportHtmlArgs): string {
+  const tieredSummary = hasTieredSummaryShape(summary) ? summary : null;
   const displayPatientName =
     (!isPlaceholderPatientName(caseData?.patientName)
       ? caseData?.patientName?.trim()
@@ -208,7 +255,7 @@ export function buildCaseExportHtml({
           ${escapeHtml(caseData?.caseType || "")}
           ${displayPatientName ? ` | ${escapeHtml(displayPatientName)}` : ""}
         </div>
-        ${renderSummary(summary)}
+        ${renderSummary(tieredSummary || summary)}
         <div class="timeline-heading">Timeline</div>
         ${renderGroupedEvents(groupedEvents, getAttributionLine, getDocumentName)}
       </body>

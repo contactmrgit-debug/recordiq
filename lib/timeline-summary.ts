@@ -1,4 +1,4 @@
-import { formatTimelineDateValue } from "@/lib/timeline-date";
+import { formatTimelineDateValue } from "./timeline-date.js";
 
 export type TimelineSummaryMode = "short" | "grouped" | "highlights";
 
