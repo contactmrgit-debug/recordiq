@@ -15,6 +15,7 @@ export type TieredTimelineSummaryEvent = {
   description?: string | null;
   eventType?: string | null;
   sourcePage?: number | null;
+  sourcePageEnd?: number | null;
   documentId?: string | null;
   physicianName?: string | null;
   medicalFacility?: string | null;
@@ -42,6 +43,7 @@ export type TimelineDisplayEvent = TimelineSummaryEvent & {
   documentId?: string | null;
   reviewStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
   isHidden?: boolean | null;
+  sourcePageEnd?: number | null;
 };
 
 export type TimelineDisplayEventGroup = {
@@ -61,6 +63,7 @@ type TimelineSummaryEvent = {
   description?: string | null;
   eventType?: string | null;
   sourcePage?: number | null;
+  sourcePageEnd?: number | null;
   documentName?: string | null;
   medicalFacility?: string | null;
 };
@@ -440,6 +443,30 @@ export function scoreSummaryValue(event: TimelineSummaryEvent): number {
 
 function normalizeSentence(value: string): string {
   return value.replace(/\s+/g, " ").replace(/\s+([,.;:!?])/g, "$1").trim();
+}
+
+function normalizeSentenceForComparison(value: string): string {
+  return normalizeText(
+    value
+      .replace(/^the records?\s+(?:describe|document)\s+/i, "")
+      .replace(/^the record documents\s+/i, "")
+      .replace(/^imaging documented\s+/i, "")
+      .replace(/^follow[- ]?up instructions were documented\.?$/i, "follow-up instructions were documented")
+  );
+}
+
+function dedupeSentenceParts(parts: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const part of parts) {
+    const normalized = normalizeSentenceForComparison(part);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(part);
+  }
+
+  return result;
 }
 
 function joinNatural(items: string[], finalConjunction = "and"): string {
@@ -1338,7 +1365,7 @@ function buildCaseSummary(
     sentences.push(limitationSentence);
   }
 
-  const limited = sentences
+  const limited = dedupeSentenceParts(sentences)
     .map((sentence) => sentence.trim())
     .filter(Boolean)
     .filter(Boolean);
@@ -1557,6 +1584,7 @@ type TieredSummarySourceEvent = Pick<
   | "description"
   | "eventType"
   | "sourcePage"
+  | "sourcePageEnd"
   | "documentId"
   | "physicianName"
   | "medicalFacility"
@@ -1722,6 +1750,7 @@ function normalizeTieredSummaryEvent(
         : event.description ?? null,
     eventType: event.eventType || null,
     sourcePage: event.sourcePage ?? null,
+    sourcePageEnd: event.sourcePageEnd ?? null,
     documentId: event.documentId ?? null,
     physicianName: event.physicianName ?? null,
     medicalFacility: event.medicalFacility ?? null,

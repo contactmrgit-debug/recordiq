@@ -9,7 +9,7 @@ import {
   type TieredTimelineSummaryEvent,
   type TimelineDisplayDateGroup,
 } from "@/lib/timeline-summary";
-import { buildCaseExportHtml } from "@/lib/case-export-html";
+import { buildCaseExportHtml, type CaseExportRow } from "@/lib/case-export-html";
 import { resolveDisplayedMedicalFacility } from "@/lib/medical-facility";
 import { formatTimelineDateValue } from "@/lib/timeline-date";
 import { isPlaceholderPatientName } from "@/lib/patient-name";
@@ -25,6 +25,8 @@ type CaseData = {
   caseType?: string | null;
   patientName?: string | null;
   subjectName?: string | null;
+  patientDob?: string | null;
+  subjectDob?: string | null;
   summary?: TieredTimelineSummary | null;
 };
 
@@ -50,7 +52,10 @@ type TimelineEvent = {
   title: string;
   description?: string | null;
   eventType?: string | null;
+  sourcePageStart?: number | null;
   sourcePage?: number | null;
+  sourcePageEnd?: number | null;
+  pageRange?: string | null;
   reviewStatus?: ReviewStatus;
   isHidden?: boolean;
   documentId?: string | null;
@@ -142,6 +147,37 @@ function formatDate(date?: string) {
 
   return `${month}/${day}/${year}`;
 }
+
+function formatDisplayDate(date?: string | null) {
+  if (!date || date === "UNKNOWN") return "Unknown";
+
+  const normalized = date.trim();
+  if (!normalized) return "Unknown";
+
+  const parts = normalized.split("-");
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return `${month}/${day}/${year}`;
+  }
+
+  return normalized;
+}
+
+function sortExportTimelineEvents(a: TimelineEvent, b: TimelineEvent) {
+  const dateDelta = eventSortTime(a) - eventSortTime(b);
+  if (dateDelta !== 0) return dateDelta;
+
+  const aPage = a.sourcePage ?? Number.MAX_SAFE_INTEGER;
+  const bPage = b.sourcePage ?? Number.MAX_SAFE_INTEGER;
+  if (aPage !== bPage) return aPage - bPage;
+
+  const aTitle = (a.title || "").toLowerCase();
+  const bTitle = (b.title || "").toLowerCase();
+  if (aTitle !== bTitle) return aTitle.localeCompare(bTitle);
+
+  return a.id.localeCompare(b.id);
+}
+
 function eventSortTime(event: TimelineEvent) {
   const date = normalizeTimelineEventDate(event);
 
@@ -332,8 +368,36 @@ function buildExportRows(
     description: event.description || "",
     eventType: event.eventType || "",
     sourcePage: event.sourcePage ?? "",
+    sourcePageEnd: event.sourcePageEnd ?? "",
     reviewStatus: event.reviewStatus || "PENDING",
     document: getDocumentName(event.documentId),
+    patientDob:
+      caseData?.patientDob?.trim() || caseData?.subjectDob?.trim() || "",
+  }));
+}
+
+function buildChronologyExportRows(
+  events: TimelineEvent[],
+  getDocumentName: (documentId?: string | null) => string,
+  getProviderName: (event: TimelineEvent) => string | null,
+  getProviderRole: (event: TimelineEvent) => string | null
+): CaseExportRow[] {
+  return events.map((event) => ({
+    date: normalizeTimelineEventDate(event),
+    title: event.title || "",
+    description: event.description || "",
+    eventType: event.eventType || "other",
+    sourcePageStart: event.sourcePageStart ?? null,
+    sourcePage: event.sourcePage ?? null,
+    sourcePageEnd: event.sourcePageEnd ?? null,
+    pageRange: event.pageRange ?? null,
+    reviewStatus: event.reviewStatus || "PENDING",
+    documentName: getDocumentName(event.documentId),
+    attribution:
+      [getProviderName(event), getProviderRole(event)].filter(Boolean).join(" | ") ||
+      null,
+    medicalFacility: event.medicalFacility || null,
+    isHidden: event.isHidden ?? false,
   }));
 }
 function rowsToCsv(rows: Record<string, string | number>[]) {
@@ -395,6 +459,10 @@ export default function CasePage() {
   const [patientNameDraft, setPatientNameDraft] = useState("");
   const [patientNameError, setPatientNameError] = useState<string | null>(null);
   const [savingPatientName, setSavingPatientName] = useState(false);
+  const [editingPatientDob, setEditingPatientDob] = useState(false);
+  const [patientDobDraft, setPatientDobDraft] = useState("");
+  const [patientDobError, setPatientDobError] = useState<string | null>(null);
+  const [savingPatientDob, setSavingPatientDob] = useState(false);
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -459,6 +527,20 @@ export default function CasePage() {
     setEditingPatientName(false);
     setPatientNameDraft("");
     setPatientNameError(null);
+  }
+
+  function startPatientDobEdit() {
+    setPatientDobDraft(
+      caseData?.subjectDob?.trim() || caseData?.patientDob?.trim() || ""
+    );
+    setPatientDobError(null);
+    setEditingPatientDob(true);
+  }
+
+  function cancelPatientDobEdit() {
+    setEditingPatientDob(false);
+    setPatientDobDraft("");
+    setPatientDobError(null);
   }
 
   async function saveCaseTitle() {
@@ -539,6 +621,47 @@ export default function CasePage() {
       );
     } finally {
       setSavingPatientName(false);
+    }
+  }
+
+  async function savePatientDob() {
+    const trimmedPatientDob = patientDobDraft.trim();
+
+    try {
+      setSavingPatientDob(true);
+      setPatientDobError(null);
+
+      const res = await fetch(`/api/cases/${caseId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ subjectDob: trimmedPatientDob || null }),
+      });
+
+      const data = await safeJson(res, "Update patient DOB");
+
+      if (!res.ok || !data?.success || !data.case) {
+        throw new Error(data?.error || "Failed to update patient DOB");
+      }
+
+      setCaseData((prev) =>
+        prev
+          ? {
+              ...prev,
+              patientDob: data.case.patientDob ?? data.case.subjectDob ?? null,
+              subjectDob: data.case.subjectDob ?? data.case.patientDob ?? null,
+            }
+          : prev
+      );
+      setEditingPatientDob(false);
+      setPatientDobDraft("");
+    } catch (error) {
+      setPatientDobError(
+        error instanceof Error ? error.message : "Failed to update patient DOB"
+      );
+    } finally {
+      setSavingPatientDob(false);
     }
   }
 
@@ -1252,6 +1375,13 @@ const activeDocument = useMemo(() => {
       ? caseData?.subjectName?.trim()
       : null) ||
     "Unnamed Patient";
+  const displayedPatientDobRaw = formatDisplayDate(
+    caseData?.patientDob || caseData?.subjectDob || ""
+  );
+  const displayedPatientDob =
+    displayedPatientDobRaw && displayedPatientDobRaw !== "Unknown"
+      ? displayedPatientDobRaw
+      : "Not set";
   const displayedCaseTitle = isPlaceholderCaseTitle(caseData?.title)
     ? displayedPatientName
     : caseData?.title?.trim() || displayedPatientName || "Untitled Case";
@@ -1259,19 +1389,34 @@ const activeDocument = useMemo(() => {
   function handleExport(format: "pdf" | "word" | "excel" | "zip") {
     setDownloadOpen(false);
 
-    const exportEvents = filteredEvents.map((event) => ({
-      ...event,
-      medicalFacility: getMedicalFacility(event),
-    }));
+    const exportEvents = [...events]
+      .map((event) => ({
+        ...event,
+        medicalFacility: getMedicalFacility(event),
+      }))
+      .sort(sortExportTimelineEvents);
+    const visibleExportEvents = exportEvents.filter((event) => !event.isHidden);
+    const hiddenExportEvents = exportEvents.filter((event) => event.isHidden);
 
     const exportRows = buildExportRows(
-      exportEvents,
+      visibleExportEvents,
       caseData,
       getDocumentName,
       (event) => getProviderName(event) || "",
       getProviderRole
     );
-    const exportGroupedEvents = buildTimelineDisplayGroups(exportEvents);
+    const chronologyRows = buildChronologyExportRows(
+      visibleExportEvents,
+      getDocumentName,
+      getProviderName,
+      getProviderRole
+    );
+    const hiddenChronologyRows = buildChronologyExportRows(
+      hiddenExportEvents,
+      getDocumentName,
+      getProviderName,
+      getProviderRole
+    );
     const exportSummary = caseData?.summary || summary;
 
     const safeTitle = (caseData?.title || "verachron-case")
@@ -1286,31 +1431,12 @@ const activeDocument = useMemo(() => {
     }
 
     if (format === "word") {
-      const content = exportGroupedEvents
-        .map(
-          (group) => `
-${formatDate(group.date)}
-${group.groups
-  .map(
-    (section) => `
-${section.categoryLabel}
-${section.items
-  .map(
-    (event) => `${event.title}
-${getAttributionLine(event as TimelineEvent) ? `Attribution: ${getAttributionLine(event as TimelineEvent)}\n` : ""}${event.description || "No description"}
-Type: ${event.eventType || "other"}
-Page: ${event.sourcePage ?? ""}
-Document: ${getDocumentName(event.documentId)}
-Status: ${event.reviewStatus || "PENDING"}
-`
-  )
-  .join("\n")}
-`
-  )
-  .join("\n")}
-`
-        )
-        .join(" | ");
+      const content = buildCaseExportHtml({
+        caseData,
+        chronologyRows,
+        hiddenRows: hiddenChronologyRows,
+        summary: exportSummary,
+      });
 
       downloadBlob(
         content,
@@ -1326,6 +1452,7 @@ Status: ${event.reviewStatus || "PENDING"}
           case: caseData,
           documents,
           chronology: exportRows,
+          hiddenChronology: hiddenChronologyRows,
         },
         null,
         2
@@ -1341,17 +1468,10 @@ Status: ${event.reviewStatus || "PENDING"}
 
     const html = buildCaseExportHtml({
       caseData,
-      groupedEvents: exportGroupedEvents,
+      chronologyRows,
+      hiddenRows: hiddenChronologyRows,
       summary: exportSummary,
-      getAttributionLine: (event) => getAttributionLine(event as TimelineEvent),
-      getDocumentName,
     });
-    console.log("EXPORT SUMMARY CHECK", {
-      hasSummary: Boolean(exportSummary),
-      caseSnapshot: exportSummary?.caseSnapshot,
-      keyIssuesCount: exportSummary?.keyIssues?.length,
-    });
-    console.log("EXPORT HTML HAS CASE SUMMARY", html.includes("Case Summary"));
 
     const printWindow = window.open("", "_blank", "width=1100,height=800");
     if (!printWindow) {
@@ -1477,9 +1597,70 @@ Status: ${event.reviewStatus || "PENDING"}
           </span>
         </div>
 
+        {editingPatientDob ? (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+            <label className="text-sm font-medium text-slate-500">
+              DOB
+              <input
+                type="date"
+                value={patientDobDraft}
+                onChange={(e) => setPatientDobDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void savePatientDob();
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    cancelPatientDobEdit();
+                  }
+                }}
+                disabled={savingPatientDob}
+                className="ml-3 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+                aria-label="Patient date of birth"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => void savePatientDob()}
+              disabled={savingPatientDob}
+              className="rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {savingPatientDob ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={cancelPatientDobEdit}
+              disabled={savingPatientDob}
+              className="rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm text-slate-500">
+            <span>DOB: {displayedPatientDob}</span>
+            <button
+              type="button"
+              onClick={startPatientDobEdit}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              aria-label="Edit patient DOB"
+            >
+              <span className="text-sm leading-none">âœŽ</span>
+              <span>Edit</span>
+            </button>
+          </div>
+        )}
+
         {patientNameError ? (
           <div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {patientNameError}
+          </div>
+        ) : null}
+
+        {patientDobError ? (
+          <div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {patientDobError}
           </div>
         ) : null}
 

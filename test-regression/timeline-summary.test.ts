@@ -596,6 +596,21 @@ function run() {
     assert.ok(boilerplateHits.length <= 1);
   }
 
+  {
+    const duplicateSentenceResult = generateTimelineSummary([
+      makeEvent(
+        "Follow-up instructions were documented",
+        "Follow-up instructions were documented.",
+        { eventType: "followup", date: "2024-05-01" }
+      ),
+    ]);
+    const duplicateCount =
+      duplicateSentenceResult.caseSummary.match(/Follow-up instructions were documented\./gi)
+        ?.length || 0;
+
+    assert.equal(duplicateCount, 1);
+  }
+
   console.log("timeline-summary tests passed");
 }
 
